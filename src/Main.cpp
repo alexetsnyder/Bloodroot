@@ -1,11 +1,12 @@
-#include <cstdlib>
-#include <iostream>
-#include <vector>
-
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 #include <vulkan/vulkan_raii.hpp>
+
+#include <assert.h>
+#include <cstdlib>
+#include <iostream>
+#include <vector>
 
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
@@ -38,7 +39,13 @@ class HelloTirangleApp
 		vk::raii::Context context;
 		vk::raii::Instance instance = nullptr;
 		vk::raii::DebugUtilsMessengerEXT debugMessenger = nullptr;
+
 		vk::raii::PhysicalDevice physicalDevice = nullptr;
+		vk::raii::Device device = nullptr;
+
+		vk::raii::Queue graphicsQueue = nullptr;
+
+		std::vector<const char*> requiredDeviceExtension = { vk::KHRSwapchainExtensionName };
 
 		void initWindow()
 		{
@@ -55,6 +62,38 @@ class HelloTirangleApp
 			createInstance();
 			setupDebugMessenger();
 			pickPhysicalDevice();
+			createLogicalDevice();
+		}
+
+		void createLogicalDevice()
+		{
+			std::vector<vk::QueueFamilyProperties> queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
+
+			auto graphicsQueueFamilyProperty = std::ranges::find_if(queueFamilyProperties, [](auto const& qfp) { return (qfp.queueFlags & vk::QueueFlagBits::eGraphics) != static_cast<vk::QueueFlags>(0); });
+			assert(graphicsQueueFamilyProperty != queueFamilyProperties.end() && "NO graphics queue family found!");
+
+			auto graphicsIndex = static_cast<uint32_t>(std::distance(queueFamilyProperties.begin(), graphicsQueueFamilyProperty));
+
+			vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features, vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT> featureChain =
+			{
+				{},
+				{ .dynamicRendering = true },
+				{ .extendedDynamicState = true }
+			};
+
+			float queuePriority = 0.5f;
+			vk::DeviceQueueCreateInfo deviceQueueCreateInfo { .queueFamilyIndex = graphicsIndex, .queueCount = 1, .pQueuePriorities = &queuePriority };
+			vk::DeviceCreateInfo deviceCreateInfo
+			{
+				.pNext = &featureChain.get<vk::PhysicalDeviceFeatures2>(),
+				.queueCreateInfoCount = 1,
+				.pQueueCreateInfos = &deviceQueueCreateInfo,
+				.enabledExtensionCount = static_cast<uint32_t>(requiredDeviceExtension.size()),
+				.ppEnabledExtensionNames = requiredDeviceExtension.data()
+			};
+
+			device = vk::raii::Device(physicalDevice, deviceCreateInfo);
+			graphicsQueue = vk::raii::Queue(device, graphicsIndex, 0);
 		}
 
 		void createInstance()
@@ -187,7 +226,7 @@ class HelloTirangleApp
 			physicalDevice = *devIter;
 		}
 
-		std::vector<const char*> requiredDeviceExtension = { vk::KHRSwapchainExtensionName };
+		
 
 		bool isDeviceSuitable(vk::raii::PhysicalDevice const& physicalDevice)
 		{
