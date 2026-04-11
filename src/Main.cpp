@@ -34,9 +34,11 @@ class HelloTirangleApp
 
 	private:
 		GLFWwindow* window = nullptr;
+
 		vk::raii::Context context;
 		vk::raii::Instance instance = nullptr;
 		vk::raii::DebugUtilsMessengerEXT debugMessenger = nullptr;
+		vk::raii::PhysicalDevice physicalDevice = nullptr;
 
 		void initWindow()
 		{
@@ -174,7 +176,43 @@ class HelloTirangleApp
 
 		void pickPhysicalDevice()
 		{
+			auto physicalDevices = instance.enumeratePhysicalDevices();
+			auto const devIter = std::ranges::find_if(physicalDevices, [&](auto const& physicalDevice) { return isDeviceSuitable(physicalDevice); });
 
+			if (devIter == physicalDevices.end())
+			{
+				throw std::runtime_error("Failed to find suitable GPU!");
+			}
+
+			physicalDevice = *devIter;
+		}
+
+		std::vector<const char*> requiredDeviceExtension = { vk::KHRSwapchainExtensionName };
+
+		bool isDeviceSuitable(vk::raii::PhysicalDevice const& physicalDevice)
+		{
+			bool supportVulkan1_3 = physicalDevice.getProperties().apiVersion >= vk::ApiVersion13;
+
+			auto queueFamilies = physicalDevice.getQueueFamilyProperties();
+			bool supportsGraphics = std::ranges::any_of(queueFamilies, [](auto const& qfp) { return !!(qfp.queueFlags & vk::QueueFlagBits::eGraphics); });
+
+			auto availableDeviceExtensions = physicalDevice.enumerateDeviceExtensionProperties();
+			bool supportsAllRequiredExtensions =
+				std::ranges::all_of(requiredDeviceExtension,
+					[&availableDeviceExtensions](auto const& requiredDeviceExtension)
+					{
+						return std::ranges::any_of(availableDeviceExtensions,
+							[requiredDeviceExtension](auto const& availableDeviceExtension)
+							{
+								return strcmp(availableDeviceExtension.extensionName, requiredDeviceExtension) == 0;
+							});
+					});
+
+			auto features = physicalDevice.template getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features, vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
+			bool supportRequiredFeatures = features.template get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering &&
+				features.template get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
+
+			return supportVulkan1_3 && supportsGraphics && supportsAllRequiredExtensions && supportRequiredFeatures;
 		}
 
 		void mainLoop()
