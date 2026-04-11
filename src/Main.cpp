@@ -4,6 +4,7 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+
 #include <vulkan/vulkan_raii.hpp>
 
 const int WINDOW_WIDTH = 800;
@@ -50,6 +51,8 @@ class HelloTirangleApp
 		void initVulkan()
 		{
 			createInstance();
+			setupDebugMessenger();
+			pickPhysicalDevice();
 		}
 
 		void createInstance()
@@ -122,6 +125,10 @@ class HelloTirangleApp
 			auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 			
 			std::vector extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+			if (enableValidationLayers)
+			{
+				extensions.push_back(vk::EXTDebugUtilsExtensionName);
+			}
 
 			return extensions;
 		}
@@ -163,6 +170,11 @@ class HelloTirangleApp
 			}
 
 			return vk::False;
+		}
+
+		void pickPhysicalDevice()
+		{
+
 		}
 
 		void mainLoop()
