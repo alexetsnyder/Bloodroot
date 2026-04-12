@@ -45,6 +45,8 @@ class HelloTirangleApp
 
 		vk::raii::Queue graphicsQueue = nullptr;
 
+		vk::raii::SurfaceKHR surface = nullptr;
+
 		std::vector<const char*> requiredDeviceExtension = { vk::KHRSwapchainExtensionName };
 
 		void initWindow()
@@ -61,18 +63,41 @@ class HelloTirangleApp
 		{
 			createInstance();
 			setupDebugMessenger();
+			createSurface();
 			pickPhysicalDevice();
 			createLogicalDevice();
+		}
+
+		void createSurface()
+		{
+			VkSurfaceKHR _surface;
+			if (glfwCreateWindowSurface(*instance, window, nullptr, &_surface) != 0)
+			{
+				throw std::runtime_error("Failed to create window surface!");
+			}
+
+			surface = vk::raii::SurfaceKHR(instance, _surface);
 		}
 
 		void createLogicalDevice()
 		{
 			std::vector<vk::QueueFamilyProperties> queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
 
-			auto graphicsQueueFamilyProperty = std::ranges::find_if(queueFamilyProperties, [](auto const& qfp) { return (qfp.queueFlags & vk::QueueFlagBits::eGraphics) != static_cast<vk::QueueFlags>(0); });
-			assert(graphicsQueueFamilyProperty != queueFamilyProperties.end() && "NO graphics queue family found!");
+			uint32_t queueIndex = ~0;
+			for (uint32_t qfpIndex = 0; qfpIndex < queueFamilyProperties.size(); qfpIndex++)
+			{
+				if ((queueFamilyProperties[qfpIndex].queueFlags & vk::QueueFlagBits::eGraphics) &&
+					physicalDevice.getSurfaceSupportKHR(qfpIndex, *surface))
+				{
+					queueIndex = qfpIndex;
+					break;
+				}
+			}
 
-			auto graphicsIndex = static_cast<uint32_t>(std::distance(queueFamilyProperties.begin(), graphicsQueueFamilyProperty));
+			if (queueIndex == ~0)
+			{
+				throw std::runtime_error("Could not find a queue for graphics and present -> terminating!");
+			}
 
 			vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features, vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT> featureChain =
 			{
@@ -82,7 +107,7 @@ class HelloTirangleApp
 			};
 
 			float queuePriority = 0.5f;
-			vk::DeviceQueueCreateInfo deviceQueueCreateInfo { .queueFamilyIndex = graphicsIndex, .queueCount = 1, .pQueuePriorities = &queuePriority };
+			vk::DeviceQueueCreateInfo deviceQueueCreateInfo { .queueFamilyIndex = queueIndex, .queueCount = 1, .pQueuePriorities = &queuePriority };
 			vk::DeviceCreateInfo deviceCreateInfo
 			{
 				.pNext = &featureChain.get<vk::PhysicalDeviceFeatures2>(),
@@ -93,7 +118,7 @@ class HelloTirangleApp
 			};
 
 			device = vk::raii::Device(physicalDevice, deviceCreateInfo);
-			graphicsQueue = vk::raii::Queue(device, graphicsIndex, 0);
+			graphicsQueue = vk::raii::Queue(device, queueIndex, 0);
 		}
 
 		void createInstance()
