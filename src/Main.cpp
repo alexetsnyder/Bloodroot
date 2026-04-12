@@ -5,6 +5,7 @@
 
 #include <assert.h>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <vector>
@@ -22,6 +23,25 @@ constexpr bool enableValidationLayers = false;
 #else
 constexpr bool enableValidationLayers = true;
 #endif
+
+static std::vector<char> readFile(const std::string& fileName)
+{
+	std::ifstream file(fileName, std::ios::ate | std::ios::binary);
+
+	if (!file.is_open())
+	{
+		throw std::runtime_error("Failed to open file: " + fileName + "!\n");
+	}
+
+	std::vector<char> buffer(file.tellg());
+
+	file.seekg(0, std::ios::beg);
+	file.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+
+	file.close();
+
+	return buffer;
+}
 
 class HelloTirangleApp
 {
@@ -80,7 +100,19 @@ class HelloTirangleApp
 
 		void createGraphicsPipeline()
 		{
+			vk::raii::ShaderModule shaderModule = createShaderModule(readFile("Shaders/slang.spv"));
 
+			vk::PipelineShaderStageCreateInfo vertShaderStageInfo{ .stage = vk::ShaderStageFlagBits::eVertex, .module = shaderModule, .pName = "vertMain" };
+			vk::PipelineShaderStageCreateInfo fragShaderStageInfo{ .stage = vk::ShaderStageFlagBits::eFragment, .module = shaderModule, .pName = "fragMain" };
+			vk::PipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+		}
+
+		[[nodiscard]] vk::raii::ShaderModule createShaderModule(const std::vector<char>& code) const
+		{
+			vk::ShaderModuleCreateInfo createInfo{ .codeSize = code.size() * sizeof(char), .pCode = reinterpret_cast<const uint32_t*>(code.data()) };
+			vk::raii::ShaderModule shaderModule{ device, createInfo };
+
+			return shaderModule;
 		}
 
 		void createImageViews()
