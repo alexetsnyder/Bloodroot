@@ -74,6 +74,38 @@ class HelloTirangleApp
 			pickPhysicalDevice();
 			createLogicalDevice();
 			createSwapChain();
+			createImageViews();
+			createGraphicsPipeline();
+		}
+
+		void createGraphicsPipeline()
+		{
+
+		}
+
+		void createImageViews()
+		{
+			assert(swapChainImageViews.empty());
+
+			vk::ImageViewCreateInfo imageViewCreateInfo
+			{
+				.viewType = vk::ImageViewType::e2D,
+				.format = swapChainSurfaceFormat.format,
+				/*.components = 
+				{ 
+					vk::ComponentSwizzle::eIdentity, 
+					vk::ComponentSwizzle::eIdentity, 
+					vk::ComponentSwizzle::eIdentity,
+					vk::ComponentSwizzle::eIdentity
+				},*/
+				.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 },
+			};
+
+			for (auto& image : swapChainImages)
+			{
+				imageViewCreateInfo.image = image;
+				swapChainImageViews.emplace_back(device, imageViewCreateInfo);
+			}
 		}
 
 		void createSwapChain()
