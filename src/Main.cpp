@@ -66,6 +66,7 @@ class HelloTirangleApp
 		vk::raii::PhysicalDevice physicalDevice = nullptr;
 		vk::raii::Device device = nullptr;
 
+		uint32_t queueIndex = ~0;
 		vk::raii::Queue graphicsQueue = nullptr;
 
 		vk::raii::SwapchainKHR swapChain = nullptr;
@@ -73,6 +74,11 @@ class HelloTirangleApp
 		vk::SurfaceFormatKHR swapChainSurfaceFormat;
 		vk::Extent2D swapChainExtent;
 		std::vector<vk::raii::ImageView> swapChainImageViews;
+
+		vk::raii::PipelineLayout pipelineLayout = nullptr;
+		vk::raii::Pipeline graphicsPipeline = nullptr;
+
+		vk::raii::CommandPool commandPool = nullptr;
 
 		std::vector<const char*> requiredDeviceExtension = { vk::KHRSwapchainExtensionName };
 
@@ -96,6 +102,16 @@ class HelloTirangleApp
 			createSwapChain();
 			createImageViews();
 			createGraphicsPipeline();
+			createCommandPool();
+		}
+
+		void createCommandPool()
+		{
+			vk::CommandPoolCreateInfo poolInfo
+			{
+				.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer, 
+				.queueFamilyIndex = queueIndex
+			};
 		}
 
 		void createGraphicsPipeline()
@@ -105,6 +121,67 @@ class HelloTirangleApp
 			vk::PipelineShaderStageCreateInfo vertShaderStageInfo{ .stage = vk::ShaderStageFlagBits::eVertex, .module = shaderModule, .pName = "vertMain" };
 			vk::PipelineShaderStageCreateInfo fragShaderStageInfo{ .stage = vk::ShaderStageFlagBits::eFragment, .module = shaderModule, .pName = "fragMain" };
 			vk::PipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+
+			vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
+			vk::PipelineInputAssemblyStateCreateInfo inputAssembly{ .topology = vk::PrimitiveTopology::eTriangleList };
+			vk::PipelineViewportStateCreateInfo viewPortState{ .viewportCount = 1, .scissorCount = 1 };
+
+			vk::PipelineRasterizationStateCreateInfo rasterizer
+			{
+				.depthClampEnable = vk::False,
+				.rasterizerDiscardEnable = vk::False,
+				.polygonMode = vk::PolygonMode::eFill,
+				.cullMode = vk::CullModeFlagBits::eBack,
+				.frontFace = vk::FrontFace::eClockwise,
+				.depthBiasEnable = vk::False,
+				.lineWidth = 1.0f
+
+			};
+
+			vk::PipelineMultisampleStateCreateInfo multisampling{ .rasterizationSamples = vk::SampleCountFlagBits::e1, .sampleShadingEnable = vk::False };
+
+			vk::PipelineColorBlendAttachmentState colorBlendAttachment
+			{
+				.blendEnable = vk::False,
+				.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+			};
+
+			vk::PipelineColorBlendStateCreateInfo colorBlending
+			{
+				.logicOpEnable = vk::False,
+				.logicOp = vk::LogicOp::eCopy,
+				.attachmentCount = 1,
+				.pAttachments = &colorBlendAttachment
+			};
+
+			std::vector<vk::DynamicState> dynamicStates = { vk::DynamicState::eViewport, vk::DynamicState::eScissor };
+			vk::PipelineDynamicStateCreateInfo dynamicState{ .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()), .pDynamicStates = dynamicStates.data() };
+
+			vk::PipelineLayoutCreateInfo pipelineLayoutInfo{ .setLayoutCount = 0, .pushConstantRangeCount = 0 };
+			pipelineLayout = vk::raii::PipelineLayout(device, pipelineLayoutInfo);
+
+			vk::StructureChain<vk::GraphicsPipelineCreateInfo, vk::PipelineRenderingCreateInfo> pipelineCreateInfoChain = 
+			{
+				{
+					.stageCount = 2,
+					.pStages = shaderStages,
+					.pVertexInputState = &vertexInputInfo,
+					.pInputAssemblyState = &inputAssembly,
+					.pViewportState = &viewPortState,
+					.pRasterizationState = &rasterizer,
+					.pMultisampleState = &multisampling,
+					.pColorBlendState = &colorBlending,
+					.pDynamicState = &dynamicState,
+					.layout = pipelineLayout,
+					.renderPass = nullptr
+				},
+				{
+					.colorAttachmentCount = 1,
+					.pColorAttachmentFormats = &swapChainSurfaceFormat.format
+				}
+			};
+
+			graphicsPipeline = vk::raii::Pipeline(device, nullptr, pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>());
 		}
 
 		[[nodiscard]] vk::raii::ShaderModule createShaderModule(const std::vector<char>& code) const
@@ -238,7 +315,6 @@ class HelloTirangleApp
 		{
 			std::vector<vk::QueueFamilyProperties> queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
 
-			uint32_t queueIndex = ~0;
 			for (uint32_t qfpIndex = 0; qfpIndex < queueFamilyProperties.size(); qfpIndex++)
 			{
 				if ((queueFamilyProperties[qfpIndex].queueFlags & vk::QueueFlagBits::eGraphics) &&
@@ -254,9 +330,13 @@ class HelloTirangleApp
 				throw std::runtime_error("Could not find a queue for graphics and present -> terminating!");
 			}
 
-			vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features, vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT> featureChain =
+			vk::StructureChain<vk::PhysicalDeviceFeatures2, 
+							   vk::PhysicalDeviceVulkan11Features,
+							   vk::PhysicalDeviceVulkan13Features, 
+							   vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT> featureChain =
 			{
 				{},
+				{ .shaderDrawParameters = true },
 				{ .dynamicRendering = true },
 				{ .extendedDynamicState = true }
 			};
