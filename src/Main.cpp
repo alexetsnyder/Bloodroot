@@ -57,6 +57,7 @@ class HelloTirangleApp
 		}
 
 	private:
+		bool framebufferResized = false;
 		GLFWwindow* window = nullptr;
 
 		vk::raii::Context context;
@@ -95,9 +96,18 @@ class HelloTirangleApp
 			glfwInit();
 
 			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-			glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+			//glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
 			window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Hello Triangle!", nullptr, nullptr);
+
+			glfwSetWindowUserPointer(window, this);
+			glfwSetFramebufferSizeCallback(window, framebufferResizedCallback);
+		}
+
+		static void framebufferResizedCallback(GLFWwindow* window, int width, int height)
+		{
+			auto app = reinterpret_cast<HelloTirangleApp*>(glfwGetWindowUserPointer(window));
+			app->framebufferResized = true;
 		}
 
 		void initVulkan()
@@ -249,6 +259,30 @@ class HelloTirangleApp
 				imageViewCreateInfo.image = image;
 				swapChainImageViews.emplace_back(device, imageViewCreateInfo);
 			}
+		}
+
+		void cleanUpSwapChain()
+		{
+			swapChainImageViews.clear();
+			swapChain = nullptr;
+		}
+
+		void recreateSwapChain()
+		{
+			int width = 0, height = 0;
+			glfwGetFramebufferSize(window, &width, &height);
+			while (width == 0 || height == 0)
+			{
+				glfwGetFramebufferSize(window, &width, &height);
+				glfwWaitEvents();
+			}
+
+			device.waitIdle();
+
+			cleanUpSwapChain();
+
+			createSwapChain();
+			createImageViews();
 		}
 
 		void createSwapChain()
@@ -572,9 +606,21 @@ class HelloTirangleApp
 				throw std::runtime_error("Failed to wait for Fence!");
 			}
 
-			device.resetFences(*inFlightFences[frameIndex]);
-
 			auto [result, imageIndex] = swapChain.acquireNextImage(UINT64_MAX, *presentCompleteSemaphores[frameIndex], nullptr);
+
+			if (result == vk::Result::eErrorOutOfDateKHR)
+			{
+				recreateSwapChain();
+				return;
+			}
+
+			if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR)
+			{
+				assert(result == vk::Result::eTimeout || result == vk::Result::eNotReady);
+				throw std::runtime_error("Failed to acquire swap cahin image!");
+			}
+
+			device.resetFences(*inFlightFences[frameIndex]);
 
 			commandBuffers[frameIndex].reset();
 			recordCommandBuffer(imageIndex);
@@ -605,6 +651,16 @@ class HelloTirangleApp
 			};
 
 			result = graphicsQueue.presentKHR(presentInfoKHR);
+
+			if (result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR || framebufferResized)
+			{
+				framebufferResized = false;
+				recreateSwapChain();
+			}
+			else
+			{
+				assert(result == vk::Result::eSuccess);
+			}
 
 			frameIndex = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
 		}
@@ -706,6 +762,8 @@ class HelloTirangleApp
 
 		void cleanUp()
 		{
+			cleanUpSwapChain();
+
 			glfwDestroyWindow(window);
 
 			glfwTerminate();
