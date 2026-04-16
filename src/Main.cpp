@@ -1,6 +1,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
 #include <assert.h>
@@ -25,6 +26,30 @@ constexpr bool enableValidationLayers = false;
 #else
 constexpr bool enableValidationLayers = true;
 #endif
+
+struct Vertex
+{
+	glm::vec2 pos;
+	glm::vec3 color;
+
+	static vk::VertexInputBindingDescription getBindingDescription()
+	{
+		return { .binding = 0, .stride = sizeof(Vertex), .inputRate = vk::VertexInputRate::eVertex };
+	}
+
+	static std::array<vk::VertexInputAttributeDescription, 2> getAttibuteDescriptions()
+	{
+		return { { { .location = 0, .binding = 0, .format = vk::Format::eR32G32Sfloat, .offset = offsetof(Vertex, pos) },
+			   { .location = 1, .binding = 0, .format = vk::Format::eR32G32B32Sfloat, .offset = offsetof(Vertex, color) } } };
+	}
+};
+
+const std::vector<Vertex> vertices =
+{
+	{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+	{{0.5f, 0.5f},  {0.0f, 1.0f, 0.0f}},
+	{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+};
 
 static std::vector<char> readFile(const std::string& fileName)
 {
@@ -89,6 +114,9 @@ class HelloTirangleApp
 		std::vector<vk::raii::Semaphore> renderFinishedSemaphores;
 		std::vector<vk::raii::Fence> inFlightFences;
 
+		vk::raii::Buffer vertexBuffer = nullptr;
+		vk::raii::DeviceMemory vertexBufferMemory = nullptr;
+
 		std::vector<const char*> requiredDeviceExtension = { vk::KHRSwapchainExtensionName };
 
 		void initWindow()
@@ -121,8 +149,52 @@ class HelloTirangleApp
 			createImageViews();
 			createGraphicsPipeline();
 			createCommandPool();
+			createVertexBuffer();
 			createCommandBuffers();
 			createSyncObjects();
+		}
+
+		void createVertexBuffer()
+		{
+			vk::BufferCreateInfo bufferInfo
+			{
+				.size = sizeof(vertices[0]) * vertices.size(),
+				.usage = vk::BufferUsageFlagBits::eVertexBuffer,
+				.sharingMode = vk::SharingMode::eExclusive
+			};
+
+			vertexBuffer = vk::raii::Buffer(device, bufferInfo);
+
+			vk::MemoryRequirements memRequirements = vertexBuffer.getMemoryRequirements();
+
+			vk::MemoryAllocateInfo memoryAllocateInfo
+			{
+				.allocationSize = memRequirements.size,
+				.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)
+			};
+
+			vertexBufferMemory = vk::raii::DeviceMemory(device, memoryAllocateInfo);
+
+			vertexBuffer.bindMemory(*vertexBufferMemory, 0);
+
+			void* data = vertexBufferMemory.mapMemory(0, bufferInfo.size);
+			memcpy(data, vertices.data(), bufferInfo.size);
+			vertexBufferMemory.unmapMemory();
+		}
+
+		uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
+		{
+			vk::PhysicalDeviceMemoryProperties memProperties = physicalDevice.getMemoryProperties();
+
+			for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+			{
+				if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+				{
+					return i;
+				}
+			}
+
+			throw std::runtime_error("Failed to find suitable memory type!");
 		}
 
 		void createSyncObjects()
@@ -166,7 +238,16 @@ class HelloTirangleApp
 			vk::PipelineShaderStageCreateInfo fragShaderStageInfo{ .stage = vk::ShaderStageFlagBits::eFragment, .module = shaderModule, .pName = "fragMain" };
 			vk::PipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
-			vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
+			auto bindingDescription = Vertex::getBindingDescription();
+			auto attibuteDescriptions = Vertex::getAttibuteDescriptions();
+			vk::PipelineVertexInputStateCreateInfo vertexInputInfo
+			{
+				.vertexBindingDescriptionCount = 1,
+				.pVertexBindingDescriptions = &bindingDescription,
+				.vertexAttributeDescriptionCount = static_cast<uint32_t>(attibuteDescriptions.size()),
+				.pVertexAttributeDescriptions = attibuteDescriptions.data()
+			};
+
 			vk::PipelineInputAssemblyStateCreateInfo inputAssembly{ .topology = vk::PrimitiveTopology::eTriangleList };
 			vk::PipelineViewportStateCreateInfo viewPortState{ .viewportCount = 1, .scissorCount = 1 };
 
@@ -625,8 +706,6 @@ class HelloTirangleApp
 			commandBuffers[frameIndex].reset();
 			recordCommandBuffer(imageIndex);
 
-			//graphicsQueue.waitIdle();
-
 			vk::PipelineStageFlags waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
 			const vk::SubmitInfo submitInfo
 			{
@@ -701,10 +780,12 @@ class HelloTirangleApp
 
 			commandBuffers[frameIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, *graphicsPipeline);
 
+			commandBuffers[frameIndex].bindVertexBuffers(0, *vertexBuffer, { 0 });
+
 			commandBuffers[frameIndex].setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height), 0.0f, 1.0f));
 			commandBuffers[frameIndex].setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapChainExtent));
 
-			commandBuffers[frameIndex].draw(3, 1, 0, 0);
+			commandBuffers[frameIndex].draw(static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 
 			commandBuffers[frameIndex].endRendering();
 

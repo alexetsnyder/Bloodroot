@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(glfw3 CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
+find_package(glm REQUIRED)
 
 add_compile_definitions(VULKAN_HPP_NO_STRUCT_CONSTRUCTORS)
 
@@ -14,6 +15,7 @@ add_executable(Bloodroot src/Main.cpp)
 
 target_link_libraries(Bloodroot PRIVATE glfw)
 target_link_libraries(Bloodroot PRIVATE Vulkan::Vulkan)
+target_link_libraries(Bloodroot PRIVATE glm::glm)
 
 find_program(SLANGC_EXECUTABLE slangc HINTS $ENV{VULKAN_SDK}/bin)
 file(GLOB SLANG_SHADER_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Shaders/*.slang)
