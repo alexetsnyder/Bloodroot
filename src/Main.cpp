@@ -46,9 +46,16 @@ struct Vertex
 
 const std::vector<Vertex> vertices =
 {
-	{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-	{{0.5f, 0.5f},  {0.0f, 1.0f, 0.0f}},
-	{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+	{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+	{{0.5f, -0.5f},  {0.0f, 1.0f, 0.0f}},
+	{{0.5f, 0.5f},   {0.0f, 0.0f, 1.0f}},
+	{{-0.5f, 0.5f},  {1.0f, 1.0f, 1.0f}},
+};
+
+const std::vector<uint16_t> indices =
+{
+	0, 1, 2,
+	2, 3, 0,
 };
 
 static std::vector<char> readFile(const std::string& fileName)
@@ -117,6 +124,9 @@ class HelloTriangleApp
 		vk::raii::Buffer vertexBuffer = nullptr;
 		vk::raii::DeviceMemory vertexBufferMemory = nullptr;
 
+		vk::raii::Buffer indexBuffer = nullptr;
+		vk::raii::DeviceMemory indexBufferMemory = nullptr;
+
 		std::vector<const char*> requiredDeviceExtension = { vk::KHRSwapchainExtensionName };
 
 		void initWindow()
@@ -150,8 +160,41 @@ class HelloTriangleApp
 			createGraphicsPipeline();
 			createCommandPool();
 			createVertexBuffer();
+			createIndexBuffer();
 			createCommandBuffers();
 			createSyncObjects();
+		}
+
+		void createIndexBuffer()
+		{
+			vk::DeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+			vk::raii::Buffer stagingBuffer({});
+			vk::raii::DeviceMemory stagingBufferMemory({});
+
+			createBuffer(
+				bufferSize,
+				vk::BufferUsageFlagBits::eTransferSrc,
+				vk::MemoryPropertyFlagBits::eHostVisible |
+				vk::MemoryPropertyFlagBits::eHostCoherent,
+				stagingBuffer,
+				stagingBufferMemory
+			);
+
+			void* dataStaging = stagingBufferMemory.mapMemory(0, bufferSize);
+			memcpy(dataStaging, indices.data(), (size_t)bufferSize);
+			stagingBufferMemory.unmapMemory();
+
+			createBuffer(
+				bufferSize,
+				vk::BufferUsageFlagBits::eTransferDst |
+				vk::BufferUsageFlagBits::eIndexBuffer,
+				vk::MemoryPropertyFlagBits::eDeviceLocal,
+				indexBuffer,
+				indexBufferMemory
+			);
+
+			copyBuffer(stagingBuffer, indexBuffer, bufferSize);
 		}
 
 		void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory)
@@ -816,11 +859,12 @@ class HelloTriangleApp
 			commandBuffers[frameIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, *graphicsPipeline);
 
 			commandBuffers[frameIndex].bindVertexBuffers(0, *vertexBuffer, { 0 });
+			commandBuffers[frameIndex].bindIndexBuffer(*indexBuffer, 0, vk::IndexType::eUint16);
 
 			commandBuffers[frameIndex].setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height), 0.0f, 1.0f));
 			commandBuffers[frameIndex].setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapChainExtent));
 
-			commandBuffers[frameIndex].draw(static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+			commandBuffers[frameIndex].drawIndexed(indices.size(), 1, 0, 0, 0);
 
 			commandBuffers[frameIndex].endRendering();
 
