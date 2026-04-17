@@ -2,9 +2,11 @@
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
 #include <assert.h>
+#include <chrono>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -56,6 +58,13 @@ const std::vector<uint16_t> indices =
 {
 	0, 1, 2,
 	2, 3, 0,
+};
+
+struct UniformBufferObject
+{
+	alignas(16) glm::mat4 model;
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 projection;
 };
 
 static std::vector<char> readFile(const std::string& fileName)
@@ -110,6 +119,7 @@ class HelloTriangleApp
 		vk::Extent2D swapChainExtent;
 		std::vector<vk::raii::ImageView> swapChainImageViews;
 
+		vk::raii::DescriptorSetLayout descriptorSetLayout = nullptr;
 		vk::raii::PipelineLayout pipelineLayout = nullptr;
 		vk::raii::Pipeline graphicsPipeline = nullptr;
 
@@ -126,6 +136,13 @@ class HelloTriangleApp
 
 		vk::raii::Buffer indexBuffer = nullptr;
 		vk::raii::DeviceMemory indexBufferMemory = nullptr;
+
+		std::vector<vk::raii::Buffer> uniformBuffers;
+		std::vector<vk::raii::DeviceMemory> uniformBuffersMemory;
+		std::vector<void*> uniformBuffersMapped;
+
+		vk::raii::DescriptorPool descriptorPool = nullptr;
+		std::vector<vk::raii::DescriptorSet> descriptorSets;
 
 		std::vector<const char*> requiredDeviceExtension = { vk::KHRSwapchainExtensionName };
 
@@ -157,12 +174,87 @@ class HelloTriangleApp
 			createLogicalDevice();
 			createSwapChain();
 			createImageViews();
+			createDescriptorSetLayout();
 			createGraphicsPipeline();
 			createCommandPool();
 			createVertexBuffer();
 			createIndexBuffer();
+			createUniformBuffers();
+			createDescriptorPool();
+			createDescriptorSets();
 			createCommandBuffers();
 			createSyncObjects();
+		}
+
+		void createDescriptorSets()
+		{
+			std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, *descriptorSetLayout);
+			vk::DescriptorSetAllocateInfo allocInfo
+			{ 
+				.descriptorPool = descriptorPool, 
+				.descriptorSetCount = static_cast<uint32_t>(layouts.size()), 
+				.pSetLayouts = layouts.data() 
+			};
+
+			descriptorSets.clear();
+			descriptorSets = device.allocateDescriptorSets(allocInfo);
+
+			for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+			{
+				vk::DescriptorBufferInfo bufferInfo{ .buffer = uniformBuffers[i], .offset = 0, .range = sizeof(UniformBufferObject) };
+				vk::WriteDescriptorSet descriptorWrite
+				{ 
+					.dstSet = descriptorSets[i], 
+					.dstBinding = 0, 
+					.dstArrayElement = 0, 
+					.descriptorCount = 1, 
+					.descriptorType = vk::DescriptorType::eUniformBuffer, 
+					.pBufferInfo = &bufferInfo 
+				};
+				device.updateDescriptorSets(descriptorWrite, {});
+			}
+		}
+
+		void createDescriptorPool()
+		{
+			vk::DescriptorPoolSize poolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT);
+			vk::DescriptorPoolCreateInfo poolInfo{ .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, .maxSets = MAX_FRAMES_IN_FLIGHT, .poolSizeCount = 1, .pPoolSizes = &poolSize };
+
+			descriptorPool = vk::raii::DescriptorPool(device, poolInfo);
+		}
+
+		void createUniformBuffers()
+		{
+			uniformBuffers.clear();
+			uniformBuffersMemory.clear();
+			uniformBuffersMapped.clear();
+
+			for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+			{
+				vk::DeviceSize bufferSize = sizeof(UniformBufferObject);
+				vk::raii::Buffer buffer({});
+				vk::raii::DeviceMemory bufferMemory({});
+
+				createBuffer(
+					bufferSize,
+					vk::BufferUsageFlagBits::eUniformBuffer,
+					vk::MemoryPropertyFlagBits::eHostVisible |
+					vk::MemoryPropertyFlagBits::eHostCoherent,
+					buffer,
+					bufferMemory
+				);
+
+				uniformBuffers.emplace_back(std::move(buffer));
+				uniformBuffersMemory.emplace_back(std::move(bufferMemory));
+				uniformBuffersMapped.emplace_back(uniformBuffersMemory[i].mapMemory(0, bufferSize));
+			}
+		}
+
+		void createDescriptorSetLayout()
+		{
+			vk::DescriptorSetLayoutBinding uboLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex, nullptr);
+			vk::DescriptorSetLayoutCreateInfo layoutInfo{ .bindingCount = 1, .pBindings = &uboLayoutBinding };
+			descriptorSetLayout = vk::raii::DescriptorSetLayout(device, layoutInfo);
 		}
 
 		void createIndexBuffer()
@@ -342,7 +434,7 @@ class HelloTriangleApp
 				.rasterizerDiscardEnable = vk::False,
 				.polygonMode = vk::PolygonMode::eFill,
 				.cullMode = vk::CullModeFlagBits::eBack,
-				.frontFace = vk::FrontFace::eClockwise,
+				.frontFace = vk::FrontFace::eCounterClockwise,
 				.depthBiasEnable = vk::False,
 				.lineWidth = 1.0f
 
@@ -367,7 +459,7 @@ class HelloTriangleApp
 			std::vector<vk::DynamicState> dynamicStates = { vk::DynamicState::eViewport, vk::DynamicState::eScissor };
 			vk::PipelineDynamicStateCreateInfo dynamicState{ .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()), .pDynamicStates = dynamicStates.data() };
 
-			vk::PipelineLayoutCreateInfo pipelineLayoutInfo{ .setLayoutCount = 0, .pushConstantRangeCount = 0 };
+			vk::PipelineLayoutCreateInfo pipelineLayoutInfo{ .setLayoutCount = 1, .pSetLayouts = &*descriptorSetLayout, .pushConstantRangeCount = 0 };
 			pipelineLayout = vk::raii::PipelineLayout(device, pipelineLayoutInfo);
 
 			vk::StructureChain<vk::GraphicsPipelineCreateInfo, vk::PipelineRenderingCreateInfo> pipelineCreateInfoChain = 
@@ -779,6 +871,8 @@ class HelloTriangleApp
 				throw std::runtime_error("Failed to acquire swap cahin image!");
 			}
 
+			updateUniformBuffer(frameIndex);
+
 			device.resetFences(*inFlightFences[frameIndex]);
 
 			commandBuffers[frameIndex].reset();
@@ -822,6 +916,25 @@ class HelloTriangleApp
 			frameIndex = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
 		}
 
+		void updateUniformBuffer(uint32_t currentImage)
+		{
+			static auto startTime = std::chrono::high_resolution_clock::now();
+
+			auto currentTime = std::chrono::high_resolution_clock::now();
+			float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+			UniformBufferObject ubo{};
+			ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			ubo.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height), 0.1f, 10.0f);
+
+			//glm designed for OpenGl where y coordinate is inverted.
+			ubo.projection[1][1] *= -1;
+
+			//Look at push constants
+			memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+		}
+
 		void recordCommandBuffer(uint32_t imageIndex)
 		{
 			commandBuffers[frameIndex].begin({});
@@ -863,6 +976,8 @@ class HelloTriangleApp
 
 			commandBuffers[frameIndex].setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height), 0.0f, 1.0f));
 			commandBuffers[frameIndex].setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapChainExtent));
+
+			commandBuffers[frameIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, *descriptorSets[frameIndex], nullptr);
 
 			commandBuffers[frameIndex].drawIndexed(indices.size(), 1, 0, 0, 0);
 
