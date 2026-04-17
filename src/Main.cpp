@@ -70,7 +70,7 @@ static std::vector<char> readFile(const std::string& fileName)
 	return buffer;
 }
 
-class HelloTirangleApp
+class HelloTriangleApp
 {
 	public:
 		void run()
@@ -124,7 +124,7 @@ class HelloTirangleApp
 			glfwInit();
 
 			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-			//glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+			glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
 			window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Hello Triangle!", nullptr, nullptr);
 
@@ -134,7 +134,7 @@ class HelloTirangleApp
 
 		static void framebufferResizedCallback(GLFWwindow* window, int width, int height)
 		{
-			auto app = reinterpret_cast<HelloTirangleApp*>(glfwGetWindowUserPointer(window));
+			auto app = reinterpret_cast<HelloTriangleApp*>(glfwGetWindowUserPointer(window));
 			app->framebufferResized = true;
 		}
 
@@ -154,32 +154,74 @@ class HelloTirangleApp
 			createSyncObjects();
 		}
 
-		void createVertexBuffer()
+		void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory)
 		{
 			vk::BufferCreateInfo bufferInfo
 			{
-				.size = sizeof(vertices[0]) * vertices.size(),
-				.usage = vk::BufferUsageFlagBits::eVertexBuffer,
+				.size = size,
+				.usage = usage,
 				.sharingMode = vk::SharingMode::eExclusive
 			};
 
-			vertexBuffer = vk::raii::Buffer(device, bufferInfo);
+			buffer = vk::raii::Buffer(device, bufferInfo);
 
-			vk::MemoryRequirements memRequirements = vertexBuffer.getMemoryRequirements();
+			vk::MemoryRequirements memRequirements = buffer.getMemoryRequirements();
 
 			vk::MemoryAllocateInfo memoryAllocateInfo
 			{
 				.allocationSize = memRequirements.size,
-				.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)
+				.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties)
 			};
 
-			vertexBufferMemory = vk::raii::DeviceMemory(device, memoryAllocateInfo);
+			bufferMemory = vk::raii::DeviceMemory(device, memoryAllocateInfo);
 
-			vertexBuffer.bindMemory(*vertexBufferMemory, 0);
+			buffer.bindMemory(*bufferMemory, 0);
+		}
 
-			void* data = vertexBufferMemory.mapMemory(0, bufferInfo.size);
-			memcpy(data, vertices.data(), bufferInfo.size);
-			vertexBufferMemory.unmapMemory();
+		void createVertexBuffer()
+		{
+			vk::DeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+
+			vk::raii::Buffer stagingBuffer = nullptr;
+			vk::raii::DeviceMemory stagingBufferMemory = nullptr;
+
+			createBuffer(
+				bufferSize, 
+				vk::BufferUsageFlagBits::eTransferSrc, 
+				vk::MemoryPropertyFlagBits::eHostVisible |
+				vk::MemoryPropertyFlagBits::eHostCoherent,
+				stagingBuffer,
+				stagingBufferMemory
+			);
+
+			void* dataStaging = stagingBufferMemory.mapMemory(0, bufferSize);
+			memcpy(dataStaging, vertices.data(), (size_t)bufferSize);
+			stagingBufferMemory.unmapMemory();
+
+			createBuffer(
+				bufferSize, 
+				vk::BufferUsageFlagBits::eVertexBuffer |
+				vk::BufferUsageFlagBits::eTransferDst, 
+				vk::MemoryPropertyFlagBits::eDeviceLocal, 
+				vertexBuffer, 
+				vertexBufferMemory
+			);
+
+			copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+		}
+
+		void copyBuffer(vk::raii::Buffer& srcBuffer, vk::raii::Buffer& dstBuffer, vk::DeviceSize size)
+		{
+			//Could create seperate CommandBool with VK_COMMAND_POOL_CREATE_TRANSIENT_BIT
+			vk::CommandBufferAllocateInfo allocInfo{ .commandPool = commandPool, .level = vk::CommandBufferLevel::ePrimary, .commandBufferCount = 1 };
+			vk::raii::CommandBuffer commandCopyBuffer = std::move(device.allocateCommandBuffers(allocInfo).front());
+
+			commandCopyBuffer.begin(vk::CommandBufferBeginInfo{ .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
+			commandCopyBuffer.copyBuffer(srcBuffer, dstBuffer, vk::BufferCopy(0, 0, size));
+			commandCopyBuffer.end();
+
+			graphicsQueue.submit(vk::SubmitInfo{ .commandBufferCount = 1, .pCommandBuffers = &*commandCopyBuffer }, nullptr);
+			graphicsQueue.waitIdle();
 		}
 
 		uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
@@ -325,13 +367,6 @@ class HelloTirangleApp
 			{
 				.viewType = vk::ImageViewType::e2D,
 				.format = swapChainSurfaceFormat.format,
-				/*.components = 
-				{ 
-					vk::ComponentSwizzle::eIdentity, 
-					vk::ComponentSwizzle::eIdentity, 
-					vk::ComponentSwizzle::eIdentity,
-					vk::ComponentSwizzle::eIdentity
-				},*/
 				.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 },
 			};
 
@@ -856,7 +891,7 @@ int main()
 
 	try
 	{
-		HelloTirangleApp app;
+		HelloTriangleApp app;
 		app.run();
 	}
 	catch (const std::exception& ex)
