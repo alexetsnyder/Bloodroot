@@ -150,6 +150,8 @@ class HelloTriangleApp
 
 		vk::raii::Image textureImage = nullptr;
 		vk::raii::DeviceMemory textureImageMemory = nullptr;
+		vk::raii::ImageView textureImageView = nullptr;
+		vk::raii::Sampler textureSampler = nullptr;
 
 		std::vector<const char*> requiredDeviceExtension = { vk::KHRSwapchainExtensionName };
 
@@ -185,6 +187,8 @@ class HelloTriangleApp
 			createGraphicsPipeline();
 			createCommandPool();
 			createTextureImage();
+			createTextureImageView();
+			createTextureSampler();
 			createVertexBuffer();
 			createIndexBuffer();
 			createUniformBuffers();
@@ -192,6 +196,46 @@ class HelloTriangleApp
 			createDescriptorSets();
 			createCommandBuffers();
 			createSyncObjects();
+		}
+
+		void createTextureSampler()
+		{
+			vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
+
+			vk::SamplerCreateInfo samplerInfo
+			{
+				.magFilter = vk::Filter::eLinear,
+				.minFilter = vk::Filter::eLinear,
+				.mipmapMode = vk::SamplerMipmapMode::eLinear,
+				.addressModeU = vk::SamplerAddressMode::eRepeat,
+				.addressModeV = vk::SamplerAddressMode::eRepeat,
+				.addressModeW = vk::SamplerAddressMode::eRepeat,
+				.mipLodBias = 0.0f,
+				.anisotropyEnable = vk::True,
+				.maxAnisotropy = properties.limits.maxSamplerAnisotropy,
+				.compareEnable = vk::False,
+				.compareOp = vk::CompareOp::eAlways
+			};
+
+			textureSampler = vk::raii::Sampler(device, samplerInfo);
+		}
+
+		void createTextureImageView()
+		{
+			textureImageView = createImageView(textureImage, vk::Format::eR8G8B8A8Srgb);
+		}
+
+		vk::raii::ImageView createImageView(vk::raii::Image& image, vk::Format format)
+		{
+			vk::ImageViewCreateInfo imageViewCreateInfo
+			{
+				.image = image,
+				.viewType = vk::ImageViewType::e2D,
+				.format = format,
+				.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 },
+			};
+
+			return vk::raii::ImageView(device, imageViewCreateInfo);
 		}
 
 		void createTextureImage()
@@ -824,7 +868,7 @@ class HelloTriangleApp
 							   vk::PhysicalDeviceVulkan13Features, 
 							   vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT> featureChain =
 			{
-				{},
+				{ .features = {.samplerAnisotropy = true } },
 				{ .shaderDrawParameters = true },
 				{ .synchronization2 = true, .dynamicRendering = true },
 				{ .extendedDynamicState = true }
@@ -1000,7 +1044,8 @@ class HelloTriangleApp
 																 vk::PhysicalDeviceVulkan11Features,
 																 vk::PhysicalDeviceVulkan13Features, 
 																 vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
-			bool supportRequiredFeatures = features.template get<vk::PhysicalDeviceVulkan11Features>().shaderDrawParameters &&
+			bool supportRequiredFeatures = features.template get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy &&
+										   features.template get<vk::PhysicalDeviceVulkan11Features>().shaderDrawParameters &&
 										   features.template get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering &&
 										   features.template get<vk::PhysicalDeviceVulkan13Features>().synchronization2 &&
 										   features.template get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
