@@ -8,10 +8,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(glm REQUIRED)
+find_package(stb REQUIRED)
 
 add_compile_definitions(VULKAN_HPP_NO_STRUCT_CONSTRUCTORS)
 
 add_executable(Bloodroot src/Main.cpp)
+
+target_include_directories(Bloodroot PRIVATE ${Stb_INCLUDE_DIR})
 
 target_link_libraries(Bloodroot PRIVATE glfw)
 target_link_libraries(Bloodroot PRIVATE Vulkan::Vulkan)
@@ -45,3 +48,19 @@ endfunction()
 
 add_slang_shader_target(shaders SOURCES ${SLANG_SHADER_SOURCES})
 add_dependencies(Bloodroot shaders)
+
+set(TEXTURE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Assets/Textures")
+set(TEXTURE_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/Textures")
+
+file(MAKE_DIRECTORY ${TEXTURE_BUILD_DIR})
+file(GLOB TEXTURES "${TEXTURE_DIR}/*.jpg")
+
+foreach (TEXTURE ${TEXTURES})
+	cmake_path(GET TEXTURE FILENAME FILE_NAME)
+	add_custom_command(
+		TARGET Bloodroot POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy "${TEXTURE}" "${TEXTURE_BUILD_DIR}/${FILE_NAME}"
+		COMMENT "Copying Textures to Build Directory!"
+		VERBATIM
+	)
+endforeach()
