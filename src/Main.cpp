@@ -37,25 +37,29 @@ struct Vertex
 {
 	glm::vec2 pos;
 	glm::vec3 color;
+	glm::vec2 texCoord;
 
 	static vk::VertexInputBindingDescription getBindingDescription()
 	{
 		return { .binding = 0, .stride = sizeof(Vertex), .inputRate = vk::VertexInputRate::eVertex };
 	}
 
-	static std::array<vk::VertexInputAttributeDescription, 2> getAttibuteDescriptions()
+	static std::array<vk::VertexInputAttributeDescription, 3> getAttibuteDescriptions()
 	{
-		return { { { .location = 0, .binding = 0, .format = vk::Format::eR32G32Sfloat, .offset = offsetof(Vertex, pos) },
-			   { .location = 1, .binding = 0, .format = vk::Format::eR32G32B32Sfloat, .offset = offsetof(Vertex, color) } } };
+		return {{ 
+			   { .location = 0, .binding = 0, .format = vk::Format::eR32G32Sfloat, .offset = offsetof(Vertex, pos) },
+			   { .location = 1, .binding = 0, .format = vk::Format::eR32G32B32Sfloat, .offset = offsetof(Vertex, color) },
+			   { .location = 2, .binding = 0, .format = vk::Format::eR32G32Sfloat, .offset = offsetof(Vertex, texCoord) }
+		}};
 	}
 };
 
 const std::vector<Vertex> vertices =
 {
-	{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-	{{0.5f, -0.5f},  {0.0f, 1.0f, 0.0f}},
-	{{0.5f, 0.5f},   {0.0f, 0.0f, 1.0f}},
-	{{-0.5f, 0.5f},  {1.0f, 1.0f, 1.0f}},
+	{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, { 1.0f, 0.0f }},
+	{{0.5f, -0.5f},  {0.0f, 1.0f, 0.0f}, { 0.0f, 0.0f }},
+	{{0.5f, 0.5f},   {0.0f, 0.0f, 1.0f}, { 0.0f, 1.0f }},
+	{{-0.5f, 0.5f},  {1.0f, 1.0f, 1.0f}, { 1.0f, 1.0f }},
 };
 
 const std::vector<uint16_t> indices =
@@ -423,23 +427,49 @@ class HelloTriangleApp
 			for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 			{
 				vk::DescriptorBufferInfo bufferInfo{ .buffer = uniformBuffers[i], .offset = 0, .range = sizeof(UniformBufferObject) };
-				vk::WriteDescriptorSet descriptorWrite
-				{ 
-					.dstSet = descriptorSets[i], 
-					.dstBinding = 0, 
-					.dstArrayElement = 0, 
-					.descriptorCount = 1, 
-					.descriptorType = vk::DescriptorType::eUniformBuffer, 
-					.pBufferInfo = &bufferInfo 
+				vk::DescriptorImageInfo imageInfo{ .sampler = textureSampler, .imageView = textureImageView, .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal };
+				
+				std::array descriptorWrites
+				{
+					vk::WriteDescriptorSet
+					{
+						.dstSet = descriptorSets[i],
+						.dstBinding = 0,
+						.dstArrayElement = 0,
+						.descriptorCount = 1,
+						.descriptorType = vk::DescriptorType::eUniformBuffer,
+						.pBufferInfo = &bufferInfo
+					},
+					vk::WriteDescriptorSet
+					{
+						.dstSet = descriptorSets[i],
+						.dstBinding = 1,
+						.dstArrayElement = 0,
+						.descriptorCount = 1,
+						.descriptorType = vk::DescriptorType::eCombinedImageSampler,
+						.pImageInfo = &imageInfo
+					}
 				};
-				device.updateDescriptorSets(descriptorWrite, {});
+
+				device.updateDescriptorSets(descriptorWrites, {});
 			}
 		}
 
 		void createDescriptorPool()
 		{
-			vk::DescriptorPoolSize poolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT);
-			vk::DescriptorPoolCreateInfo poolInfo{ .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, .maxSets = MAX_FRAMES_IN_FLIGHT, .poolSizeCount = 1, .pPoolSizes = &poolSize };
+			std::array poolSize
+			{
+				vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT),
+				vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT)
+			};
+
+			//vk::DescriptorPoolSize poolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT);
+			vk::DescriptorPoolCreateInfo poolInfo
+			{ 
+				.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, 
+				.maxSets = MAX_FRAMES_IN_FLIGHT, 
+				.poolSizeCount = poolSize.size(), 
+				.pPoolSizes = poolSize.data() };
 
 			descriptorPool = vk::raii::DescriptorPool(device, poolInfo);
 		}
@@ -473,8 +503,13 @@ class HelloTriangleApp
 
 		void createDescriptorSetLayout()
 		{
-			vk::DescriptorSetLayoutBinding uboLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex, nullptr);
-			vk::DescriptorSetLayoutCreateInfo layoutInfo{ .bindingCount = 1, .pBindings = &uboLayoutBinding };
+			std::array bindings
+			{
+				vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex, nullptr),
+				vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, nullptr)
+			};
+
+			vk::DescriptorSetLayoutCreateInfo layoutInfo{ .bindingCount = bindings.size(), .pBindings = bindings.data() };
 			descriptorSetLayout = vk::raii::DescriptorSetLayout(device, layoutInfo);
 		}
 
@@ -1018,8 +1053,6 @@ class HelloTriangleApp
 
 			physicalDevice = *devIter;
 		}
-
-		
 
 		bool isDeviceSuitable(vk::raii::PhysicalDevice const& physicalDevice)
 		{
