@@ -12,13 +12,15 @@ find_package(stb REQUIRED)
 
 add_compile_definitions(VULKAN_HPP_NO_STRUCT_CONSTRUCTORS)
 
-add_executable(Bloodroot src/Main.cpp)
+add_executable(Bloodroot src/Main.cpp "src/Core/FileIO/FileIO.cpp" "src/Core/FileIO/FileIO.h")
 
 target_include_directories(Bloodroot PRIVATE ${Stb_INCLUDE_DIR})
 
 target_link_libraries(Bloodroot PRIVATE glfw)
 target_link_libraries(Bloodroot PRIVATE Vulkan::Vulkan)
 target_link_libraries(Bloodroot PRIVATE glm::glm)
+
+target_link_libraries(Bloodroot PRIVATE FileIO)
 
 find_program(SLANGC_EXECUTABLE slangc HINTS $ENV{VULKAN_SDK}/bin)
 file(GLOB SLANG_SHADER_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Shaders/*.slang)
@@ -64,3 +66,5 @@ foreach (TEXTURE ${TEXTURES})
 		VERBATIM
 	)
 endforeach()
+
+add_subdirectory(src/Core)

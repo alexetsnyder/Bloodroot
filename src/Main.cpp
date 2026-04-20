@@ -1,3 +1,5 @@
+#include "FileIO.h"
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -82,25 +84,6 @@ struct UniformBufferObject
 	alignas(16) glm::mat4 view;
 	alignas(16) glm::mat4 projection;
 };
-
-static std::vector<char> readFile(const std::string& fileName)
-{
-	std::ifstream file(fileName, std::ios::ate | std::ios::binary);
-
-	if (!file.is_open())
-	{
-		throw std::runtime_error("Failed to open file: " + fileName + "!\n");
-	}
-
-	std::vector<char> buffer(file.tellg());
-
-	file.seekg(0, std::ios::beg);
-	file.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
-
-	file.close();
-
-	return buffer;
-}
 
 class HelloTriangleApp
 {
@@ -722,7 +705,7 @@ class HelloTriangleApp
 
 		void createGraphicsPipeline()
 		{
-			vk::raii::ShaderModule shaderModule = createShaderModule(readFile("Shaders/slang.spv"));
+			vk::raii::ShaderModule shaderModule = createShaderModule(Core::FileIO::readFile("Shaders/slang.spv"));
 
 			vk::PipelineShaderStageCreateInfo vertShaderStageInfo{ .stage = vk::ShaderStageFlagBits::eVertex, .module = shaderModule, .pName = "vertMain" };
 			vk::PipelineShaderStageCreateInfo fragShaderStageInfo{ .stage = vk::ShaderStageFlagBits::eFragment, .module = shaderModule, .pName = "fragMain" };
