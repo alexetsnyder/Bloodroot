@@ -1,4 +1,7 @@
 #include "FileIO.h"
+#include "GLFWInstance.h"
+#include "IRenderer.h"
+#include "Window.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -85,7 +88,7 @@ struct UniformBufferObject
 	alignas(16) glm::mat4 projection;
 };
 
-class HelloTriangleApp
+class HelloTriangleApp : Core::IRenderer
 {
 	public:
 		void run()
@@ -96,9 +99,16 @@ class HelloTriangleApp
 			cleanUp();
 		}
 
+		void onResize(int width, int height) override
+		{
+			framebufferResized = true;
+		}
+
 	private:
 		bool framebufferResized = false;
-		GLFWwindow* window = nullptr;
+		Core::GLFWInstance glfwInstance;
+		std::unique_ptr<Core::Window> window;
+		//GLFWwindow* window = nullptr;
 
 		vk::raii::Context context;
 		vk::raii::Instance instance = nullptr;
@@ -156,7 +166,9 @@ class HelloTriangleApp
 
 		void initWindow()
 		{
-			glfwInit();
+			window = std::make_unique<Core::Window>(std::move(Core::Window(WINDOW_WIDTH, WINDOW_HEIGHT, "Hello Triangle!", this)));
+
+			/*glfwInit();
 
 			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 			glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -164,7 +176,7 @@ class HelloTriangleApp
 			window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Hello Triangle!", nullptr, nullptr);
 
 			glfwSetWindowUserPointer(window, this);
-			glfwSetFramebufferSizeCallback(window, framebufferResizedCallback);
+			glfwSetFramebufferSizeCallback(window, framebufferResizedCallback);*/
 		}
 
 		static void framebufferResizedCallback(GLFWwindow* window, int width, int height)
@@ -830,10 +842,12 @@ class HelloTriangleApp
 		void recreateSwapChain()
 		{
 			int width = 0, height = 0;
-			glfwGetFramebufferSize(window, &width, &height);
+			window->getSize(width, height);
+			//glfwGetFramebufferSize(window, &width, &height);
 			while (width == 0 || height == 0)
 			{
-				glfwGetFramebufferSize(window, &width, &height);
+				//glfwGetFramebufferSize(window, &width, &height);
+				window->getSize(width, height);
 				glfwWaitEvents();
 			}
 
@@ -920,7 +934,8 @@ class HelloTriangleApp
 			}
 
 			int width, height;
-			glfwGetFramebufferSize(window, &width, &height);
+			window->getSize(width, height);
+			//glfwGetFramebufferSize(window, &width, &height);
 
 			return
 			{
@@ -932,7 +947,7 @@ class HelloTriangleApp
 		void createSurface()
 		{
 			VkSurfaceKHR _surface;
-			if (glfwCreateWindowSurface(*instance, window, nullptr, &_surface) != 0)
+			if (window->createWindowSurface(*instance, _surface) != 0) // glfwCreateWindowSurface(*instance, window, nullptr, &_surface) != 0)
 			{
 				throw std::runtime_error("Failed to create window surface!");
 			}
@@ -1149,7 +1164,7 @@ class HelloTriangleApp
 
 		void mainLoop()
 		{
-			while (!glfwWindowShouldClose(window))
+			while (!window->windowShouldClose())
 			{
 				glfwPollEvents();
 				drawFrame();
@@ -1374,9 +1389,9 @@ class HelloTriangleApp
 		{
 			cleanUpSwapChain();
 
-			glfwDestroyWindow(window);
+			//glfwDestroyWindow(window);
 
-			glfwTerminate();
+			//glfwTerminate();
 		}
 };
 
