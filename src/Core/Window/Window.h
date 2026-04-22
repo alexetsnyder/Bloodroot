@@ -13,13 +13,14 @@ namespace Core
 	class Window
 	{
 		public:
-			Window(int width, int height, const std::string& title, IRenderer* renderer);
-			Window(Window&& other) noexcept;
+			Window(int width, int height, const std::string& title);
+			//Window(Window&& other) noexcept;
 			~Window();
 
-			void getSize(int& width, int& height);
+			void getSize(int& width, int& height) const;
+			void setRenderer(IRenderer* renderer);
 
-			VkResult createWindowSurface(const VkInstance& instance, VkSurfaceKHR& surface);
+			VkResult createWindowSurface(const VkInstance& instance, VkSurfaceKHR& surface) const;
 			bool windowShouldClose();
 
 			Window(const Window&) = delete;
@@ -27,7 +28,7 @@ namespace Core
 
 		private:
 			GLFWwindow* window = nullptr;
-			IRenderer* renderer = nullptr;
+			IRenderer* renderer;
 
 			static void framebufferResizedCallback(GLFWwindow* window, int width, int height);
 	};

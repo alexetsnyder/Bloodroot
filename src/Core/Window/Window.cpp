@@ -1,11 +1,12 @@
 #include "Window.h"
+#include "Window.h"
 
 #include <iostream>
 #include <stdexcept>
 
 namespace Core
 {
-	Window::Window(int width, int height, const std::string& title, IRenderer* renderer)
+	Window::Window(int width, int height, const std::string& title)
 	{	
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -18,21 +19,14 @@ namespace Core
 		}
 
 		std::cout << "Window Created!\n";
-
-		glfwSetWindowUserPointer(window, this);
-		glfwSetFramebufferSizeCallback(window, framebufferResizedCallback);
-
-		this->renderer = renderer;
 	}
 
-	Window::Window(Window&& other) noexcept
+	/*Window::Window(Window&& other) noexcept
 	{
 		window = other.window;
-		renderer = other.renderer;
 
 		other.window = nullptr;
-		other.renderer = nullptr;
-	}
+	}*/
 
 	Window::~Window()
 	{
@@ -44,12 +38,20 @@ namespace Core
 		}
 	}
 
-	void Window::getSize(int& width, int& height)
+	void Window::getSize(int& width, int& height) const
 	{
 		glfwGetFramebufferSize(window, &width, &height);
 	}
 
-	VkResult Window::createWindowSurface(const VkInstance& instance, VkSurfaceKHR& surface)
+	void Window::setRenderer(IRenderer* renderer)
+	{
+		this->renderer = renderer;
+
+		glfwSetWindowUserPointer(window, this);
+		glfwSetFramebufferSizeCallback(window, framebufferResizedCallback);
+	}
+
+	VkResult Window::createWindowSurface(const VkInstance& instance, VkSurfaceKHR& surface) const
 	{
 		return glfwCreateWindowSurface(instance, window, nullptr, &surface);
 	}
