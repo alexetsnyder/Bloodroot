@@ -1,8 +1,8 @@
 #include "VulkanRenderer.h"
 
+#include "Cube.h"
 #include "FileIO.h"
 #include "Vertex.h"
-#include "Square.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -251,7 +251,7 @@ namespace Core
 
 		commandBuffers[frameIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, *descriptorSets[frameIndex], nullptr);
 
-		commandBuffers[frameIndex].drawIndexed(indices.size(), 1, 0, 0, 0);
+		commandBuffers[frameIndex].drawIndexed(Cube::indices.size(), 1, 0, 0, 0);
 
 		commandBuffers[frameIndex].endRendering();
 
@@ -847,7 +847,7 @@ namespace Core
 	void VulkanRenderer::createTextureImage()
 	{
 		int texWidth, texHeight, texChannels;
-		stbi_uc* pixels = stbi_load("Textures/texture.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		stbi_uc* pixels = stbi_load("Textures/Stone.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 		vk::DeviceSize imageSize = texWidth * texHeight * 4;
 
 		if (!pixels)
@@ -1011,9 +1011,9 @@ namespace Core
 
 		vk::SamplerCreateInfo samplerInfo
 		{
-			.magFilter = vk::Filter::eLinear,
-			.minFilter = vk::Filter::eLinear,
-			.mipmapMode = vk::SamplerMipmapMode::eLinear,
+			.magFilter = vk::Filter::eNearest,
+			.minFilter = vk::Filter::eNearest,
+			.mipmapMode = vk::SamplerMipmapMode::eNearest,
 			.addressModeU = vk::SamplerAddressMode::eRepeat,
 			.addressModeV = vk::SamplerAddressMode::eRepeat,
 			.addressModeW = vk::SamplerAddressMode::eRepeat,
@@ -1029,7 +1029,7 @@ namespace Core
 
 	void VulkanRenderer::createVertexBuffer()
 	{
-		vk::DeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+		vk::DeviceSize bufferSize = sizeof(Cube::vertices[0]) * Cube::vertices.size();
 
 		vk::raii::Buffer stagingBuffer = nullptr;
 		vk::raii::DeviceMemory stagingBufferMemory = nullptr;
@@ -1044,7 +1044,7 @@ namespace Core
 		);
 
 		void* dataStaging = stagingBufferMemory.mapMemory(0, bufferSize);
-		memcpy(dataStaging, vertices.data(), (size_t)bufferSize);
+		memcpy(dataStaging, Cube::vertices.data(), (size_t)bufferSize);
 		stagingBufferMemory.unmapMemory();
 
 		createBuffer(
@@ -1068,7 +1068,7 @@ namespace Core
 
 	void VulkanRenderer::createIndexBuffer()
 	{
-		vk::DeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+		vk::DeviceSize bufferSize = sizeof(Cube::indices[0]) * Cube::indices.size();
 
 		vk::raii::Buffer stagingBuffer({});
 		vk::raii::DeviceMemory stagingBufferMemory({});
@@ -1083,7 +1083,7 @@ namespace Core
 		);
 
 		void* dataStaging = stagingBufferMemory.mapMemory(0, bufferSize);
-		memcpy(dataStaging, indices.data(), (size_t)bufferSize);
+		memcpy(dataStaging, Cube::indices.data(), (size_t)bufferSize);
 		stagingBufferMemory.unmapMemory();
 
 		createBuffer(

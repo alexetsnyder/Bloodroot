@@ -28,7 +28,8 @@ target_sources(
 		Window/GLFWInstance.h 
 		Vulkan/VulkanRenderer.h 
 		Vulkan/Geometry/Square.h 
-		Vulkan/Geometry/Vertex.h)
+		Vulkan/Geometry/Vertex.h 
+		Vulkan/Geometry/Cube.h)
 
 target_include_directories(
 	BloodrootApp
