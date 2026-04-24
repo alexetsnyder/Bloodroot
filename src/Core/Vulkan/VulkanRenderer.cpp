@@ -143,7 +143,6 @@ namespace Core
 	{
 		int width = 0, height = 0;
 		window.getSize(width, height);
-		//glfwGetFramebufferSize(window, &width, &height);
 		while (width == 0 || height == 0)
 		{
 			window.getSize(width, height);
