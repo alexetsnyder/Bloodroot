@@ -1,5 +1,4 @@
 #include "Window.h"
-#include "Window.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -20,13 +19,6 @@ namespace Core
 
 		std::cout << "Window Created!\n";
 	}
-
-	/*Window::Window(Window&& other) noexcept
-	{
-		window = other.window;
-
-		other.window = nullptr;
-	}*/
 
 	Window::~Window()
 	{
@@ -59,6 +51,11 @@ namespace Core
 	bool Window::windowShouldClose()
 	{
 		return glfwWindowShouldClose(window);
+	}
+
+	void Window::pollEvents()
+	{
+		glfwPollEvents();
 	}
 
 	void Window::framebufferResizedCallback(GLFWwindow* window, int width, int height)

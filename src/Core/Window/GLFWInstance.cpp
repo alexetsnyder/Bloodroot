@@ -21,4 +21,14 @@ namespace Core
 
 		glfwTerminate();
 	}
+
+	std::vector<const char*> GLFWInstance::getRequiredInstanceExtensions()
+	{
+		uint32_t glfwExtensionCount = 0;
+		auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+		std::vector extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+		return extensions;
+	}
 }

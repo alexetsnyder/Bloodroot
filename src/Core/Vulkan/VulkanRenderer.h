@@ -32,7 +32,7 @@ namespace Core
 	class VulkanRenderer : public IRenderer
 	{
 		public:
-			VulkanRenderer(const Window& window, const std::vector<const char*>& requiredExtensions);
+			VulkanRenderer(const Window& window, std::vector<const char*>&& requiredExtensions);
 			~VulkanRenderer();
 
 			void drawFrame(const Window& window);

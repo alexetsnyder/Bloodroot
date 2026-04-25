@@ -1,11 +1,10 @@
 #include "VulkanRenderer.h"
 
+#define STB_IMAGE_IMPLEMENTATION
 #include "Cube.h"
 #include "FileIO.h"
+#include "Image.h"
 #include "Vertex.h"
-
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
 
 #include <assert.h>
 #include <chrono>
@@ -18,9 +17,14 @@ namespace Core
 		"VK_LAYER_KHRONOS_validation"
 	};
 
-	VulkanRenderer::VulkanRenderer(const Window& window, const std::vector<const char*>& requiredExtensions)
+	VulkanRenderer::VulkanRenderer(const Window& window, std::vector<const char*>&& requiredExtensions)
 	{
 		std::cout << "Renderer created!\n";
+
+		if (enableValidationLayers)
+		{
+			requiredExtensions.push_back(vk::EXTDebugUtilsExtensionName);
+		}
 
 		createInstance(requiredExtensions);
 		setupDebugMessenger();
@@ -846,14 +850,12 @@ namespace Core
 
 	void VulkanRenderer::createTextureImage()
 	{
-		int texWidth, texHeight, texChannels;
-		stbi_uc* pixels = stbi_load("Textures/Stone.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-		vk::DeviceSize imageSize = texWidth * texHeight * 4;
+		/*int texWidth, texHeight, texChannels;
+		stbi_uc* pixels = stbi_load("Textures/Stone.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);*/
 
-		if (!pixels)
-		{
-			throw std::runtime_error("Failed to load texture image!");
-		}
+		Image image{ "Textures/Stone.png" };
+
+		vk::DeviceSize imageSize = static_cast<vk::DeviceSize>(image.Width()) * image.Height() * 4;
 
 		vk::raii::Buffer stagingBuffer({});
 		vk::raii::DeviceMemory stagingBufferMemory({});
@@ -868,14 +870,12 @@ namespace Core
 		);
 
 		void* data = stagingBufferMemory.mapMemory(0, imageSize);
-		memcpy(data, pixels, imageSize);
+		memcpy(data, image.Data(), imageSize);
 		stagingBufferMemory.unmapMemory();
 
-		stbi_image_free(pixels);
-
 		createImage(
-			texWidth,
-			texHeight,
+			image.Width(),
+			image.Height(),
 			vk::Format::eR8G8B8A8Srgb,
 			vk::ImageTiling::eOptimal,
 			vk::ImageUsageFlagBits::eTransferDst |
@@ -886,7 +886,7 @@ namespace Core
 		);
 
 		transitionImageLayout(textureImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
-		copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+		copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(image.Width()), static_cast<uint32_t>(image.Height()));
 		transitionImageLayout(textureImage, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
 	}
 

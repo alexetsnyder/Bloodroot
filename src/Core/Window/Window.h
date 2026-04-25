@@ -22,6 +22,7 @@ namespace Core
 
 			VkResult createWindowSurface(const VkInstance& instance, VkSurfaceKHR& surface) const;
 			bool windowShouldClose();
+			void pollEvents();
 
 			Window(const Window&) = delete;
 			Window& operator=(const Window&) = delete;

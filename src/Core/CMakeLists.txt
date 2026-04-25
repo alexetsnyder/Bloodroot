@@ -1,25 +1,10 @@
-find_package(Vulkan REQUIRED)
-find_package(glfw3 CONFIG REQUIRED)
-find_package(glm REQUIRED)
-find_package(stb REQUIRED)
-
-add_library(BloodrootApp)
-
-target_link_libraries(BloodrootApp PRIVATE glfw)
-target_link_libraries(BloodrootApp PRIVATE glm::glm)
-target_link_libraries(BloodrootApp PRIVATE FileIO)
-target_link_libraries(Bloodroot PRIVATE Vulkan::Vulkan)
-
-add_compile_definitions(VULKAN_HPP_NO_STRUCT_CONSTRUCTORS)
-
-target_include_directories(BloodrootApp PRIVATE ${Stb_INCLUDE_DIR})
-
 target_sources(
 	BloodrootApp
 	PRIVATE 
 		Window/Window.cpp
 		Window/GLFWInstance.cpp
 		Vulkan/VulkanRenderer.cpp
+		Image/Image.cpp
 	PUBLIC
 	FILE_SET HEADERS
 	FILES
@@ -29,7 +14,9 @@ target_sources(
 		Vulkan/VulkanRenderer.h 
 		Vulkan/Geometry/Square.h 
 		Vulkan/Geometry/Vertex.h 
-		Vulkan/Geometry/Cube.h)
+		Vulkan/Geometry/Cube.h 
+		Image/Image.h
+)
 
 target_include_directories(
 	BloodrootApp
@@ -38,8 +25,7 @@ target_include_directories(
 		Interfaces
 		Vulkan
 		Vulkan/Geometry
+		Image
 )
-
-target_include_directories(BloodrootApp PRIVATE ${Stb_INCLUDE_DIR})
 
 add_subdirectory(FileIO)

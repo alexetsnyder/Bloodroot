@@ -9,6 +9,8 @@ add_executable(Bloodroot src/Main.cpp)
 
 target_link_libraries(Bloodroot PRIVATE BloodrootApp)
 
+#target_include_directories(Bloodroot PRIVATE src/Core)
+
 find_program(SLANGC_EXECUTABLE slangc HINTS $ENV{VULKAN_SDK}/bin)
 file(GLOB SLANG_SHADER_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Shaders/*.slang)
 
@@ -54,4 +56,4 @@ foreach (TEXTURE ${TEXTURES})
 	)
 endforeach()
 
-add_subdirectory(src/Core)
+add_subdirectory(src)
