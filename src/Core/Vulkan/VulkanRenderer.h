@@ -11,7 +11,6 @@
 
 #include <vector>
 
-
 #ifdef NDEBUG
 constexpr bool enableValidationLayers = false;
 #else
@@ -21,6 +20,7 @@ constexpr bool enableValidationLayers = true;
 namespace Core
 {
 	constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+	constexpr int TEXTURE_ARRAY_SIZE = 4;
 
 	struct UniformBufferObject
 	{
@@ -85,10 +85,10 @@ namespace Core
 			vk::raii::DescriptorPool descriptorPool = nullptr;
 			std::vector<vk::raii::DescriptorSet> descriptorSets;
 
-			vk::raii::Image textureImage = nullptr;
-			vk::raii::DeviceMemory textureImageMemory = nullptr;
-			vk::raii::ImageView textureImageView = nullptr;
-			vk::raii::Sampler textureSampler = nullptr;
+			std::vector<vk::raii::Image> textureImage;
+			std::vector<vk::raii::DeviceMemory> textureImageMemory;
+			std::vector<vk::raii::ImageView> textureImageView;
+			std::vector<vk::raii::Sampler> textureSampler;
 
 			vk::raii::Image depthImage = nullptr;
 			vk::raii::DeviceMemory depthImageMemory = nullptr;

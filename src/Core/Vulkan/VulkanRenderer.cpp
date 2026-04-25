@@ -177,7 +177,7 @@ namespace Core
 
 		UniformBufferObject ubo{};
 		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.view = glm::lookAt(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height), 0.1f, 10.0f);
 
 		//glm designed for OpenGl where y coordinate is inverted.
@@ -618,7 +618,7 @@ namespace Core
 		std::array bindings
 		{
 			vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex, nullptr),
-			vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, nullptr)
+			vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eCombinedImageSampler, TEXTURE_ARRAY_SIZE, vk::ShaderStageFlagBits::eFragment, nullptr)
 		};
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{ .bindingCount = bindings.size(), .pBindings = bindings.data() };
@@ -850,44 +850,62 @@ namespace Core
 
 	void VulkanRenderer::createTextureImage()
 	{
-		/*int texWidth, texHeight, texChannels;
-		stbi_uc* pixels = stbi_load("Textures/Stone.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);*/
+		textureImage.clear();
+		textureImageMemory.clear();
 
-		Image image{ "Textures/Stone.png" };
+		Image images[TEXTURE_ARRAY_SIZE]
+		{
+			{ "Textures/Dirt.png" },
+			{ "Textures/GrassSide.png" },
+			{ "Textures/GrassTop.png" },
+			{ "Textures/Stone.png" },
+		};
 
-		vk::DeviceSize imageSize = static_cast<vk::DeviceSize>(image.Width()) * image.Height() * 4;
+		//Image image{ "Textures/Stone.png" };
 
-		vk::raii::Buffer stagingBuffer({});
-		vk::raii::DeviceMemory stagingBufferMemory({});
+		for (uint32_t i = 0; i < TEXTURE_ARRAY_SIZE; i++)
+		{
+			auto& image = images[i];
+			vk::DeviceSize imageSize = static_cast<vk::DeviceSize>(image.Width()) * image.Height() * 4;
 
-		createBuffer(
-			imageSize,
-			vk::BufferUsageFlagBits::eTransferSrc,
-			vk::MemoryPropertyFlagBits::eHostVisible |
-			vk::MemoryPropertyFlagBits::eHostCoherent,
-			stagingBuffer,
-			stagingBufferMemory
-		);
+			vk::raii::Buffer stagingBuffer({});
+			vk::raii::DeviceMemory stagingBufferMemory({});
 
-		void* data = stagingBufferMemory.mapMemory(0, imageSize);
-		memcpy(data, image.Data(), imageSize);
-		stagingBufferMemory.unmapMemory();
+			createBuffer(
+				imageSize,
+				vk::BufferUsageFlagBits::eTransferSrc,
+				vk::MemoryPropertyFlagBits::eHostVisible |
+				vk::MemoryPropertyFlagBits::eHostCoherent,
+				stagingBuffer,
+				stagingBufferMemory
+			);
 
-		createImage(
-			image.Width(),
-			image.Height(),
-			vk::Format::eR8G8B8A8Srgb,
-			vk::ImageTiling::eOptimal,
-			vk::ImageUsageFlagBits::eTransferDst |
-			vk::ImageUsageFlagBits::eSampled,
-			vk::MemoryPropertyFlagBits::eDeviceLocal,
-			textureImage,
-			textureImageMemory
-		);
+			void* data = stagingBufferMemory.mapMemory(0, imageSize);
+			memcpy(data, image.Data(), imageSize);
+			stagingBufferMemory.unmapMemory();
 
-		transitionImageLayout(textureImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
-		copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(image.Width()), static_cast<uint32_t>(image.Height()));
-		transitionImageLayout(textureImage, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+			vk::raii::Image tempImage = nullptr;
+			vk::raii::DeviceMemory tempDeviceMemory = nullptr;
+
+			createImage(
+				image.Width(),
+				image.Height(),
+				vk::Format::eR8G8B8A8Srgb,
+				vk::ImageTiling::eOptimal,
+				vk::ImageUsageFlagBits::eTransferDst |
+				vk::ImageUsageFlagBits::eSampled,
+				vk::MemoryPropertyFlagBits::eDeviceLocal,
+				tempImage,
+				tempDeviceMemory
+			);
+
+			textureImage.push_back(std::move(tempImage));
+			textureImageMemory.push_back(std::move(tempDeviceMemory));
+
+			transitionImageLayout(textureImage[i], vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+			copyBufferToImage(stagingBuffer, textureImage[i], static_cast<uint32_t>(image.Width()), static_cast<uint32_t>(image.Height()));
+			transitionImageLayout(textureImage[i], vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+		}
 	}
 
 	void VulkanRenderer::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory)
@@ -1002,29 +1020,39 @@ namespace Core
 
 	void VulkanRenderer::createTextureImageView()
 	{
-		textureImageView = createImageView(textureImage, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
+		textureImageView.clear();
+
+		for (uint32_t i = 0; i < TEXTURE_ARRAY_SIZE; i++)
+		{
+			textureImageView.push_back(std::move(createImageView(textureImage[i], vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor)));
+		}
 	}
 
 	void VulkanRenderer::createTextureSampler()
 	{
-		vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
+		textureSampler.clear();
 
-		vk::SamplerCreateInfo samplerInfo
+		for (uint32_t i = 0; i < TEXTURE_ARRAY_SIZE; i++)
 		{
-			.magFilter = vk::Filter::eNearest,
-			.minFilter = vk::Filter::eNearest,
-			.mipmapMode = vk::SamplerMipmapMode::eNearest,
-			.addressModeU = vk::SamplerAddressMode::eRepeat,
-			.addressModeV = vk::SamplerAddressMode::eRepeat,
-			.addressModeW = vk::SamplerAddressMode::eRepeat,
-			.mipLodBias = 0.0f,
-			.anisotropyEnable = vk::True,
-			.maxAnisotropy = properties.limits.maxSamplerAnisotropy,
-			.compareEnable = vk::False,
-			.compareOp = vk::CompareOp::eAlways
-		};
+			vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
 
-		textureSampler = vk::raii::Sampler(device, samplerInfo);
+			vk::SamplerCreateInfo samplerInfo
+			{
+				.magFilter = vk::Filter::eNearest,
+				.minFilter = vk::Filter::eNearest,
+				.mipmapMode = vk::SamplerMipmapMode::eNearest,
+				.addressModeU = vk::SamplerAddressMode::eRepeat,
+				.addressModeV = vk::SamplerAddressMode::eRepeat,
+				.addressModeW = vk::SamplerAddressMode::eRepeat,
+				.mipLodBias = 0.0f,
+				.anisotropyEnable = vk::True,
+				.maxAnisotropy = properties.limits.maxSamplerAnisotropy,
+				.compareEnable = vk::False,
+				.compareOp = vk::CompareOp::eAlways
+			};
+
+			textureSampler.emplace_back(device, samplerInfo);
+		}
 	}
 
 	void VulkanRenderer::createVertexBuffer()
@@ -1130,7 +1158,7 @@ namespace Core
 		std::array poolSize
 		{
 			vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT),
-			vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT)
+			vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT * TEXTURE_ARRAY_SIZE)
 		};
 
 		vk::DescriptorPoolCreateInfo poolInfo
@@ -1159,7 +1187,15 @@ namespace Core
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
 			vk::DescriptorBufferInfo bufferInfo{ .buffer = uniformBuffers[i], .offset = 0, .range = sizeof(UniformBufferObject) };
-			vk::DescriptorImageInfo imageInfo{ .sampler = textureSampler, .imageView = textureImageView, .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal };
+			
+			vk::DescriptorImageInfo imageInfo[TEXTURE_ARRAY_SIZE];
+			for (uint32_t i = 0; i < TEXTURE_ARRAY_SIZE; i++)
+			{
+				imageInfo[i].sampler = textureSampler[i];
+				imageInfo[i].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+				imageInfo[i].imageView = textureImageView[i];
+			}
+			//vk::DescriptorImageInfo imageInfo{ .sampler = textureSampler, .imageView = textureImageView, .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal };
 
 			std::array descriptorWrites
 			{
@@ -1177,9 +1213,9 @@ namespace Core
 					.dstSet = descriptorSets[i],
 					.dstBinding = 1,
 					.dstArrayElement = 0,
-					.descriptorCount = 1,
+					.descriptorCount = TEXTURE_ARRAY_SIZE,
 					.descriptorType = vk::DescriptorType::eCombinedImageSampler,
-					.pImageInfo = &imageInfo
+					.pImageInfo = imageInfo
 				}
 			};
 
