@@ -176,8 +176,8 @@ namespace Core
 		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.view = glm::lookAt(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		ubo.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height), 0.1f, 10.0f);
 
 		//glm designed for OpenGl where y coordinate is inverted.
@@ -655,7 +655,6 @@ namespace Core
 			.frontFace = vk::FrontFace::eCounterClockwise,
 			.depthBiasEnable = vk::False,
 			.lineWidth = 1.0f
-
 		};
 
 		vk::PipelineMultisampleStateCreateInfo multisampling{ .rasterizationSamples = vk::SampleCountFlagBits::e1, .sampleShadingEnable = vk::False };
@@ -860,8 +859,6 @@ namespace Core
 			{ "Textures/GrassTop.png" },
 			{ "Textures/Stone.png" },
 		};
-
-		//Image image{ "Textures/Stone.png" };
 
 		for (uint32_t i = 0; i < TEXTURE_ARRAY_SIZE; i++)
 		{
@@ -1195,7 +1192,6 @@ namespace Core
 				imageInfo[i].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 				imageInfo[i].imageView = textureImageView[i];
 			}
-			//vk::DescriptorImageInfo imageInfo{ .sampler = textureSampler, .imageView = textureImageView, .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal };
 
 			std::array descriptorWrites
 			{
