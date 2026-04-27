@@ -25,3 +25,4 @@ target_sources(
 target_include_directories(BloodrootApp PRIVATE ${Stb_INCLUDE_DIR})
 
 add_subdirectory(Core)
+add_subdirectory(Game)

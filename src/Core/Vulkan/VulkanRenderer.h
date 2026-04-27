@@ -35,7 +35,7 @@ namespace Core
 			VulkanRenderer(const Window& window, std::vector<const char*>&& requiredExtensions);
 			~VulkanRenderer();
 
-			void drawFrame(const Window& window);
+			void drawFrame(const Window& window, const glm::mat4& view);
 			void waitIdle();
 
 			void onResize(int width, int height) override;
@@ -150,7 +150,7 @@ namespace Core
 			void createSyncObjects();
 			void recreateSwapChain(const Window& window);
 			void cleanUpSwapChain();
-			void updateUniformBuffer(uint32_t currentImage);
+			void updateUniformBuffer(uint32_t currentImage, const glm::mat4& view);
 			void recordCommandBuffer(uint32_t imageIndex);
 			void transitionImageLayout(vk::Image image,
 				vk::ImageLayout oldLayout,

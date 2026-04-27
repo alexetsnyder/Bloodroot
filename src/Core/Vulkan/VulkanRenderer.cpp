@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <chrono>
 #include <iostream>
+#include <math.h>
 
 namespace Core
 {
@@ -66,7 +67,7 @@ namespace Core
 		cleanUpSwapChain();
 	}
 
-	void VulkanRenderer::drawFrame(const Window& window)
+	void VulkanRenderer::drawFrame(const Window& window, const glm::mat4& view)
 	{
 		auto fenceResult = device.waitForFences(*inFlightFences[frameIndex], vk::True, UINT64_MAX);
 		if (fenceResult != vk::Result::eSuccess)
@@ -88,7 +89,7 @@ namespace Core
 			throw std::runtime_error("Failed to acquire swap chain image!");
 		}
 
-		updateUniformBuffer(frameIndex);
+		updateUniformBuffer(frameIndex, view);
 
 		device.resetFences(*inFlightFences[frameIndex]);
 
@@ -168,16 +169,17 @@ namespace Core
 		swapChain = nullptr;
 	}
 
-	void VulkanRenderer::updateUniformBuffer(uint32_t currentImage)
+	void VulkanRenderer::updateUniformBuffer(uint32_t currentImage, const glm::mat4& view)
 	{
-		static auto startTime = std::chrono::high_resolution_clock::now();
+		/*static auto startTime = std::chrono::high_resolution_clock::now();
 
 		auto currentTime = std::chrono::high_resolution_clock::now();
-		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();*/
 
 		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		ubo.model = glm::mat4(1.0f); // glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+		ubo.view = view;
 		ubo.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height), 0.1f, 10.0f);
 
 		//glm designed for OpenGl where y coordinate is inverted.
@@ -1037,10 +1039,10 @@ namespace Core
 			{
 				.magFilter = vk::Filter::eNearest,
 				.minFilter = vk::Filter::eNearest,
-				.mipmapMode = vk::SamplerMipmapMode::eNearest,
-				.addressModeU = vk::SamplerAddressMode::eRepeat,
-				.addressModeV = vk::SamplerAddressMode::eRepeat,
-				.addressModeW = vk::SamplerAddressMode::eRepeat,
+				.mipmapMode = vk::SamplerMipmapMode::eLinear,
+				.addressModeU = vk::SamplerAddressMode::eClampToEdge,
+				.addressModeV = vk::SamplerAddressMode::eClampToEdge,
+				.addressModeW = vk::SamplerAddressMode::eClampToEdge,
 				.mipLodBias = 0.0f,
 				.anisotropyEnable = vk::True,
 				.maxAnisotropy = properties.limits.maxSamplerAnisotropy,

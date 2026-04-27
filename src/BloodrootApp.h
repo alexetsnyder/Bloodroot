@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Camera.h"
 #include "GLFWInstance.h"
 #include "Window.h"
 #include "VulkanRenderer.h"
@@ -17,6 +18,8 @@ class BloodrootApp
 		Core::GLFWInstance glfwInstance;
 		Core::Window window;
 		Core::VulkanRenderer renderer;
+		Game::Camera camera;
 
 		void mainLoop();
+		void processInput(float deltaTime);
 };

@@ -14,7 +14,6 @@ namespace Core
 	{
 		public:
 			Window(int width, int height, const std::string& title);
-			//Window(Window&& other) noexcept;
 			~Window();
 
 			void getSize(int& width, int& height) const;
@@ -23,6 +22,8 @@ namespace Core
 			VkResult createWindowSurface(const VkInstance& instance, VkSurfaceKHR& surface) const;
 			bool windowShouldClose();
 			void pollEvents();
+
+			GLFWwindow* windowPtr() { return window; }
 
 			Window(const Window&) = delete;
 			Window& operator=(const Window&) = delete;
