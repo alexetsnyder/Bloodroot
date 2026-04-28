@@ -6,11 +6,12 @@
 #include <vector>
 
 BloodrootApp::BloodrootApp()
-	: window(WINDOW_WIDTH, WINDOW_HEIGHT, "Bloodroot App!"),
-	  renderer(window, glfwInstance.getRequiredInstanceExtensions()),
-	  camera(glm::vec3(0.0f, 2.0f, 2.0f), glm::vec3(0.0f, 1.0f, 0.0f))
+	: renderer(window, glfwInstance.getRequiredInstanceExtensions()),
+	  camera(glm::vec3(0.0f, 2.0f, 2.0f), glm::vec3(0.0f, 1.0f, 0.0f)),
+	  appData{ .renderer = &renderer, .camera = &camera },
+	  window(&appData, WINDOW_WIDTH, WINDOW_HEIGHT, "Bloodroot App!")  
 {
-	window.setRenderer(&renderer);
+	
 }
 
 void BloodrootApp::run()

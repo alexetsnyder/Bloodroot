@@ -20,6 +20,7 @@ target_sources(
 	FILE_SET HEADERS
 	FILES
 		BloodrootApp.h
+		AppData.h
 )
 
 target_include_directories(BloodrootApp PRIVATE ${Stb_INCLUDE_DIR})

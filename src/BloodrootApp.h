@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AppData.h"
 #include "Camera.h"
 #include "GLFWInstance.h"
 #include "Window.h"
@@ -15,11 +16,12 @@ class BloodrootApp
 		void run();
 
 	private:
+		AppData appData;
 		Core::GLFWInstance glfwInstance;
 		Core::Window window;
 		Core::VulkanRenderer renderer;
 		Game::Camera camera;
 
 		void mainLoop();
-		void processInput(float deltaTime);
+		void processInput(float deltaTime);	
 };

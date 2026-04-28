@@ -5,7 +5,7 @@
 
 namespace Core
 {
-	Window::Window(int width, int height, const std::string& title)
+	Window::Window(AppData* appData, int width, int height, const std::string& title)
 	{	
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -16,6 +16,13 @@ namespace Core
 		{
 			throw std::runtime_error("Failed to create GLFW Window!");
 		}
+
+		glfwSetWindowUserPointer(window, appData);
+		glfwSetFramebufferSizeCallback(window, framebufferResizedCallback);
+		glfwSetCursorPosCallback(window, mouseCallback);
+		glfwSetScrollCallback(window, scrollCallback);
+
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 		std::cout << "Window Created!\n";
 	}
@@ -35,14 +42,6 @@ namespace Core
 		glfwGetFramebufferSize(window, &width, &height);
 	}
 
-	void Window::setRenderer(IRenderer* renderer)
-	{
-		this->renderer = renderer;
-
-		glfwSetWindowUserPointer(window, this);
-		glfwSetFramebufferSizeCallback(window, framebufferResizedCallback);
-	}
-
 	VkResult Window::createWindowSurface(const VkInstance& instance, VkSurfaceKHR& surface) const
 	{
 		return glfwCreateWindowSurface(instance, window, nullptr, &surface);
@@ -60,7 +59,39 @@ namespace Core
 
 	void Window::framebufferResizedCallback(GLFWwindow* window, int width, int height)
 	{
-		auto windowClass = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-		windowClass->renderer->onResize(width, height);
+		auto appData = reinterpret_cast<AppData*>(glfwGetWindowUserPointer(window));
+		appData->renderer->onResize(width, height);
+	}
+
+	void Core::Window::mouseCallback(GLFWwindow* window, double xPosIn, double yPosIn)
+	{
+		static float lastX = 0.0f;
+		static float lastY = 0.0f;
+		static bool firstMouse = true;
+
+		float xPos = static_cast<float>(xPosIn);
+		float yPos = static_cast<float>(yPosIn);
+
+		if (firstMouse)
+		{
+			lastX = xPos;
+			lastY = yPos;
+			firstMouse = false;
+		}
+
+		float xOffset = xPos - lastX;
+		float yOffset = lastY - yPos;
+
+		lastX = xPos;
+		lastY = yPos;
+
+		auto appData = reinterpret_cast<AppData*>(glfwGetWindowUserPointer(window));
+		appData->camera->processMouseMovement(xOffset, yOffset);
+	}
+
+	void Core::Window::scrollCallback(GLFWwindow* window, double xOffset, double yOffset)
+	{
+		auto appData = reinterpret_cast<AppData*>(glfwGetWindowUserPointer(window));
+		appData->camera->processMouseScroll(static_cast<float>(yOffset));
 	}
 }

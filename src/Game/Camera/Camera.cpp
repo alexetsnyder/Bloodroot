@@ -33,7 +33,7 @@ namespace Game
 	void Camera::processMouseMovement(float xOffset, float yOffset)
 	{
 		xOffset *= mouseSensitivity;
-		yOffset += mouseSensitivity;
+		yOffset *= mouseSensitivity;
 
 		yaw += xOffset;
 		pitch += yOffset;
@@ -54,9 +54,9 @@ namespace Game
 		front = glm::normalize(
 			glm::vec3
 			{
-				cos(glm::radians(yaw)) * cos(glm::radians(pitch)),
-				sin(glm::radians(yaw)),
-				sin(glm::radians(yaw)) * cos(glm::radians(pitch))
+				std::cos(glm::radians(yaw)) * std::cos(glm::radians(pitch)),
+				std::sin(glm::radians(pitch)),
+				std::sin(glm::radians(yaw)) * std::cos(glm::radians(pitch))
 			});
 
 		right = glm::normalize(glm::cross(front, worldUp));
