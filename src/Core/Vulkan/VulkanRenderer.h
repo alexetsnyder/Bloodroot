@@ -85,10 +85,11 @@ namespace Core
 			vk::raii::DescriptorPool descriptorPool = nullptr;
 			std::vector<vk::raii::DescriptorSet> descriptorSets;
 
-			std::vector<vk::raii::Image> textureImage;
-			std::vector<vk::raii::DeviceMemory> textureImageMemory;
-			std::vector<vk::raii::ImageView> textureImageView;
-			std::vector<vk::raii::Sampler> textureSampler;
+			uint32_t mipLevels[TEXTURE_ARRAY_SIZE];
+			std::vector<vk::raii::Image> textureImages;
+			std::vector<vk::raii::DeviceMemory> textureImageMemorys;
+			std::vector<vk::raii::ImageView> textureImageViews;
+			std::vector<vk::raii::Sampler> textureSamplers;
 
 			vk::raii::Image depthImage = nullptr;
 			vk::raii::DeviceMemory depthImageMemory = nullptr;
@@ -123,6 +124,7 @@ namespace Core
 			void createImage(
 				uint32_t width,
 				uint32_t height,
+				uint32_t mipLevels,
 				vk::Format format,
 				vk::ImageTiling tiling,
 				vk::ImageUsageFlags usage,
@@ -131,15 +133,18 @@ namespace Core
 				vk::raii::DeviceMemory& imageMemory
 			);
 			uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
-			vk::raii::ImageView createImageView(vk::raii::Image& image, vk::Format format, vk::ImageAspectFlags aspectFlags);
-			void createTextureImage();
+			vk::raii::ImageView createImageView(vk::raii::Image& image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels);
+			
+			void createTextureImages();
+			void generateMipmaps(vk::raii::Image& image, vk::Format imageFormat, int32_t width, int32_t height, uint32_t mipLevels);
 			void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory);
-			void transitionImageLayout(const vk::raii::Image& image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
+			void transitionImageLayout(const vk::raii::Image& image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels);
 			void copyBufferToImage(const vk::raii::Buffer& buffer, vk::raii::Image& image, uint32_t width, uint32_t height);
 			std::unique_ptr<vk::raii::CommandBuffer> beginSingleTimeCommands();
 			void endSingleTimeCommands(vk::raii::CommandBuffer& commandBuffer);
-			void createTextureImageView();
-			void createTextureSampler();
+			void createTextureImageViews();
+			void createTextureSamplers();
+
 			void createVertexBuffer();
 			void copyBuffer(vk::raii::Buffer& srcBuffer, vk::raii::Buffer& dstBuffer, vk::DeviceSize size);
 			void createIndexBuffer();
@@ -147,7 +152,9 @@ namespace Core
 			void createDescriptorPool();
 			void createDescriptorSets();
 			void createCommandBuffers();
+
 			void createSyncObjects();
+
 			void recreateSwapChain(const Window& window);
 			void cleanUpSwapChain();
 			void updateUniformBuffer(uint32_t currentImage, const glm::mat4& view);

@@ -1,5 +1,6 @@
 #include "Image.h"
 
+#include <cmath>
 #include <stdexcept>
 
 namespace Core
@@ -20,5 +21,15 @@ namespace Core
 		{
 			stbi_image_free(pixels);
 		}
+	}
+
+	uint32_t Image::getMipLevels()
+	{
+		if (pixels)
+		{
+			return static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
+		}
+
+		return 0;
 	}
 }
