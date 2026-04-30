@@ -1,8 +1,6 @@
 #include "VulkanRenderer.h"
-#include "VulkanRenderer.h"
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "Cube.h"
 #include "FileIO.h"
 #include "Image.h"
 #include "Vertex.h"
@@ -51,8 +49,8 @@ namespace Core
 		createTextureImageViews();
 		createTextureSamplers();
 
-		createVertexBuffer();
-		createIndexBuffer();
+		/*createVertexBuffer();
+		createIndexBuffer();*/
 		createUniformBuffers();
 
 		createDescriptorPool();
@@ -252,7 +250,7 @@ namespace Core
 
 		commandBuffers[frameIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, *descriptorSets[frameIndex], nullptr);
 
-		commandBuffers[frameIndex].drawIndexed(Cube::indices.size(), 1, 0, 0, 0);
+		commandBuffers[frameIndex].drawIndexed(indiciesCount, 1, 0, 0, 0);
 
 		commandBuffers[frameIndex].endRendering();
 
@@ -1143,9 +1141,9 @@ namespace Core
 		}
 	}
 
-	void VulkanRenderer::createVertexBuffer()
+	void VulkanRenderer::createVertexBuffer(const Mesh& mesh)
 	{
-		vk::DeviceSize bufferSize = sizeof(Cube::vertices[0]) * Cube::vertices.size();
+		vk::DeviceSize bufferSize = sizeof(mesh.Verticies()[0]) * mesh.Verticies().size();
 
 		vk::raii::Buffer stagingBuffer = nullptr;
 		vk::raii::DeviceMemory stagingBufferMemory = nullptr;
@@ -1160,7 +1158,7 @@ namespace Core
 		);
 
 		void* dataStaging = stagingBufferMemory.mapMemory(0, bufferSize);
-		memcpy(dataStaging, Cube::vertices.data(), (size_t)bufferSize);
+		memcpy(dataStaging, mesh.Verticies().data(), (size_t)bufferSize);
 		stagingBufferMemory.unmapMemory();
 
 		createBuffer(
@@ -1182,9 +1180,10 @@ namespace Core
 		endSingleTimeCommands(*commandCopyBuffer);
 	}
 
-	void VulkanRenderer::createIndexBuffer()
+	void VulkanRenderer::createIndexBuffer(const Mesh& mesh)
 	{
-		vk::DeviceSize bufferSize = sizeof(Cube::indices[0]) * Cube::indices.size();
+		indiciesCount = mesh.Indicies().size();
+		vk::DeviceSize bufferSize = sizeof(mesh.Indicies()[0]) * mesh.Indicies().size();
 
 		vk::raii::Buffer stagingBuffer({});
 		vk::raii::DeviceMemory stagingBufferMemory({});
@@ -1199,7 +1198,7 @@ namespace Core
 		);
 
 		void* dataStaging = stagingBufferMemory.mapMemory(0, bufferSize);
-		memcpy(dataStaging, Cube::indices.data(), (size_t)bufferSize);
+		memcpy(dataStaging, mesh.Indicies().data(), (size_t)bufferSize);
 		stagingBufferMemory.unmapMemory();
 
 		createBuffer(

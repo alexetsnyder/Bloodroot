@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Window.h"
 #include "IRenderer.h"
+#include "Mesh.h"
+#include "Window.h"
 
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -34,6 +35,9 @@ namespace Core
 		public:
 			VulkanRenderer(const Window& window, std::vector<const char*>&& requiredExtensions);
 			~VulkanRenderer();
+
+			void createVertexBuffer(const Mesh& mesh);
+			void createIndexBuffer(const Mesh& mesh);
 
 			void drawFrame(const Window& window, const glm::mat4& view);
 			void waitIdle();
@@ -75,6 +79,7 @@ namespace Core
 			vk::raii::Buffer vertexBuffer = nullptr;
 			vk::raii::DeviceMemory vertexBufferMemory = nullptr;
 
+			int indiciesCount;
 			vk::raii::Buffer indexBuffer = nullptr;
 			vk::raii::DeviceMemory indexBufferMemory = nullptr;
 
@@ -145,9 +150,7 @@ namespace Core
 			void createTextureImageViews();
 			void createTextureSamplers();
 
-			void createVertexBuffer();
 			void copyBuffer(vk::raii::Buffer& srcBuffer, vk::raii::Buffer& dstBuffer, vk::DeviceSize size);
-			void createIndexBuffer();
 			void createUniformBuffers();
 			void createDescriptorPool();
 			void createDescriptorSets();

@@ -15,6 +15,7 @@ target_sources(
 		Vulkan/Geometry/Square.h 
 		Vulkan/Geometry/Vertex.h 
 		Vulkan/Geometry/Cube.h 
+		Vulkan/Geometry/Mesh.h 
 		Image/Image.h
 )
 

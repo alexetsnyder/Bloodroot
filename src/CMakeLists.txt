@@ -10,8 +10,6 @@ target_link_libraries(BloodrootApp PRIVATE glm::glm)
 target_link_libraries(BloodrootApp PRIVATE FileIO)
 target_link_libraries(BloodrootApp PRIVATE Vulkan::Vulkan)
 
-add_compile_definitions(VULKAN_HPP_NO_STRUCT_CONSTRUCTORS)
-
 target_sources(
 	BloodrootApp
 	PRIVATE 
