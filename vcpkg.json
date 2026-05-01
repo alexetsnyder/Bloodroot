@@ -2,7 +2,7 @@
   "dependencies": [
     "glfw3",
     "glm",
-    "vulkan",
-    "stb"
+    "stb",
+    "vulkan"
   ]
 }

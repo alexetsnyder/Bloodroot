@@ -7,8 +7,8 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp> 
-
 #include <Vulkan/vulkan_raii.hpp>
+
 
 #include <vector>
 
@@ -90,11 +90,11 @@ namespace Core
 			vk::raii::DescriptorPool descriptorPool = nullptr;
 			std::vector<vk::raii::DescriptorSet> descriptorSets;
 
-			uint32_t mipLevels[TEXTURE_ARRAY_SIZE];
-			std::vector<vk::raii::Image> textureImages;
-			std::vector<vk::raii::DeviceMemory> textureImageMemorys;
-			std::vector<vk::raii::ImageView> textureImageViews;
-			std::vector<vk::raii::Sampler> textureSamplers;
+			uint32_t mipLevel;
+			vk::raii::Image textureImage = nullptr;
+			vk::raii::DeviceMemory textureImageMemory = nullptr;
+			vk::raii::ImageView textureImageView = nullptr;
+			vk::raii::Sampler textureSampler = nullptr;
 
 			vk::raii::Image depthImage = nullptr;
 			vk::raii::DeviceMemory depthImageMemory = nullptr;
@@ -130,25 +130,27 @@ namespace Core
 				uint32_t width,
 				uint32_t height,
 				uint32_t mipLevels,
+				uint32_t layerCount,
 				vk::Format format,
 				vk::ImageTiling tiling,
 				vk::ImageUsageFlags usage,
 				vk::MemoryPropertyFlags properties,
 				vk::raii::Image& image,
-				vk::raii::DeviceMemory& imageMemory
+				vk::raii::DeviceMemory& imageMemory,
+				vk::ImageType imageType
 			);
 			uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
-			vk::raii::ImageView createImageView(vk::raii::Image& image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels);
+			vk::raii::ImageView createImageView(vk::raii::Image& image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels, uint32_t layerCount, vk::ImageViewType imageFormat);
 			
-			void createTextureImages();
-			void generateMipmaps(vk::raii::Image& image, vk::Format imageFormat, int32_t width, int32_t height, uint32_t mipLevels);
+			void createTextureImage();
+			void generateMipmaps(vk::raii::Image& image, vk::Format imageFormat, int32_t width, int32_t height, uint32_t mipLevels, uint32_t layerCount);
 			void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory);
-			void transitionImageLayout(const vk::raii::Image& image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels);
-			void copyBufferToImage(const vk::raii::Buffer& buffer, vk::raii::Image& image, uint32_t width, uint32_t height);
+			void transitionImageLayout(const vk::raii::Image& image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount);
+			void copyBufferToImage(const vk::raii::Buffer& buffer, vk::raii::Image& image, uint32_t width, uint32_t height, uint32_t layerCount);
 			std::unique_ptr<vk::raii::CommandBuffer> beginSingleTimeCommands();
 			void endSingleTimeCommands(vk::raii::CommandBuffer& commandBuffer);
-			void createTextureImageViews();
-			void createTextureSamplers();
+			void createTextureImageView();
+			void createTextureSampler();
 
 			void copyBuffer(vk::raii::Buffer& srcBuffer, vk::raii::Buffer& dstBuffer, vk::DeviceSize size);
 			void createUniformBuffers();

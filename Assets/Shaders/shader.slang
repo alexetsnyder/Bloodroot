@@ -28,10 +28,10 @@ VSOutput vertMain(VSInput input)
 	return output;
 }
 
-Sampler2D texture[4];
+Sampler2DArray textures;
 
 [shader("fragment")]
 float4 fragMain(VSOutput inVert) : SV_Target
 {
-    return texture[int(inVert.fragTexCoord.b)].Sample(inVert.fragTexCoord.rg);
+    return textures.Sample(inVert.fragTexCoord);
 }

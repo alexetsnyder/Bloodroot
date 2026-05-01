@@ -13,7 +13,7 @@ BloodrootApp::BloodrootApp()
 	  camera(glm::vec3(0.0f, 2.0f, 2.0f), glm::vec3(0.0f, 1.0f, 0.0f)),
 	  appData{ .renderer = &renderer, .camera = &camera }	  
 {
-	Game::Chunk chunk{ 1, 1, 1, glm::vec3(0.0f, 0.0f, 0.0f) };
+	Game::Chunk chunk{ 16, 16, 16 , glm::vec3(0.0f, 0.0f, 0.0f) };
 
 	chunk.generateMesh();
 

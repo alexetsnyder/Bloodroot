@@ -8,6 +8,7 @@ target_sources(
 	FILES
 		Camera/Camera.h
 		WorldGen/Chunk.h
+		WorldGen/Voxel.h
 )
 
 target_include_directories(
