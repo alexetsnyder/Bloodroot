@@ -8,6 +8,7 @@ namespace Game
 		GRASS,
 		DIRT,
 		STONE,
+		BEDROCK,
 	};
 
 	struct Voxel

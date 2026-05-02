@@ -856,6 +856,7 @@ namespace Core
 			{ "Textures/GrassSide.png" },
 			{ "Textures/GrassTop.png" },
 			{ "Textures/Stone.png" },
+			{ "Textures/Bedrock.png" }
 		};
 
 		mipLevel = images[0].getMipLevels();

@@ -21,7 +21,7 @@ constexpr bool enableValidationLayers = true;
 namespace Core
 {
 	constexpr int MAX_FRAMES_IN_FLIGHT = 2;
-	constexpr int TEXTURE_ARRAY_SIZE = 4;
+	constexpr int TEXTURE_ARRAY_SIZE = 5;
 
 	struct UniformBufferObject
 	{

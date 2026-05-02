@@ -24,7 +24,7 @@ namespace Game
 			glm::vec3 position;
 			Core::Mesh mesh;
 
-			void generateVoxel(const glm::vec3& voxelPos, int& vertexCount, int index);
-			Voxel getVoxel(int count);
+			void generateVoxel(const glm::vec3& voxelPos, int& vertexCount);
+			Voxel getVoxel(int y);
 	};
 }
