@@ -79,7 +79,7 @@ namespace Core
 			vk::raii::Buffer vertexBuffer = nullptr;
 			vk::raii::DeviceMemory vertexBufferMemory = nullptr;
 
-			int indiciesCount;
+			uint32_t indiciesCount = 0;
 			vk::raii::Buffer indexBuffer = nullptr;
 			vk::raii::DeviceMemory indexBufferMemory = nullptr;
 
