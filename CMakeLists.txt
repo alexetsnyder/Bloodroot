@@ -11,7 +11,7 @@ add_compile_definitions(VULKAN_HPP_NO_STRUCT_CONSTRUCTORS)
 
 target_link_libraries(Bloodroot PRIVATE BloodrootApp)
 
-find_program(SLANGC_EXECUTABLE slangc HINTS $ENV{VULKAN_SDK}/bin)
+find_program(SLANGC_EXECUTABLE slangc HINTS $ENV{VULKAN_SDK}/Bin)
 file(GLOB SLANG_SHADER_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Shaders/*.slang)
 
 function (add_slang_shader_target TARGET)

@@ -16,6 +16,7 @@ namespace Game
 	};
 
 	Chunk::Chunk(int width, int height, int depth, glm::vec3 position)
+		: noise{ 42 }
 	{
 		this->width = width;
 		this->height = height;
@@ -110,16 +111,20 @@ namespace Game
 			}
 
 			//check all cube sides
-			bool isCurrentCubeSolid = IsSolid(cubePos);
+			auto currentVoxel = getVoxel(cubePos);
+
+			bool isCurrentCubeSolid = IsSolid(cubePos) && currentVoxel.Type != VoxelType::AIR;
 			if (isCurrentCubeSolid)
 			{
 				for (int i = 0; i < adjCubes.size(); i++)
 				{
 					CubeFace face = static_cast<CubeFace>(i);
 
-					if (isCurrentCubeSolid != IsSolid(adjCubes[i]))
+					auto adjVoxel = getVoxel(adjCubes[i]);
+
+					if (!IsSolid(adjCubes[i]) || adjVoxel.Type == VoxelType::AIR)
 					{
-						createFace(face, cubePos, vertexCount);
+						createFace(face, cubePos, currentVoxel, vertexCount);
 					}
 				}
 			}
@@ -179,13 +184,11 @@ namespace Game
 		return adjCubes;
 	}
 
-	void Chunk::createFace(CubeFace face, const glm::i32vec3& cubePos, int& vertexCount)
+	void Chunk::createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, int& vertexCount)
 	{
 		uint32_t x = cubePos.x;
 		uint32_t y = cubePos.y;
 		uint32_t z = cubePos.z;
-
-		auto voxel = getVoxel(y);
 
 		switch (face)
 		{
@@ -253,7 +256,7 @@ namespace Game
 		uint32_t y = static_cast<uint32_t>(voxelPos.y);
 		uint32_t z = static_cast<uint32_t>(voxelPos.z);
 
-		auto voxel = getVoxel(y);
+		auto voxel = getVoxel({ x, y, z });
 
 		//Front Face
 		mesh.AddVertex({ { x + VOXEL_SIZE, y + VOXEL_SIZE, z + VOXEL_SIZE }, { 0.0f, 0.0f, voxel.frontFaceIndex } });
@@ -305,27 +308,32 @@ namespace Game
 		}
 	}
 
-	Voxel Chunk::getVoxel(int y)
+	Voxel Chunk::getVoxel(const glm::i32vec3& cubePos)
 	{
-		if (y >= 0 && y < 1)
+		if (cubePos.y == 0)
 		{
 			return voxels[VoxelType::BEDROCK];
 		}
-		else if (y >= 1 && y < 10)
+
+		float noiseValue = noise.GetNoise(cubePos.x, cubePos.z);
+
+		int height = std::floor(noiseValue * 6 + 6);
+
+		if (cubePos.y > height)
 		{
-			return voxels[VoxelType::STONE];
+			return voxels[VoxelType::AIR];
 		}
-		else if (y >= 10 && y < 15)
-		{
-			return voxels[VoxelType::DIRT];
-		}
-		else if (y >= 15 && y < 16)
+		else if (cubePos.y == height)
 		{
 			return voxels[VoxelType::GRASS];
 		}
+		else if (cubePos.y >= height - 3)
+		{
+			return voxels[VoxelType::DIRT];
+		}
 		else
 		{
-			return voxels[VoxelType::AIR];
+			return voxels[VoxelType::STONE];
 		}
 		 
 	}

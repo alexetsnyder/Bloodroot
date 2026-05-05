@@ -5,6 +5,7 @@ target_sources(
 		Window/GLFWInstance.cpp
 		Vulkan/VulkanRenderer.cpp
 		Image/Image.cpp
+		"Math/Noise/SimplexNoise.cpp"
 	PUBLIC
 	FILE_SET HEADERS
 	FILES
@@ -17,6 +18,8 @@ target_sources(
 		Vulkan/Geometry/Cube.h 
 		Vulkan/Geometry/Mesh.h 
 		Image/Image.h
+		"Math/Noise/FastNoiseLite.h"
+		"Math/Noise/SimplexNoise.h"
 )
 
 target_include_directories(
@@ -27,6 +30,7 @@ target_include_directories(
 		Vulkan
 		Vulkan/Geometry
 		Image
+		"Math/Noise"
 )
 
 add_subdirectory(FileIO)

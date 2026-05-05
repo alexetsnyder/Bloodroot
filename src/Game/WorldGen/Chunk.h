@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Mesh.h"
+#include "SimplexNoise.h"
 #include "Voxel.h"
 
 #include <glm/glm.hpp>
@@ -36,14 +37,15 @@ namespace Game
 			int width, height, depth;
 			glm::vec3 position;
 			Core::Mesh mesh;
+			Core::Math::SimplexNoise noise;
 
 			bool IsSolid(const glm::i32vec3& cubePos);
 			bool IsInBounds(const glm::i32vec3& cubePos);
 			std::vector<glm::i32vec3> getAdjCubes(const glm::i32vec3& cubePos);
-			void createFace(CubeFace face, const glm::i32vec3& cubePos, int& vertexCount);
+			void createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, int& vertexCount);
 
 			glm::vec3 mapToLocal(const glm::vec3& position);
 			void generateVoxel(const glm::vec3& voxelPos, int& vertexCount);
-			Voxel getVoxel(int y);
+			Voxel getVoxel(const glm::i32vec3& cubePos);
 	};
 }
