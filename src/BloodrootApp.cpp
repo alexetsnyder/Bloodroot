@@ -10,7 +10,7 @@
 BloodrootApp::BloodrootApp()
 	: window(&appData, WINDOW_WIDTH, WINDOW_HEIGHT, "Bloodroot App!"),
 	  renderer(window, glfwInstance.getRequiredInstanceExtensions()),
-	  camera(glm::vec3(0.0f, 2.0f, 20.0f), glm::vec3(0.0f, 1.0f, 0.0f)),
+	  camera(glm::vec3(8.0f, 16.0f, 8.0f), glm::vec3(0.0f, 1.0f, 0.0f)),
 	  appData{ .renderer = &renderer, .camera = &camera }	  
 {
 	Game::Chunk chunk{ 16, 16, 16, glm::vec3(0.0f, 0.0f, 0.0f) };
