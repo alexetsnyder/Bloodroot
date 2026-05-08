@@ -1,22 +1,10 @@
 #include "Chunk.h"
 
-#include <map>
-#include <stack>
 #include <vector>
 
 namespace Game
 {
-	std::map<VoxelType, Voxel> voxels
-	{
-		{ VoxelType::AIR, { VoxelType::AIR, -1, -1, -1, -1, -1, -1 } },
-		{ VoxelType::GRASS, { VoxelType::GRASS, 1, 1, 2, 0, 1, 1 } },
-		{ VoxelType::DIRT, { VoxelType::DIRT, 0, 0, 0, 0, 0, 0  } },
-		{ VoxelType::STONE, { VoxelType::STONE, 3, 3, 3, 3, 3, 3 } },
-		{ VoxelType::BEDROCK, { VoxelType::BEDROCK, 4, 4, 4, 4, 4, 4 } },
-	};
-
-	Chunk::Chunk(int width, int height, int depth, glm::vec3 position)
-		: noise{ 42 }
+	Chunk::Chunk(uint32_t width, uint32_t height, uint32_t depth, const glm::vec3& position)
 	{
 		this->width = width;
 		this->height = height;
@@ -29,129 +17,13 @@ namespace Game
 
 	}
 
-	bool Chunk::IsSolid(const glm::vec3& position)
+	bool Chunk::IsInBounds(const glm::vec3& position)
 	{
-		glm::vec3 localPos = mapToLocal(position);
+		auto localPos = mapToLocal(position);
 
-		if (localPos.y < 0)
-		{
-			return true;
-		}
-
-		if (localPos.x >= 16 || localPos.y >= 16 || localPos.z >= 16 ||
-			localPos.x < 0 || localPos.z < 0)
-		{
-			return false;
-		}
-
-		return true;
-	}
-
-	void Chunk::generateMesh()
-	{
-		int vertexCount = 0;
-		for (int x = 0; x < width; x++)
-		{
-			for (int y = 0; y < height; y++)
-			{
-				for (int z = 0; z < depth; z++)
-				{
-					generateVoxel(position + glm::vec3(x, y, z), vertexCount);
-				}
-			}
-		}
-	}
-
-	struct I32Vec3Comparator
-	{
-		bool operator()(const glm::i32vec3& lhs, const glm::i32vec3& rhs) const
-		{
-			return (std::tie(lhs.x, lhs.y, lhs.z) < std::tie(rhs.x, rhs.y, rhs.z));
-		}
-	};
-
-	void Chunk::generateMesh2()
-	{
-		int vertexCount = 0;
-
-		//visited
-		std::map<glm::i32vec3, bool, I32Vec3Comparator> visited;
-		for (int x = -1; x <= width; x++)
-		{
-			for (int y = -1; y <= height; y++)
-			{
-				for (int z = -1; z <= depth; z++)
-				{
-					visited[glm::i32vec3(x, y, z)] = false;
-				}
-			}
-		}
-
-		//stack
-		std::stack<glm::i32vec3> cubes;
-		auto startCubePos = glm::i32vec3(-1, -1, -1);
-		cubes.push(startCubePos);
-		visited[startCubePos] = true;
-
-		while (!cubes.empty())
-		{
-			auto cubePos = cubes.top();
-			cubes.pop();
-
-			auto adjCubes = getAdjCubes(cubePos);
-
-			//grab cube and add all neighbors to stack if not visited
-			for (auto adjCubePos : adjCubes)
-			{
-				if (IsInBounds(adjCubePos) && !visited[adjCubePos])
-				{
-					visited[adjCubePos] = true;
-					cubes.push(adjCubePos);
-				}
-			}
-
-			//check all cube sides
-			auto currentVoxel = getVoxel(cubePos);
-
-			bool isCurrentCubeSolid = IsSolid(cubePos) && currentVoxel.Type != VoxelType::AIR;
-			if (isCurrentCubeSolid)
-			{
-				for (int i = 0; i < adjCubes.size(); i++)
-				{
-					CubeFace face = static_cast<CubeFace>(i);
-
-					auto adjVoxel = getVoxel(adjCubes[i]);
-
-					if (!IsSolid(adjCubes[i]) || adjVoxel.Type == VoxelType::AIR)
-					{
-						createFace(face, cubePos, currentVoxel, vertexCount);
-					}
-				}
-			}
-		}
-	}
-
-	bool Chunk::IsSolid(const glm::i32vec3& cubePos)
-	{
-		/*if (cubePos.y < 0)
-		{
-			return true;
-		}*/
-
-		if (cubePos.x >= 16 || cubePos.y >= 16 || cubePos.z >= 16 ||
-			cubePos.x < 0 || cubePos.z < 0 || cubePos.y < 0)
-		{
-			return false;
-		}
-
-		return true;
-	}
-
-	bool Chunk::IsInBounds(const glm::i32vec3& cubePos)
-	{
-		if ((cubePos.y >= -1 && cubePos.y <= 16) &&
-			(cubePos.x >= -1 && cubePos.x <= 16) &&
-			(cubePos.z >= -1 && cubePos.z <= 16))
+		if ((localPos.y >= 0 && localPos.y < height) &&
+			(localPos.x >= 0 && localPos.x < width) &&
+			(localPos.z >= 0 && localPos.z < depth))
 		{
 			return true;
 		}
@@ -159,32 +31,13 @@ namespace Game
 		return false;
 	}
 
-	std::vector<glm::i32vec3> Chunk::getAdjCubes(const glm::i32vec3& cubePos)
+	void Chunk::CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel, Core::Mesh& mesh, int& vertexCount)
 	{
-		std::vector<glm::i32vec3> adjCubes;
-
-		//Left
-		adjCubes.push_back(cubePos + glm::i32vec3(-1, 0, 0));
-
-		//Right
-		adjCubes.push_back(cubePos + glm::i32vec3(1, 0, 0));
-
-		//Top
-		adjCubes.push_back(cubePos + glm::i32vec3(0, 1, 0));
-
-		//Bottom
-		adjCubes.push_back(cubePos + glm::i32vec3(0, -1, 0));
-
-		//Front
-		adjCubes.push_back(cubePos + glm::i32vec3(0, 0, 1));
-
-		//Back
-		adjCubes.push_back(cubePos + glm::i32vec3(0, 0, -1));
-
-		return adjCubes;
+		auto cubePos = mapToLocal(position);
+		createFace(face, cubePos, voxel, mesh, vertexCount);
 	}
 
-	void Chunk::createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, int& vertexCount)
+	void Chunk::createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::Mesh& mesh, int& vertexCount)
 	{
 		uint32_t x = cubePos.x;
 		uint32_t y = cubePos.y;
@@ -241,22 +94,22 @@ namespace Game
 		vertexCount += 4;
 	}
 
-	glm::vec3 Chunk::mapToLocal(const glm::vec3& position)
+	glm::i32vec3 Chunk::mapToLocal(const glm::vec3& position) const
 	{
-		float x = std::floorf(position.x - this->position.x);
-		float y = std::floorf(position.y - this->position.y);
-		float z = std::floorf(position.z - this->position.z);
+		int x = static_cast<int>(std::floorf(position.x - this->position.x));
+		int y = static_cast<int>(std::floorf(position.y - this->position.y));
+		int z = static_cast<int>(std::floorf(position.z - this->position.z));
 
-		return glm::vec3(x, y, z);
+		return glm::i32vec3(x, y, z);
 	}
 
-	void Chunk::generateVoxel(const glm::vec3& voxelPos, int& vertexCount)
+	void Chunk::generateVoxel(const glm::vec3& voxelPos, const Voxel& voxel, Core::Mesh& mesh, int& vertexCount)
 	{
 		uint32_t x = static_cast<uint32_t>(voxelPos.x);
 		uint32_t y = static_cast<uint32_t>(voxelPos.y);
 		uint32_t z = static_cast<uint32_t>(voxelPos.z);
 
-		auto voxel = getVoxel({ x, y, z });
+		//auto voxel = getVoxel({ x, y, z });
 
 		//Front Face
 		mesh.AddVertex({ { x + VOXEL_SIZE, y + VOXEL_SIZE, z + VOXEL_SIZE }, { 0.0f, 0.0f, voxel.frontFaceIndex } });
@@ -306,35 +159,5 @@ namespace Game
 
 			vertexCount += 4;
 		}
-	}
-
-	Voxel Chunk::getVoxel(const glm::i32vec3& cubePos)
-	{
-		if (cubePos.y == 0)
-		{
-			return voxels[VoxelType::BEDROCK];
-		}
-
-		float noiseValue = noise.GetNoise(cubePos.x, cubePos.z);
-
-		int height = std::floor(noiseValue * 6 + 6);
-
-		if (cubePos.y > height)
-		{
-			return voxels[VoxelType::AIR];
-		}
-		else if (cubePos.y == height)
-		{
-			return voxels[VoxelType::GRASS];
-		}
-		else if (cubePos.y >= height - 3)
-		{
-			return voxels[VoxelType::DIRT];
-		}
-		else
-		{
-			return voxels[VoxelType::STONE];
-		}
-		 
 	}
 }

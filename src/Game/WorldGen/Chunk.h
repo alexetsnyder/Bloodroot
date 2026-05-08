@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Mesh.h"
-#include "SimplexNoise.h"
 #include "Voxel.h"
 
 #include <glm/glm.hpp>
@@ -23,29 +22,23 @@ namespace Game
 		public:
 			const int VOXEL_SIZE = 1;
 
-			Chunk(int width, int height, int depth, glm::vec3 position);
+			Chunk(uint32_t width, uint32_t height, uint32_t depth, const glm::vec3& position);
 			~Chunk();
 
-			bool IsSolid(const glm::vec3& position);
-			
-			const Core::Mesh& GetMesh() { return mesh; }
+			uint32_t Width() const { return width; }
+			uint32_t Height() const { return height; }
+			uint32_t Depth() const { return depth; }
 
-			void generateMesh();
-			void generateMesh2();
+			bool IsInBounds(const glm::vec3& position);
+			void CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel, Core::Mesh& mesh, int& vertexCount);
 
 		private:
-			int width, height, depth;
-			glm::vec3 position;
-			Core::Mesh mesh;
-			Core::Math::SimplexNoise noise;
+			uint32_t width, height, depth;
+			glm::vec3 position; 
+			
+			void createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::Mesh& mesh, int& vertexCount);
 
-			bool IsSolid(const glm::i32vec3& cubePos);
-			bool IsInBounds(const glm::i32vec3& cubePos);
-			std::vector<glm::i32vec3> getAdjCubes(const glm::i32vec3& cubePos);
-			void createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, int& vertexCount);
-
-			glm::vec3 mapToLocal(const glm::vec3& position);
-			void generateVoxel(const glm::vec3& voxelPos, int& vertexCount);
-			Voxel getVoxel(const glm::i32vec3& cubePos);
+			glm::i32vec3 mapToLocal(const glm::vec3& position) const;
+			void generateVoxel(const glm::vec3& voxelPos, const Voxel& voxel, Core::Mesh& mesh, int& vertexCount);
 	};
 }

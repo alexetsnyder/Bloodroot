@@ -4,6 +4,7 @@ target_sources(
 		Camera/Camera.cpp
 		WorldGen/Chunk.cpp
 		WorldGen/MeshGen.cpp
+		
 	PUBLIC
 	FILE_SET HEADERS
 	FILES

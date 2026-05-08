@@ -1,6 +1,6 @@
 #include "BloodrootApp.h"
 
-#include "Chunk.h"
+#include "MeshGen.h"
 
 #include <GLFW/glfw3.h>
 
@@ -13,12 +13,12 @@ BloodrootApp::BloodrootApp()
 	  camera(glm::vec3(8.0f, 16.0f, 8.0f), glm::vec3(0.0f, 1.0f, 0.0f)),
 	  appData{ .renderer = &renderer, .camera = &camera }	  
 {
-	Game::Chunk chunk{ 16, 16, 16, glm::vec3(0.0f, 0.0f, 0.0f) };
+	Game::MeshGen meshGen;
 
-	chunk.generateMesh2();
+	meshGen.GenerateMesh();
 
-	renderer.createVertexBuffer(chunk.GetMesh());
-	renderer.createIndexBuffer(chunk.GetMesh());
+	renderer.createVertexBuffer(meshGen.GetMesh());
+	renderer.createIndexBuffer(meshGen.GetMesh());
 }
 
 void BloodrootApp::run()

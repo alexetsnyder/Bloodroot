@@ -6,6 +6,7 @@ target_sources(
 		Vulkan/VulkanRenderer.cpp
 		Image/Image.cpp
 		"Math/Noise/SimplexNoise.cpp"
+		Data/Octree.cpp
 	PUBLIC
 	FILE_SET HEADERS
 	FILES
@@ -20,6 +21,7 @@ target_sources(
 		Image/Image.h
 		"Math/Noise/FastNoiseLite.h"
 		"Math/Noise/SimplexNoise.h"
+		Data/Octree.h
 )
 
 target_include_directories(
@@ -31,6 +33,7 @@ target_include_directories(
 		Vulkan/Geometry
 		Image
 		"Math/Noise"
+		Data
 )
 
 add_subdirectory(FileIO)
