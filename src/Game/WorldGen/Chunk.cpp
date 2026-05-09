@@ -17,7 +17,7 @@ namespace Game
 
 	}
 
-	bool Chunk::IsInBounds(const glm::vec3& position)
+	bool Chunk::IsInBounds(const glm::vec3& position) const
 	{
 		auto localPos = mapToLocal(position);
 
@@ -31,17 +31,22 @@ namespace Game
 		return false;
 	}
 
-	void Chunk::CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel, Core::Mesh& mesh, int& vertexCount)
+	void Chunk::CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel, Core::Mesh& mesh, int& vertexCount) const
 	{
-		auto cubePos = mapToLocal(position);
-		createFace(face, cubePos, voxel, mesh, vertexCount);
+		//auto cubePos = mapToLocal(position);
+
+		int32_t x = static_cast<int>(std::floorf(position.x));
+		int32_t y = static_cast<int>(std::floorf(position.y));
+		int32_t z = static_cast<int>(std::floorf(position.z));
+
+		createFace(face, { x, y, z }, voxel, mesh, vertexCount);
 	}
 
-	void Chunk::createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::Mesh& mesh, int& vertexCount)
+	void Chunk::createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::Mesh& mesh, int& vertexCount) const
 	{
-		uint32_t x = cubePos.x;
-		uint32_t y = cubePos.y;
-		uint32_t z = cubePos.z;
+		int32_t x = cubePos.x;
+		int32_t y = cubePos.y;
+		int32_t z = cubePos.z;
 
 		switch (face)
 		{
@@ -96,9 +101,9 @@ namespace Game
 
 	glm::i32vec3 Chunk::mapToLocal(const glm::vec3& position) const
 	{
-		int x = static_cast<int>(std::floorf(position.x - this->position.x));
-		int y = static_cast<int>(std::floorf(position.y - this->position.y));
-		int z = static_cast<int>(std::floorf(position.z - this->position.z));
+		int32_t x = static_cast<int32_t>(std::floorf(position.x - this->position.x));
+		int32_t y = static_cast<int32_t>(std::floorf(position.y - this->position.y));
+		int32_t z = static_cast<int32_t>(std::floorf(position.z - this->position.z));
 
 		return glm::i32vec3(x, y, z);
 	}

@@ -10,10 +10,10 @@
 BloodrootApp::BloodrootApp()
 	: window(&appData, WINDOW_WIDTH, WINDOW_HEIGHT, "Bloodroot App!"),
 	  renderer(window, glfwInstance.getRequiredInstanceExtensions()),
-	  camera(glm::vec3(8.0f, 16.0f, 8.0f), glm::vec3(0.0f, 1.0f, 0.0f)),
+	  camera(glm::vec3(8.0f, 66.0f, 8.0f), glm::vec3(0.0f, 1.0f, 0.0f)),
 	  appData{ .renderer = &renderer, .camera = &camera }	  
 {
-	Game::MeshGen meshGen;
+	Game::MeshGen meshGen{ { 0, 0, 0 }, { 64, 64, 64 }, { 16, 16, 16 } };
 
 	meshGen.GenerateMesh();
 
