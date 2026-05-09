@@ -247,7 +247,7 @@ namespace Game
 				{
 					auto adjVoxel = getVoxel(adjCubes[i]);
 
-					if (!chunk.IsInBounds(adjCubes[i]) || adjVoxel.Type == VoxelType::AIR)
+					if (!isInBounds(adjCubes[i]) || adjVoxel.Type == VoxelType::AIR)
 					{
 						CubeFace face = static_cast<CubeFace>(i);
 

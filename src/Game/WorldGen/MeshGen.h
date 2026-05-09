@@ -7,8 +7,6 @@
 #include <glm/glm.hpp>
 #include <vector>
 
-//TODO: Creating inner faces where it shouldn't
-
 namespace Game
 {
 	class MeshGen
