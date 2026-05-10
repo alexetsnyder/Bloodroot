@@ -7,6 +7,7 @@
 namespace Core::raii
 {
 	VMemBuffer::VMemBuffer()
+		: size(0)
 	{
 
 	}
@@ -26,8 +27,6 @@ namespace Core::raii
 
 		VmaAllocationCreateInfo allocInfo
 		{		
-			/*.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
-					 VMA_ALLOCATION_CREATE_MAPPED_BIT,*/
 			.usage = VMA_MEMORY_USAGE_CPU_TO_GPU,
 		};
 
