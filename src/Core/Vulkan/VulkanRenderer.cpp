@@ -10,8 +10,6 @@
 #include <iostream>
 #include <math.h>
 
-//TODO: Custom Allocator for the vertex buffer and index buffer.
-
 namespace Core
 {
 	const std::vector<char const*> validationLayers =
@@ -34,6 +32,8 @@ namespace Core
 		createSurface(window);
 		pickPhysicalDevice();
 		createLogicalDevice();
+
+		createAllocator();
 
 		int width, height;
 		window.getSize(width, height);
@@ -242,8 +242,8 @@ namespace Core
 
 		commandBuffers[frameIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, *graphicsPipeline);
 
-		commandBuffers[frameIndex].bindVertexBuffers(0, *vertexBuffer, { 0 });
-		commandBuffers[frameIndex].bindIndexBuffer(*indexBuffer, 0, vk::IndexType::eUint32);
+		commandBuffers[frameIndex].bindVertexBuffers(0, { vertexBuffer.Buffer() }, { 0 });
+		commandBuffers[frameIndex].bindIndexBuffer(indexBuffer.Buffer(), 0, vk::IndexType::eUint32);
 
 		commandBuffers[frameIndex].setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height), 0.0f, 1.0f));
 		commandBuffers[frameIndex].setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapChainExtent));
@@ -508,6 +508,11 @@ namespace Core
 
 		device = vk::raii::Device(physicalDevice, deviceCreateInfo);
 		graphicsQueue = vk::raii::Queue(device, queueIndex, 0);
+	}
+
+	void VulkanRenderer::createAllocator()
+	{
+		allocator = std::move(Core::raii::VMemAlloc(physicalDevice, device, instance));
 	}
 
 	void VulkanRenderer::createSwapChain(int windowWidth, int windowHeight)
@@ -1137,76 +1142,29 @@ namespace Core
 		textureSampler = vk::raii::Sampler(device, samplerInfo);
 	}
 
-	void VulkanRenderer::createVertexBuffer(const Mesh& mesh)
+	void VulkanRenderer::SendMeshData(const Mesh& mesh)
 	{
-		vk::DeviceSize bufferSize = sizeof(mesh.Verticies()[0]) * mesh.Verticies().size();
-
-		vk::raii::Buffer stagingBuffer = nullptr;
-		vk::raii::DeviceMemory stagingBufferMemory = nullptr;
-
-		createBuffer(
-			bufferSize,
-			vk::BufferUsageFlagBits::eTransferSrc,
-			vk::MemoryPropertyFlagBits::eHostVisible |
-			vk::MemoryPropertyFlagBits::eHostCoherent,
-			stagingBuffer,
-			stagingBufferMemory
-		);
-
-		void* dataStaging = stagingBufferMemory.mapMemory(0, bufferSize);
-		memcpy(dataStaging, mesh.Verticies().data(), (size_t)bufferSize);
-		stagingBufferMemory.unmapMemory();
-
-		createBuffer(
-			bufferSize,
-			vk::BufferUsageFlagBits::eVertexBuffer |
-			vk::BufferUsageFlagBits::eTransferDst,
-			vk::MemoryPropertyFlagBits::eDeviceLocal,
-			vertexBuffer,
-			vertexBufferMemory
-		);
-
-		copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+		createVertexBuffer(mesh.Verticies());
+		createIndexBuffer(mesh.Indicies());
 	}
 
-	void VulkanRenderer::copyBuffer(vk::raii::Buffer& srcBuffer, vk::raii::Buffer& dstBuffer, vk::DeviceSize size)
+	void VulkanRenderer::createVertexBuffer(const std::vector<Vertex>& verticies)
 	{
-		auto commandCopyBuffer = beginSingleTimeCommands();
-		commandCopyBuffer->copyBuffer(srcBuffer, dstBuffer, vk::BufferCopy(0, 0, size));
-		endSingleTimeCommands(*commandCopyBuffer);
+		vk::DeviceSize bufferSize = sizeof(verticies[0]) * verticies.size();
+
+		vertexBuffer = Core::raii::VMemBuffer(allocator.Allocator(), bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+		vertexBuffer.SendData(verticies.data());
 	}
 
-	void VulkanRenderer::createIndexBuffer(const Mesh& mesh)
+	void VulkanRenderer::createIndexBuffer(const std::vector<uint32_t>& indicies)
 	{
-		indiciesCount = mesh.Indicies().size();
-		vk::DeviceSize bufferSize = sizeof(mesh.Indicies()[0]) * mesh.Indicies().size();
+		indiciesCount = indicies.size();
+		vk::DeviceSize bufferSize = sizeof(indicies[0]) * indicies.size();
 
-		vk::raii::Buffer stagingBuffer({});
-		vk::raii::DeviceMemory stagingBufferMemory({});
+		indexBuffer = std::move(Core::raii::VMemBuffer{ allocator.Allocator(), bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT });
 
-		createBuffer(
-			bufferSize,
-			vk::BufferUsageFlagBits::eTransferSrc,
-			vk::MemoryPropertyFlagBits::eHostVisible |
-			vk::MemoryPropertyFlagBits::eHostCoherent,
-			stagingBuffer,
-			stagingBufferMemory
-		);
-
-		void* dataStaging = stagingBufferMemory.mapMemory(0, bufferSize);
-		memcpy(dataStaging, mesh.Indicies().data(), (size_t)bufferSize);
-		stagingBufferMemory.unmapMemory();
-
-		createBuffer(
-			bufferSize,
-			vk::BufferUsageFlagBits::eTransferDst |
-			vk::BufferUsageFlagBits::eIndexBuffer,
-			vk::MemoryPropertyFlagBits::eDeviceLocal,
-			indexBuffer,
-			indexBufferMemory
-		);
-
-		copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+		indexBuffer.SendData(indicies.data());
 	}
 
 	void VulkanRenderer::createUniformBuffers()

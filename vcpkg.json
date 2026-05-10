@@ -3,6 +3,7 @@
     "glfw3",
     "glm",
     "stb",
-    "vulkan"
+    "vulkan",
+    "vulkan-memory-allocator"
   ]
 }

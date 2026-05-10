@@ -2,13 +2,14 @@ find_package(Vulkan REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
 find_package(Stb REQUIRED)
+find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
 add_library(BloodrootApp)
 
 target_link_libraries(BloodrootApp PUBLIC glfw)
 target_link_libraries(BloodrootApp PRIVATE glm::glm)
 target_link_libraries(BloodrootApp PRIVATE FileIO)
-target_link_libraries(BloodrootApp PRIVATE Vulkan::Vulkan)
+target_link_libraries(BloodrootApp PRIVATE Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator)
 
 target_sources(
 	BloodrootApp

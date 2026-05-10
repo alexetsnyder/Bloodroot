@@ -3,12 +3,13 @@
 #include "IRenderer.h"
 #include "Mesh.h"
 #include "Window.h"
+#include "VMemAlloc.h"
+#include "VMemBuffer.h"
 
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp> 
 #include <Vulkan/vulkan_raii.hpp>
-
 
 #include <vector>
 
@@ -36,9 +37,8 @@ namespace Core
 			VulkanRenderer(const Window& window, std::vector<const char*>&& requiredExtensions);
 			~VulkanRenderer();
 
-			void createVertexBuffer(const Mesh& mesh);
-			void createIndexBuffer(const Mesh& mesh);
-
+			void SendMeshData(const Mesh& mesh);
+			
 			void drawFrame(const Window& window, const glm::mat4& view);
 			void waitIdle();
 
@@ -76,12 +76,15 @@ namespace Core
 			std::vector<vk::raii::Semaphore> renderFinishedSemaphores;
 			std::vector<vk::raii::Fence> inFlightFences;
 
-			vk::raii::Buffer vertexBuffer = nullptr;
-			vk::raii::DeviceMemory vertexBufferMemory = nullptr;
+			/*vk::raii::Buffer vertexBuffer = nullptr;
+			vk::raii::DeviceMemory vertexBufferMemory = nullptr;*/
+			Core::raii::VMemAlloc allocator;
+			Core::raii::VMemBuffer vertexBuffer;
 
 			uint32_t indiciesCount = 0;
-			vk::raii::Buffer indexBuffer = nullptr;
-			vk::raii::DeviceMemory indexBufferMemory = nullptr;
+			Core::raii::VMemBuffer indexBuffer;
+			/*vk::raii::Buffer indexBuffer = nullptr;
+			vk::raii::DeviceMemory indexBufferMemory = nullptr;*/
 
 			std::vector<vk::raii::Buffer> uniformBuffers;
 			std::vector<vk::raii::DeviceMemory> uniformBuffersMemory;
@@ -112,6 +115,8 @@ namespace Core
 			void pickPhysicalDevice();
 			bool isDeviceSuitable(vk::raii::PhysicalDevice const& physicalDevice);
 			void createLogicalDevice();
+
+			void createAllocator();
 
 			void createSwapChain(int windowWidth, int windowHeight);
 			vk::Extent2D chooseSwapChainExtent(vk::SurfaceCapabilitiesKHR const& capabilities, int windowWidth, int windowHeight);
@@ -152,7 +157,9 @@ namespace Core
 			void createTextureImageView();
 			void createTextureSampler();
 
-			void copyBuffer(vk::raii::Buffer& srcBuffer, vk::raii::Buffer& dstBuffer, vk::DeviceSize size);
+			void createVertexBuffer(const std::vector<Vertex>& verticies);
+			void createIndexBuffer(const std::vector<uint32_t>& indicies);
+
 			void createUniformBuffers();
 			void createDescriptorPool();
 			void createDescriptorSets();

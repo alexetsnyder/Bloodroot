@@ -17,8 +17,7 @@ BloodrootApp::BloodrootApp()
 
 	meshGen.GenerateMesh();
 
-	renderer.createVertexBuffer(meshGen.GetMesh());
-	renderer.createIndexBuffer(meshGen.GetMesh());
+	renderer.SendMeshData(meshGen.GetMesh());
 }
 
 void BloodrootApp::run()
