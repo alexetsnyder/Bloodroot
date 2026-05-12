@@ -15,9 +15,15 @@ BloodrootApp::BloodrootApp()
 {
 	Game::MeshGen meshGen{ { 0, 0, 0 }, { 64, 64, 64 }, { 16, 16, 16 } };
 
-	meshGen.GenerateMesh();
+	meshGen.GenerateChunkMeshes();
 
-	renderer.SendMeshData(meshGen.GetMesh());
+	for (const auto& chunk : meshGen.Chunks())
+	{
+		if (chunk.ShouldDraw())
+		{
+			renderer.SendMeshData(chunk.Mesh());
+		}	
+	}
 }
 
 void BloodrootApp::run()

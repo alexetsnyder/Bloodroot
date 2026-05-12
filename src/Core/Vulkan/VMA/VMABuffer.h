@@ -41,15 +41,19 @@ namespace Core::VMA
 				{
 					throw std::runtime_error("Failed to create Buffer!");
 				}
-
-				std::cout << "Created VMemBuffer.\n";
 			}
 
 			VMABuffer(VMABuffer&& other) noexcept
 			{
+				buffer = other.buffer;
+				allocation = other.allocation;
 				allocator = other.allocator;
+				size = other.size;
 
+				other.buffer = VK_NULL_HANDLE;
+				other.allocation = VK_NULL_HANDLE;
 				other.allocator = VK_NULL_HANDLE;
+				other.size = 0;
 			}
 
 			VMABuffer& operator=(VMABuffer&& other) noexcept
@@ -104,7 +108,6 @@ namespace Core::VMA
 			{
 				if (buffer != VK_NULL_HANDLE)
 				{
-					std::cout << "Destroyed VMemBuffer.\n";
 					vmaDestroyBuffer(allocator, buffer, allocation);
 				}
 			}

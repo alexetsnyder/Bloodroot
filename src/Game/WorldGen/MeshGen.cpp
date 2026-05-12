@@ -31,7 +31,7 @@ namespace Game
 		}
 	};
 
-	void MeshGen::GenerateMesh()
+	void MeshGen::GenerateChunkMeshes()
 	{
 		int vertexCount = 0;
 
@@ -73,8 +73,8 @@ namespace Game
 			chunkStack.pop();
 
 			auto chunk = Chunk{ chunkSize.x, chunkSize.y, chunkSize.z, chunkPos };
-			chunks.push_back(chunk);
 			generateChunkMesh(chunk, vertexCount);
+			chunks.push_back(chunk);
 
 			auto adjChunks = getAdjChunks(chunk);
 
@@ -186,7 +186,7 @@ namespace Game
 		return adjCubes;
 	}
 
-	void MeshGen::generateChunkMesh(const Chunk& chunk, int& vertexCount)
+	void MeshGen::generateChunkMesh(Chunk& chunk, int& vertexCount)
 	{
 		int32_t xPos = static_cast<int32_t>(std::floorf(chunk.Position().x));
 		int32_t yPos = static_cast<int32_t>(std::floorf(chunk.Position().y));
@@ -251,7 +251,7 @@ namespace Game
 					{
 						CubeFace face = static_cast<CubeFace>(i);
 
-						chunk.CreateFace(face, cubePos, currentVoxel, mesh, vertexCount);
+						chunk.CreateFace(face, cubePos, currentVoxel);
 					}
 				}
 			}

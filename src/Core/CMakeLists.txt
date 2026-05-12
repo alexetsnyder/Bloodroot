@@ -8,7 +8,8 @@ target_sources(
 		"Math/Noise/SimplexNoise.cpp"
 		Data/Octree.cpp
 		Vulkan/VMA/VMAAllocator.cpp
-		
+		Vulkan/VMA/VMAVirtualBlock.cpp
+
 	PUBLIC
 	FILE_SET HEADERS
 	FILES
@@ -25,7 +26,9 @@ target_sources(
 		"Math/Noise/SimplexNoise.h"
 		Data/Octree.h
 		Vulkan/VMA/VMAAllocator.h
-		Vulkan/VMA/VMABuffer.h		
+		Vulkan/VMA/VMABuffer.h
+		Vulkan/VMA/VMAVirtualBlock.h
+		Vulkan/VMA/VMAVirtualAllocation.h
 )
 
 target_include_directories(

@@ -1,5 +1,7 @@
 #include "VulkanRenderer.h"
 #include "VulkanRenderer.h"
+#include "VulkanRenderer.h"
+#include "VulkanRenderer.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "FileIO.h"
@@ -51,6 +53,9 @@ namespace Core
 		createTextureImage();
 		createTextureImageView();
 		createTextureSampler();
+
+		createVertexBuffer();
+		createIndexBuffer();
 
 		createUniformBuffers();
 
@@ -243,15 +248,21 @@ namespace Core
 
 		commandBuffers[frameIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, *graphicsPipeline);
 
-		commandBuffers[frameIndex].bindVertexBuffers(0, { vertexBuffer.Buffer() }, { 0 });
-		commandBuffers[frameIndex].bindIndexBuffer(indexBuffer.Buffer(), 0, vk::IndexType::eUint32);
-
 		commandBuffers[frameIndex].setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height), 0.0f, 1.0f));
 		commandBuffers[frameIndex].setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapChainExtent));
 
 		commandBuffers[frameIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, *descriptorSets[frameIndex], nullptr);
 
-		commandBuffers[frameIndex].drawIndexed(indiciesCount, 1, 0, 0, 0);
+		for (int i = 0; i < vertexAllocations.size(); i++)
+		{
+			vk::DeviceSize vertexOffset = vertexAllocations[i].Offset();
+			vk::DeviceSize indexOffset = indexAllocations[i].Offset();
+
+			commandBuffers[frameIndex].bindVertexBuffers(0, { vertexBuffer.Buffer() }, { vertexOffset });
+			commandBuffers[frameIndex].bindIndexBuffer(indexBuffer.Buffer(), indexOffset, vk::IndexType::eUint32);
+
+			commandBuffers[frameIndex].drawIndexed(indexCount[i], 1, 0, 0, 0);
+		}
 
 		commandBuffers[frameIndex].endRendering();
 
@@ -1143,15 +1154,51 @@ namespace Core
 		textureSampler = vk::raii::Sampler(device, samplerInfo);
 	}
 
-	//TODO: One Index buffer 16 x 16 x 16 and vma virtual block
+	//TODO: One Index buffer 16 x 16 x 16
 
 	void VulkanRenderer::SendMeshData(const Mesh& mesh)
 	{
-		createVertexBuffer(mesh.Verticies());
-		createIndexBuffer(mesh.Indicies());
+		AllocateToVertexBuffer(mesh.Verticies());
+		AllocateToIndexBuffer(mesh.Indicies());
 	}
 
-	void VulkanRenderer::createVertexBuffer(const std::vector<Vertex>& verticies)
+	void VulkanRenderer::createVertexBuffer()
+	{
+		vk::DeviceSize bufferSize = 400 * 1024 * 1024;
+
+		vertexBuffer = Core::VMA::VMABuffer(
+			allocator.Allocator(), 
+			bufferSize, 
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | 
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			0,
+			VMA_MEMORY_USAGE_GPU_ONLY);
+
+		vertexBufferBlock = Core::VMA::VMAVirtualBlock
+		{
+			bufferSize,
+		};
+	}
+
+	void VulkanRenderer::createIndexBuffer()
+	{
+		vk::DeviceSize bufferSize = 400 * 1024 * 1024;
+
+		indexBuffer = Core::VMA::VMABuffer(
+			allocator.Allocator(),
+			bufferSize,
+			VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			0,
+			VMA_MEMORY_USAGE_GPU_ONLY);
+
+		indexBufferBlock = Core::VMA::VMAVirtualBlock
+		{
+			bufferSize,
+		};
+	}
+
+	void VulkanRenderer::AllocateToVertexBuffer(const std::vector<Vertex>& verticies)
 	{
 		vk::DeviceSize bufferSize = sizeof(verticies[0]) * verticies.size();
 
@@ -1166,20 +1213,19 @@ namespace Core
 
 		stagingBuffer.CopyData(verticies.data());
 
-		vertexBuffer = Core::VMA::VMABuffer(
-			allocator.Allocator(), 
-			bufferSize, 
-			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | 
-			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			0,
-			VMA_MEMORY_USAGE_GPU_ONLY);
+		auto tempAllocation = Core::VMA::VMAVirtualAllocation
+		{
+			vertexBufferBlock.Block(),
+			bufferSize,
+		};
 
-		copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+		copyBuffer(stagingBuffer, vertexBuffer, vk::BufferCopy(0, tempAllocation.Offset(), bufferSize));
+
+		vertexAllocations.emplace_back(std::move(tempAllocation));
 	}
 
-	void VulkanRenderer::createIndexBuffer(const std::vector<uint32_t>& indicies)
+	void VulkanRenderer::AllocateToIndexBuffer(const std::vector<uint32_t>& indicies)
 	{
-		indiciesCount = indicies.size();
 		vk::DeviceSize bufferSize = sizeof(indicies[0]) * indicies.size();
 
 		Core::VMA::VMABuffer stagingBuffer
@@ -1193,21 +1239,22 @@ namespace Core
 
 		stagingBuffer.CopyData(indicies.data());
 
-		indexBuffer = Core::VMA::VMABuffer(
-			allocator.Allocator(),
+		auto tempAllocation = Core::VMA::VMAVirtualAllocation
+		{
+			indexBufferBlock.Block(),
 			bufferSize,
-			VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
-			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			0,
-			VMA_MEMORY_USAGE_GPU_ONLY);
+		};
 
-		copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+		copyBuffer(stagingBuffer, indexBuffer, vk::BufferCopy(0, tempAllocation.Offset(), bufferSize));
+
+		indexAllocations.emplace_back(std::move(tempAllocation));
+		indexCount.push_back(indicies.size());
 	}
 
-	void VulkanRenderer::copyBuffer(Core::VMA::VMABuffer& srcBuffer, Core::VMA::VMABuffer& dstBuffer, vk::DeviceSize size)
+	void VulkanRenderer::copyBuffer(Core::VMA::VMABuffer& srcBuffer, Core::VMA::VMABuffer& dstBuffer, vk::BufferCopy bufferCopy)
 	{
 		auto commandCopyBuffer = beginSingleTimeCommands();
-		commandCopyBuffer->copyBuffer(srcBuffer.Buffer(), dstBuffer.Buffer(), vk::BufferCopy(0, 0, size));
+		commandCopyBuffer->copyBuffer(srcBuffer.Buffer(), dstBuffer.Buffer(), bufferCopy); // vk::BufferCopy(0, 0, size));
 		endSingleTimeCommands(*commandCopyBuffer);
 	}
 

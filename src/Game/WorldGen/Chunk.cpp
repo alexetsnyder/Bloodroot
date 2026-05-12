@@ -10,6 +10,7 @@ namespace Game
 		this->height = height;
 		this->depth = depth;
 		this->position = position;
+		this->vertexCount = 0;
 	}
 
 	Chunk::~Chunk()
@@ -31,18 +32,20 @@ namespace Game
 		return false;
 	}
 
-	void Chunk::CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel, Core::Mesh& mesh, int& vertexCount) const
+	void Chunk::CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel)
 	{
 		//auto cubePos = mapToLocal(position);
+
+		shouldDraw = true;
 
 		int32_t x = static_cast<int>(std::floorf(position.x));
 		int32_t y = static_cast<int>(std::floorf(position.y));
 		int32_t z = static_cast<int>(std::floorf(position.z));
 
-		createFace(face, { x, y, z }, voxel, mesh, vertexCount);
+		createFace(face, { x, y, z }, voxel);
 	}
 
-	void Chunk::createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::Mesh& mesh, int& vertexCount) const
+	void Chunk::createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel)
 	{
 		int32_t x = cubePos.x;
 		int32_t y = cubePos.y;
@@ -108,7 +111,7 @@ namespace Game
 		return glm::i32vec3(x, y, z);
 	}
 
-	void Chunk::generateVoxel(const glm::vec3& voxelPos, const Voxel& voxel, Core::Mesh& mesh, int& vertexCount)
+	void Chunk::generateVoxel(const glm::vec3& voxelPos, const Voxel& voxel)
 	{
 		uint32_t x = static_cast<uint32_t>(voxelPos.x);
 		uint32_t y = static_cast<uint32_t>(voxelPos.y);

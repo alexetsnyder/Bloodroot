@@ -18,15 +18,14 @@ namespace Game
 
 			MeshGen(const glm::i32vec3& worldCenter, const glm::u32vec3& worldSize, const glm::u32vec3& chunkSize);
 
-			const Core::Mesh& GetMesh() { return mesh; }
+			void GenerateChunkMeshes();
 
-			void GenerateMesh();
+			const std::vector<Chunk>& Chunks() const { return chunks; }
 
 		private:
 			glm::u32vec3 worldSize;
 			glm::i32vec3 worldCenter;
 			glm::u32vec3 chunkSize;
-			Core::Mesh mesh;
 			std::vector<Chunk> chunks;
 			Core::Math::SimplexNoise noise;
 
@@ -35,7 +34,7 @@ namespace Game
 			std::vector<glm::i32vec3> getAdjChunkRow(const Chunk& chunk, uint32_t height, bool excludeMiddle);
 			std::vector<glm::i32vec3> getAdjCubes(const glm::i32vec3& cubePos);
 
-			void generateChunkMesh(const Chunk& chunk, int& vertexCount);
+			void generateChunkMesh(Chunk& chunk, int& vertexCount);
 			Voxel getVoxel(const glm::vec3& position);
 	};
 }

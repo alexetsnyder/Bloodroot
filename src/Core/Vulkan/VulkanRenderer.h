@@ -5,6 +5,8 @@
 #include "Window.h"
 #include "VMAAllocator.h"
 #include "VMABuffer.h"
+#include "VMAVirtualBlock.h"
+#include "VMAVirtualAllocation.h"
 
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -78,9 +80,13 @@ namespace Core
 
 			Core::VMA::VMAAllocator allocator;
 			Core::VMA::VMABuffer vertexBuffer;
-
-			uint32_t indiciesCount = 0;
+			Core::VMA::VMAVirtualBlock vertexBufferBlock;
 			Core::VMA::VMABuffer indexBuffer;
+			Core::VMA::VMAVirtualBlock indexBufferBlock;
+
+			std::vector<Core::VMA::VMAVirtualAllocation> vertexAllocations;
+			std::vector<uint32_t> indexCount;
+			std::vector<Core::VMA::VMAVirtualAllocation> indexAllocations;
 
 			std::vector<vk::raii::Buffer> uniformBuffers;
 			std::vector<vk::raii::DeviceMemory> uniformBuffersMemory;
@@ -153,9 +159,12 @@ namespace Core
 			void createTextureImageView();
 			void createTextureSampler();
 
-			void createVertexBuffer(const std::vector<Vertex>& verticies);
-			void createIndexBuffer(const std::vector<uint32_t>& indicies);
-			void copyBuffer(Core::VMA::VMABuffer& srcBuffer, Core::VMA::VMABuffer& dstBuffer, vk::DeviceSize size);
+			void createVertexBuffer();
+			void createIndexBuffer();
+
+			void AllocateToVertexBuffer(const std::vector<Vertex>& verticies);
+			void AllocateToIndexBuffer(const std::vector<uint32_t>& indicies);   
+			void copyBuffer(Core::VMA::VMABuffer& srcBuffer, Core::VMA::VMABuffer& dstBuffer, vk::BufferCopy bufferCopy);
 
 			void createUniformBuffers();
 			void createDescriptorPool();

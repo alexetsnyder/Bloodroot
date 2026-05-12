@@ -30,17 +30,23 @@ namespace Game
 			uint32_t Depth() const { return depth; }
 
 			const glm::vec3& Position() const { return position; }
+			const Core::Mesh& Mesh() const { return mesh; }
+
+			bool ShouldDraw() const { return shouldDraw; }
 
 			bool IsInBounds(const glm::vec3& position) const;
-			void CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel, Core::Mesh& mesh, int& vertexCount) const;
+			void CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel);
 
 		private:
 			uint32_t width, height, depth;
-			glm::vec3 position; 
+			uint32_t vertexCount;
+			glm::vec3 position;
+			Core::Mesh mesh;
+			bool shouldDraw = false;
 			
-			void createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::Mesh& mesh, int& vertexCount) const;
+			void createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel);
 
 			glm::i32vec3 mapToLocal(const glm::vec3& position) const;
-			void generateVoxel(const glm::vec3& voxelPos, const Voxel& voxel, Core::Mesh& mesh, int& vertexCount);
+			void generateVoxel(const glm::vec3& voxelPos, const Voxel& voxel);
 	};
 }
