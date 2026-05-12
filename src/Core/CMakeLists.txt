@@ -7,8 +7,8 @@ target_sources(
 		Image/Image.cpp
 		"Math/Noise/SimplexNoise.cpp"
 		Data/Octree.cpp
-		Vulkan/VMA/VMemAlloc.cpp
-		Vulkan/VMA/VMemBuffer.cpp
+		Vulkan/VMA/VMAAllocator.cpp
+		
 	PUBLIC
 	FILE_SET HEADERS
 	FILES
@@ -24,8 +24,8 @@ target_sources(
 		"Math/Noise/FastNoiseLite.h"
 		"Math/Noise/SimplexNoise.h"
 		Data/Octree.h
-		Vulkan/VMA/VMemAlloc.h
-		Vulkan/VMA/VMemBuffer.h
+		Vulkan/VMA/VMAAllocator.h
+		Vulkan/VMA/VMABuffer.h		
 )
 
 target_include_directories(

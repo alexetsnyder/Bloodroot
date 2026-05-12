@@ -1,15 +1,15 @@
-#include "VMemAlloc.h"
+#include "VMAAllocator.h"
 
 #include <iostream>
 
-namespace Core::raii
+namespace Core::VMA
 {
-	VMemAlloc::VMemAlloc()
+	VMAAllocator::VMAAllocator()
 	{
-		allocator = nullptr;
+
 	}
 
-	VMemAlloc::VMemAlloc(const vk::raii::PhysicalDevice& physicalDevice, const vk::raii::Device& device, const vk::raii::Instance& instance)
+	VMAAllocator::VMAAllocator(const vk::raii::PhysicalDevice& physicalDevice, const vk::raii::Device& device, const vk::raii::Instance& instance)
 	{
 		VmaVulkanFunctions vulkanFunctions = {};
 		vulkanFunctions.vkGetPhysicalDeviceProperties = vkGetPhysicalDeviceProperties;
@@ -20,11 +20,11 @@ namespace Core::raii
 		{
 			.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT,
 			.physicalDevice = *physicalDevice,
-			.device = *device,	
+			.device = *device,
 			.pVulkanFunctions = &vulkanFunctions,
 			.instance = *instance,
 			.vulkanApiVersion = VK_API_VERSION_1_0,
-			
+
 		};
 
 		auto result = vmaCreateAllocator(&allocatorCreateInfo, &allocator);
@@ -37,22 +37,18 @@ namespace Core::raii
 		std::cout << "Created VMA Allocator.\n";
 	}
 
-	VMemAlloc::VMemAlloc(VMemAlloc&& other) noexcept
+	VMAAllocator::VMAAllocator(VMAAllocator&& other) noexcept
 	{
 		allocator = other.allocator;
 
 		other.allocator = VK_NULL_HANDLE;
 	}
 
-	VMemAlloc& VMemAlloc::operator=(VMemAlloc&& other) noexcept
+	VMAAllocator& VMAAllocator::operator=(VMAAllocator&& other) noexcept
 	{
 		if (this != &other)
 		{
-			if (allocator != VK_NULL_HANDLE)
-			{
-				std::cout << "Destroying VMA Allocator.\n";
-				vmaDestroyAllocator(allocator);
-			}
+			free();
 
 			allocator = other.allocator;
 			other.allocator = VK_NULL_HANDLE;
@@ -61,7 +57,12 @@ namespace Core::raii
 		return *this;
 	}
 
-	VMemAlloc::~VMemAlloc()
+	VMAAllocator::~VMAAllocator()
+	{
+		free();
+	}
+
+	void VMAAllocator::free()
 	{
 		if (allocator != VK_NULL_HANDLE)
 		{

@@ -3,8 +3,8 @@
 #include "IRenderer.h"
 #include "Mesh.h"
 #include "Window.h"
-#include "VMemAlloc.h"
-#include "VMemBuffer.h"
+#include "VMAAllocator.h"
+#include "VMABuffer.h"
 
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -76,15 +76,11 @@ namespace Core
 			std::vector<vk::raii::Semaphore> renderFinishedSemaphores;
 			std::vector<vk::raii::Fence> inFlightFences;
 
-			/*vk::raii::Buffer vertexBuffer = nullptr;
-			vk::raii::DeviceMemory vertexBufferMemory = nullptr;*/
-			Core::raii::VMemAlloc allocator;
-			Core::raii::VMemBuffer vertexBuffer;
+			Core::VMA::VMAAllocator allocator;
+			Core::VMA::VMABuffer vertexBuffer;
 
 			uint32_t indiciesCount = 0;
-			Core::raii::VMemBuffer indexBuffer;
-			/*vk::raii::Buffer indexBuffer = nullptr;
-			vk::raii::DeviceMemory indexBufferMemory = nullptr;*/
+			Core::VMA::VMABuffer indexBuffer;
 
 			std::vector<vk::raii::Buffer> uniformBuffers;
 			std::vector<vk::raii::DeviceMemory> uniformBuffersMemory;

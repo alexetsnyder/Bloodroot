@@ -512,7 +512,7 @@ namespace Core
 
 	void VulkanRenderer::createAllocator()
 	{
-		allocator = std::move(Core::raii::VMemAlloc(physicalDevice, device, instance));
+		allocator = Core::VMA::VMAAllocator(physicalDevice, device, instance);
 	}
 
 	void VulkanRenderer::createSwapChain(int windowWidth, int windowHeight)
@@ -1142,6 +1142,8 @@ namespace Core
 		textureSampler = vk::raii::Sampler(device, samplerInfo);
 	}
 
+	//TODO: One Index buffer 16 x 16 x 16 and vma virtual block
+
 	void VulkanRenderer::SendMeshData(const Mesh& mesh)
 	{
 		createVertexBuffer(mesh.Verticies());
@@ -1152,7 +1154,12 @@ namespace Core
 	{
 		vk::DeviceSize bufferSize = sizeof(verticies[0]) * verticies.size();
 
-		vertexBuffer = Core::raii::VMemBuffer(allocator.Allocator(), bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+		vertexBuffer = Core::VMA::VMABuffer(
+			allocator.Allocator(), 
+			bufferSize, 
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | 
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+			VMA_MEMORY_USAGE_CPU_TO_GPU);
 
 		vertexBuffer.SendData(verticies.data());
 	}
@@ -1162,7 +1169,14 @@ namespace Core
 		indiciesCount = indicies.size();
 		vk::DeviceSize bufferSize = sizeof(indicies[0]) * indicies.size();
 
-		indexBuffer = std::move(Core::raii::VMemBuffer{ allocator.Allocator(), bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT });
+		indexBuffer = Core::VMA::VMABuffer
+		{ 
+			allocator.Allocator(), 
+			bufferSize,
+			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | 
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VMA_MEMORY_USAGE_CPU_TO_GPU
+		};
 
 		indexBuffer.SendData(indicies.data());
 	}
