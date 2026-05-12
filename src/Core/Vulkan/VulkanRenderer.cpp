@@ -1,4 +1,5 @@
 #include "VulkanRenderer.h"
+#include "VulkanRenderer.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "FileIO.h"
@@ -1154,14 +1155,26 @@ namespace Core
 	{
 		vk::DeviceSize bufferSize = sizeof(verticies[0]) * verticies.size();
 
+		Core::VMA::VMABuffer stagingBuffer
+		{
+			allocator.Allocator(),
+			bufferSize,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+			VMA_MEMORY_USAGE_CPU_ONLY
+		};
+
+		stagingBuffer.CopyData(verticies.data());
+
 		vertexBuffer = Core::VMA::VMABuffer(
 			allocator.Allocator(), 
 			bufferSize, 
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | 
-			VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
-			VMA_MEMORY_USAGE_CPU_TO_GPU);
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			0,
+			VMA_MEMORY_USAGE_GPU_ONLY);
 
-		vertexBuffer.SendData(verticies.data());
+		copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 	}
 
 	void VulkanRenderer::createIndexBuffer(const std::vector<uint32_t>& indicies)
@@ -1169,16 +1182,33 @@ namespace Core
 		indiciesCount = indicies.size();
 		vk::DeviceSize bufferSize = sizeof(indicies[0]) * indicies.size();
 
-		indexBuffer = Core::VMA::VMABuffer
-		{ 
-			allocator.Allocator(), 
+		Core::VMA::VMABuffer stagingBuffer
+		{
+			allocator.Allocator(),
 			bufferSize,
-			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | 
-			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			VMA_MEMORY_USAGE_CPU_TO_GPU
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+			VMA_MEMORY_USAGE_CPU_ONLY
 		};
 
-		indexBuffer.SendData(indicies.data());
+		stagingBuffer.CopyData(indicies.data());
+
+		indexBuffer = Core::VMA::VMABuffer(
+			allocator.Allocator(),
+			bufferSize,
+			VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			0,
+			VMA_MEMORY_USAGE_GPU_ONLY);
+
+		copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+	}
+
+	void VulkanRenderer::copyBuffer(Core::VMA::VMABuffer& srcBuffer, Core::VMA::VMABuffer& dstBuffer, vk::DeviceSize size)
+	{
+		auto commandCopyBuffer = beginSingleTimeCommands();
+		commandCopyBuffer->copyBuffer(srcBuffer.Buffer(), dstBuffer.Buffer(), vk::BufferCopy(0, 0, size));
+		endSingleTimeCommands(*commandCopyBuffer);
 	}
 
 	void VulkanRenderer::createUniformBuffers()

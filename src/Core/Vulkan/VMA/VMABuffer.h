@@ -16,7 +16,7 @@ namespace Core::VMA
 
 			}
 
-			VMABuffer(VmaAllocator allocator, size_t size, VkBufferUsageFlags usage, VmaMemoryUsage memUsage)
+			VMABuffer(VmaAllocator allocator, size_t size, VkBufferUsageFlags usage, VmaAllocationCreateFlags vmaFlags, VmaMemoryUsage memUsage)
 			{
 				this->allocator = allocator;
 				this->size = size;
@@ -31,6 +31,7 @@ namespace Core::VMA
 
 				VmaAllocationCreateInfo allocInfo
 				{
+					.flags = vmaFlags,
 					.usage = memUsage, // VMA_MEMORY_USAGE_CPU_TO_GPU,
 				};
 
@@ -80,9 +81,10 @@ namespace Core::VMA
 			}
 
 			template <typename T>
-			void SendData(T inData)
+			void CopyData(T inData)
 			{
 				void* data;
+
 				vmaMapMemory(allocator, allocation, &data);
 
 				memcpy(data, inData, size);

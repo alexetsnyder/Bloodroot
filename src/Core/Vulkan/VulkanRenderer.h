@@ -155,6 +155,7 @@ namespace Core
 
 			void createVertexBuffer(const std::vector<Vertex>& verticies);
 			void createIndexBuffer(const std::vector<uint32_t>& indicies);
+			void copyBuffer(Core::VMA::VMABuffer& srcBuffer, Core::VMA::VMABuffer& dstBuffer, vk::DeviceSize size);
 
 			void createUniformBuffers();
 			void createDescriptorPool();
