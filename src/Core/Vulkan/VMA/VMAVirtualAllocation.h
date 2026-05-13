@@ -70,7 +70,8 @@ namespace Core::VMA
 			free();
 		}
 
-		VkDeviceSize Offset() { return offset; }
+		VkDeviceSize Offset() const { return offset; }
+		size_t Size() const { return size; }
 
 		private:
 			VmaVirtualBlock block = nullptr;

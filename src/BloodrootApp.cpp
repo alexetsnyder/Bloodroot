@@ -1,5 +1,6 @@
 #include "BloodrootApp.h"
 
+#include "ChunkIndicies.h"
 #include "MeshGen.h"
 
 #include <GLFW/glfw3.h>
@@ -17,11 +18,15 @@ BloodrootApp::BloodrootApp()
 
 	meshGen.GenerateChunkMeshes();
 
+	auto chunkIndicies = Game::ChunkIndicies{ { 16, 16, 16 } };
+
+	renderer.SendIndexData(chunkIndicies.Indicies());
+
 	for (const auto& chunk : meshGen.Chunks())
 	{
 		if (chunk.ShouldDraw())
 		{
-			renderer.SendMeshData(chunk.Mesh());
+			renderer.SendVertexData(chunk.Mesh().Verticies());
 		}	
 	}
 }

@@ -1,7 +1,4 @@
 #include "VulkanRenderer.h"
-#include "VulkanRenderer.h"
-#include "VulkanRenderer.h"
-#include "VulkanRenderer.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "FileIO.h"
@@ -55,7 +52,6 @@ namespace Core
 		createTextureSampler();
 
 		createVertexBuffer();
-		createIndexBuffer();
 
 		createUniformBuffers();
 
@@ -253,15 +249,16 @@ namespace Core
 
 		commandBuffers[frameIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, *descriptorSets[frameIndex], nullptr);
 
+		commandBuffers[frameIndex].bindIndexBuffer(indexBuffer.Buffer(), 0, vk::IndexType::eUint32);
+
 		for (int i = 0; i < vertexAllocations.size(); i++)
 		{
-			vk::DeviceSize vertexOffset = vertexAllocations[i].Offset();
-			vk::DeviceSize indexOffset = indexAllocations[i].Offset();
+			commandBuffers[frameIndex].bindVertexBuffers(0, { vertexBuffer.Buffer() }, { vertexAllocations[i].Offset() });
 
-			commandBuffers[frameIndex].bindVertexBuffers(0, { vertexBuffer.Buffer() }, { vertexOffset });
-			commandBuffers[frameIndex].bindIndexBuffer(indexBuffer.Buffer(), indexOffset, vk::IndexType::eUint32);
+			//There are 4 verticies per 6 indicies.
+			uint32_t indexCount = ((vertexAllocations[i].Size() / sizeof(Vertex)) / 4) * 6;
 
-			commandBuffers[frameIndex].drawIndexed(indexCount[i], 1, 0, 0, 0);
+			commandBuffers[frameIndex].drawIndexed(indexCount, 1, 0, 0, 0);
 		}
 
 		commandBuffers[frameIndex].endRendering();
@@ -1154,12 +1151,14 @@ namespace Core
 		textureSampler = vk::raii::Sampler(device, samplerInfo);
 	}
 
-	//TODO: One Index buffer 16 x 16 x 16
-
-	void VulkanRenderer::SendMeshData(const Mesh& mesh)
+	void VulkanRenderer::SendVertexData(const std::vector<Vertex>& verticies)
 	{
-		AllocateToVertexBuffer(mesh.Verticies());
-		AllocateToIndexBuffer(mesh.Indicies());
+		AllocateToVertexBuffer(verticies);
+	}
+
+	void VulkanRenderer::SendIndexData(const std::vector<uint32_t>& indicies)
+	{
+		createIndexBuffer(indicies);
 	}
 
 	void VulkanRenderer::createVertexBuffer()
@@ -1180,9 +1179,20 @@ namespace Core
 		};
 	}
 
-	void VulkanRenderer::createIndexBuffer()
+	void VulkanRenderer::createIndexBuffer(const std::vector<uint32_t>& indicies)
 	{
-		vk::DeviceSize bufferSize = 400 * 1024 * 1024;
+		vk::DeviceSize bufferSize = sizeof(indicies[0]) * indicies.size();
+
+		Core::VMA::VMABuffer stagingBuffer
+		{
+			allocator.Allocator(),
+			bufferSize,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+			VMA_MEMORY_USAGE_CPU_ONLY
+		};
+
+		stagingBuffer.CopyData(indicies.data());
 
 		indexBuffer = Core::VMA::VMABuffer(
 			allocator.Allocator(),
@@ -1192,10 +1202,7 @@ namespace Core
 			0,
 			VMA_MEMORY_USAGE_GPU_ONLY);
 
-		indexBufferBlock = Core::VMA::VMAVirtualBlock
-		{
-			bufferSize,
-		};
+		copyBuffer(stagingBuffer, indexBuffer, vk::BufferCopy(0, 0, bufferSize));
 	}
 
 	void VulkanRenderer::AllocateToVertexBuffer(const std::vector<Vertex>& verticies)
@@ -1222,33 +1229,6 @@ namespace Core
 		copyBuffer(stagingBuffer, vertexBuffer, vk::BufferCopy(0, tempAllocation.Offset(), bufferSize));
 
 		vertexAllocations.emplace_back(std::move(tempAllocation));
-	}
-
-	void VulkanRenderer::AllocateToIndexBuffer(const std::vector<uint32_t>& indicies)
-	{
-		vk::DeviceSize bufferSize = sizeof(indicies[0]) * indicies.size();
-
-		Core::VMA::VMABuffer stagingBuffer
-		{
-			allocator.Allocator(),
-			bufferSize,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-			VMA_MEMORY_USAGE_CPU_ONLY
-		};
-
-		stagingBuffer.CopyData(indicies.data());
-
-		auto tempAllocation = Core::VMA::VMAVirtualAllocation
-		{
-			indexBufferBlock.Block(),
-			bufferSize,
-		};
-
-		copyBuffer(stagingBuffer, indexBuffer, vk::BufferCopy(0, tempAllocation.Offset(), bufferSize));
-
-		indexAllocations.emplace_back(std::move(tempAllocation));
-		indexCount.push_back(indicies.size());
 	}
 
 	void VulkanRenderer::copyBuffer(Core::VMA::VMABuffer& srcBuffer, Core::VMA::VMABuffer& dstBuffer, vk::BufferCopy bufferCopy)

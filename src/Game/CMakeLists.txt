@@ -12,6 +12,7 @@ target_sources(
 		WorldGen/Chunk.h
 		WorldGen/Voxel.h
 		WorldGen/MeshGen.h
+		WorldGen/ChunkIndicies.h
 )
 
 target_include_directories(

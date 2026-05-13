@@ -39,7 +39,6 @@ namespace Game
 
 		private:
 			uint32_t width, height, depth;
-			uint32_t vertexCount;
 			glm::vec3 position;
 			Core::Mesh mesh;
 			bool shouldDraw = false;

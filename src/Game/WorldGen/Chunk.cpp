@@ -10,7 +10,6 @@ namespace Game
 		this->height = height;
 		this->depth = depth;
 		this->position = position;
-		this->vertexCount = 0;
 	}
 
 	Chunk::~Chunk()
@@ -90,16 +89,6 @@ namespace Game
 				mesh.AddVertex({ { x + VOXEL_SIZE, y, z }, { 0.0f, 1.0f, voxel.backFaceIndex } });
 				break;
 		}
-
-		mesh.AddIndex(vertexCount);
-		mesh.AddIndex(vertexCount + 1);
-		mesh.AddIndex(vertexCount + 2);
-
-		mesh.AddIndex(vertexCount + 2);
-		mesh.AddIndex(vertexCount + 1);
-		mesh.AddIndex(vertexCount + 3);
-
-		vertexCount += 4;
 	}
 
 	glm::i32vec3 Chunk::mapToLocal(const glm::vec3& position) const
@@ -113,6 +102,8 @@ namespace Game
 
 	void Chunk::generateVoxel(const glm::vec3& voxelPos, const Voxel& voxel)
 	{
+		uint32_t vertexCount = 0;
+
 		uint32_t x = static_cast<uint32_t>(voxelPos.x);
 		uint32_t y = static_cast<uint32_t>(voxelPos.y);
 		uint32_t z = static_cast<uint32_t>(voxelPos.z);

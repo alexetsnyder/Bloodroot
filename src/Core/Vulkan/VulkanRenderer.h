@@ -39,7 +39,8 @@ namespace Core
 			VulkanRenderer(const Window& window, std::vector<const char*>&& requiredExtensions);
 			~VulkanRenderer();
 
-			void SendMeshData(const Mesh& mesh);
+			void SendVertexData(const std::vector<Vertex>& verticies);
+			void SendIndexData(const std::vector<uint32_t>& indicies);
 			
 			void drawFrame(const Window& window, const glm::mat4& view);
 			void waitIdle();
@@ -79,14 +80,13 @@ namespace Core
 			std::vector<vk::raii::Fence> inFlightFences;
 
 			Core::VMA::VMAAllocator allocator;
+
 			Core::VMA::VMABuffer vertexBuffer;
 			Core::VMA::VMAVirtualBlock vertexBufferBlock;
+
 			Core::VMA::VMABuffer indexBuffer;
-			Core::VMA::VMAVirtualBlock indexBufferBlock;
 
 			std::vector<Core::VMA::VMAVirtualAllocation> vertexAllocations;
-			std::vector<uint32_t> indexCount;
-			std::vector<Core::VMA::VMAVirtualAllocation> indexAllocations;
 
 			std::vector<vk::raii::Buffer> uniformBuffers;
 			std::vector<vk::raii::DeviceMemory> uniformBuffersMemory;
@@ -160,10 +160,9 @@ namespace Core
 			void createTextureSampler();
 
 			void createVertexBuffer();
-			void createIndexBuffer();
+			void createIndexBuffer(const std::vector<uint32_t>& indicies);
 
-			void AllocateToVertexBuffer(const std::vector<Vertex>& verticies);
-			void AllocateToIndexBuffer(const std::vector<uint32_t>& indicies);   
+			void AllocateToVertexBuffer(const std::vector<Vertex>& verticies); 
 			void copyBuffer(Core::VMA::VMABuffer& srcBuffer, Core::VMA::VMABuffer& dstBuffer, vk::BufferCopy bufferCopy);
 
 			void createUniformBuffers();
