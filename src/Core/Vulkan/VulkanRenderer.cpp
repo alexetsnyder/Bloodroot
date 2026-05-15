@@ -68,7 +68,9 @@ namespace Core
 		cleanUpSwapChain();
 	}
 
-	void VulkanRenderer::drawFrame(const Window& window, const glm::mat4& view)
+	void VulkanRenderer::drawFrame(const Window& window,
+								   const UniformBufferObject& uniforms,
+								   const std::vector<std::shared_ptr<Core::IRenderable>>& renderables)
 	{
 		auto fenceResult = device.waitForFences(*inFlightFences[frameIndex], vk::True, UINT64_MAX);
 		if (fenceResult != vk::Result::eSuccess)
@@ -90,12 +92,12 @@ namespace Core
 			throw std::runtime_error("Failed to acquire swap chain image!");
 		}
 
-		updateUniformBuffer(frameIndex, view);
+		updateUniformBuffer(frameIndex, uniforms);
 
 		device.resetFences(*inFlightFences[frameIndex]);
 
 		commandBuffers[frameIndex].reset();
-		recordCommandBuffer(imageIndex);
+		recordCommandBuffer(imageIndex, renderables);
 
 		vk::PipelineStageFlags waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
 		const vk::SubmitInfo submitInfo
@@ -170,11 +172,11 @@ namespace Core
 		swapChain = nullptr;
 	}
 
-	void VulkanRenderer::updateUniformBuffer(uint32_t currentImage, const glm::mat4& view)
+	void VulkanRenderer::updateUniformBuffer(uint32_t currentImage, const UniformBufferObject& uniforms)
 	{
 		UniformBufferObject ubo{};
-		ubo.model = glm::mat4(1.0f);
-		ubo.view = view;
+		ubo.model = uniforms.model;
+		ubo.view = uniforms.view;
 		ubo.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height), 0.1f, 100.0f);
 
 		//glm designed for OpenGl where y coordinate is inverted.
@@ -184,7 +186,7 @@ namespace Core
 		memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 	}
 
-	void VulkanRenderer::recordCommandBuffer(uint32_t imageIndex)
+	void VulkanRenderer::recordCommandBuffer(uint32_t imageIndex, const std::vector<std::shared_ptr<Core::IRenderable>>& renderables)
 	{
 		commandBuffers[frameIndex].begin({});
 
@@ -251,14 +253,11 @@ namespace Core
 
 		commandBuffers[frameIndex].bindIndexBuffer(indexBuffer.Buffer(), 0, vk::IndexType::eUint32);
 
-		for (int i = 0; i < vertexAllocations.size(); i++)
+		for (int i = 0; i < renderables.size(); i++)
 		{
-			commandBuffers[frameIndex].bindVertexBuffers(0, { vertexBuffer.Buffer() }, { vertexAllocations[i].Offset() });
+			commandBuffers[frameIndex].bindVertexBuffers(0, { vertexBuffer.Buffer() }, { renderables[i]->Allocation()->Offset() });
 
-			//There are 4 verticies per 6 indicies.
-			uint32_t indexCount = ((vertexAllocations[i].Size() / sizeof(Vertex)) / 4) * 6;
-
-			commandBuffers[frameIndex].drawIndexed(indexCount, 1, 0, 0, 0);
+			commandBuffers[frameIndex].drawIndexed(renderables[i]->IndexCount(), 1, 0, 0, 0);
 		}
 
 		commandBuffers[frameIndex].endRendering();
@@ -1151,9 +1150,9 @@ namespace Core
 		textureSampler = vk::raii::Sampler(device, samplerInfo);
 	}
 
-	void VulkanRenderer::SendVertexData(const std::vector<Vertex>& verticies)
+	std::shared_ptr<Core::IAllocation> VulkanRenderer::SendVertexData(const std::vector<Vertex>& verticies)
 	{
-		AllocateToVertexBuffer(verticies);
+		return AllocateToVertexBuffer(verticies);
 	}
 
 	void VulkanRenderer::SendIndexData(const std::vector<uint32_t>& indicies)
@@ -1205,7 +1204,7 @@ namespace Core
 		copyBuffer(stagingBuffer, indexBuffer, vk::BufferCopy(0, 0, bufferSize));
 	}
 
-	void VulkanRenderer::AllocateToVertexBuffer(const std::vector<Vertex>& verticies)
+	std::shared_ptr<Core::IAllocation> VulkanRenderer::AllocateToVertexBuffer(const std::vector<Vertex>& verticies)
 	{
 		vk::DeviceSize bufferSize = sizeof(verticies[0]) * verticies.size();
 
@@ -1220,21 +1219,24 @@ namespace Core
 
 		stagingBuffer.CopyData(verticies.data());
 
-		auto tempAllocation = Core::VMA::VMAVirtualAllocation
-		{
-			vertexBufferBlock.Block(),
-			bufferSize,
-		};
+		std::shared_ptr<Core::IAllocation> allocationPtr = std::make_shared<Core::VMA::VMAVirtualAllocation>(
+			Core::VMA::VMAVirtualAllocation
+			{
+				vertexBufferBlock.Block(),
+				bufferSize,
+			}
+		);
 
-		copyBuffer(stagingBuffer, vertexBuffer, vk::BufferCopy(0, tempAllocation.Offset(), bufferSize));
+		copyBuffer(stagingBuffer, vertexBuffer, vk::BufferCopy(0, allocationPtr->Offset(), bufferSize));
 
-		vertexAllocations.emplace_back(std::move(tempAllocation));
+		//vertexAllocations.emplace_back(std::move(tempAllocation));
+		return allocationPtr;
 	}
 
 	void VulkanRenderer::copyBuffer(Core::VMA::VMABuffer& srcBuffer, Core::VMA::VMABuffer& dstBuffer, vk::BufferCopy bufferCopy)
 	{
 		auto commandCopyBuffer = beginSingleTimeCommands();
-		commandCopyBuffer->copyBuffer(srcBuffer.Buffer(), dstBuffer.Buffer(), bufferCopy); // vk::BufferCopy(0, 0, size));
+		commandCopyBuffer->copyBuffer(srcBuffer.Buffer(), dstBuffer.Buffer(), bufferCopy);
 		endSingleTimeCommands(*commandCopyBuffer);
 	}
 

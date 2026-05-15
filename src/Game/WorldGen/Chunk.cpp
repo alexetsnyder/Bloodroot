@@ -89,6 +89,8 @@ namespace Game
 				mesh.AddVertex({ { x + VOXEL_SIZE, y, z }, { 0.0f, 1.0f, voxel.backFaceIndex } });
 				break;
 		}
+
+		indexCount += 6;
 	}
 
 	glm::i32vec3 Chunk::mapToLocal(const glm::vec3& position) const
@@ -157,6 +159,7 @@ namespace Game
 			mesh.AddIndex(vertexCount + 3);
 
 			vertexCount += 4;
+			indexCount += 6;
 		}
 	}
 }

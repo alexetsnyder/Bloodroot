@@ -1,4 +1,5 @@
 #include "MeshGen.h"
+#include "MeshGen.h"
 
 #include <map>
 #include <stack>
@@ -87,6 +88,21 @@ namespace Game
 				}
 			}
 		}
+	}
+
+	std::vector<std::shared_ptr<Core::IRenderable>> MeshGen::Renderables()
+	{
+		auto renderables = std::vector<std::shared_ptr<Core::IRenderable>>();
+
+		for (auto& chunk : chunks)
+		{
+			if (chunk.ShouldDraw())
+			{
+				renderables.push_back(std::make_shared<Chunk>(chunk));
+			}
+		}
+
+		return renderables;
 	}
 
 	bool MeshGen::isInBounds(const glm::vec3& position) const

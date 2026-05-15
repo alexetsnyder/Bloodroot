@@ -29,6 +29,8 @@ target_sources(
 		Vulkan/VMA/VMABuffer.h
 		Vulkan/VMA/VMAVirtualBlock.h
 		Vulkan/VMA/VMAVirtualAllocation.h
+		Interfaces/IAllocation.h
+		Interfaces/IRenderable.h
 )
 
 target_include_directories(

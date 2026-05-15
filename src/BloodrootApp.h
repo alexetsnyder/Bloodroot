@@ -3,6 +3,7 @@
 #include "AppData.h"
 #include "Camera.h"
 #include "GLFWInstance.h"
+#include "MeshGen.h"
 #include "Window.h"
 #include "VulkanRenderer.h"
 
@@ -21,6 +22,8 @@ class BloodrootApp
 		Core::Window window;
 		Core::VulkanRenderer renderer;
 		Game::Camera camera;
+		Game::MeshGen meshGen;
+
 
 		void mainLoop();
 		void processInput(float deltaTime);	

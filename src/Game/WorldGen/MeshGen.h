@@ -1,10 +1,13 @@
 #pragma once
 
 #include "Chunk.h"
+#include "IRenderable.h"
 #include "SimplexNoise.h"
 #include "Voxel.h"
 
 #include <glm/glm.hpp>
+
+#include <memory>
 #include <vector>
 
 namespace Game
@@ -20,7 +23,8 @@ namespace Game
 
 			void GenerateChunkMeshes();
 
-			const std::vector<Chunk>& Chunks() const { return chunks; }
+			std::vector<Chunk>& Chunks() { return chunks; }
+			std::vector<std::shared_ptr<Core::IRenderable>> Renderables();
 
 		private:
 			glm::u32vec3 worldSize;

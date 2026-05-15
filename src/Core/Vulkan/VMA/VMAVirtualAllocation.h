@@ -1,5 +1,7 @@
 #pragma once
 
+#include "IAllocation.h"
+
 #include <vulkan/vulkan_raii.hpp>
 #include <VMA/vk_mem_alloc.h>
 
@@ -7,47 +9,30 @@
 
 namespace Core::VMA
 {
-	class VMAVirtualAllocation
+	class VMAVirtualAllocation : public IAllocation
 	{
-	public:
-		VMAVirtualAllocation(VmaVirtualBlock block, size_t allocationSize)
-		{
-			this->block = block;
-			this->size = allocationSize;
-
-			VmaVirtualAllocationCreateInfo allocCreateInfo
+		public:
+			VMAVirtualAllocation(VmaVirtualBlock block, size_t allocationSize)
 			{
-				.size = this->size,
-				.alignment = 16,
-			};
+				this->block = block;
+				this->size = allocationSize;
 
-			auto result = vmaVirtualAllocate(this->block, &allocCreateInfo, &allocation, &offset);
+				VmaVirtualAllocationCreateInfo allocCreateInfo
+				{
+					.size = this->size,
+					.alignment = 16,
+				};
 
-			if (result != VK_SUCCESS)
-			{
-				throw std::runtime_error("Failed to allocate from virtual block!");
+				auto result = vmaVirtualAllocate(this->block, &allocCreateInfo, &allocation, &offset);
+
+				if (result != VK_SUCCESS)
+				{
+					throw std::runtime_error("Failed to allocate from virtual block!");
+				}
 			}
-		}
 
-		VMAVirtualAllocation(VMAVirtualAllocation&& other) noexcept
-		{
-			block = other.block;
-			allocation = other.allocation;
-			offset = other.offset;
-			size = other.size;
-
-			other.block = VK_NULL_HANDLE;
-			other.allocation = VK_NULL_HANDLE;
-			other.offset = 0;
-			other.size = 0;
-		}
-
-		VMAVirtualAllocation& operator=(VMAVirtualAllocation&& other) noexcept
-		{
-			if (this != &other)
+			VMAVirtualAllocation(VMAVirtualAllocation&& other) noexcept
 			{
-				free();
-
 				block = other.block;
 				allocation = other.allocation;
 				offset = other.offset;
@@ -59,19 +44,36 @@ namespace Core::VMA
 				other.size = 0;
 			}
 
-			return *this;
-		}
+			VMAVirtualAllocation& operator=(VMAVirtualAllocation&& other) noexcept
+			{
+				if (this != &other)
+				{
+					free();
 
-		VMAVirtualAllocation(const VMAVirtualAllocation&) = delete;
-		VMAVirtualAllocation& operator=(const VMAVirtualAllocation&) = delete;
+					block = other.block;
+					allocation = other.allocation;
+					offset = other.offset;
+					size = other.size;
 
-		~VMAVirtualAllocation()
-		{
-			free();
-		}
+					other.block = VK_NULL_HANDLE;
+					other.allocation = VK_NULL_HANDLE;
+					other.offset = 0;
+					other.size = 0;
+				}
 
-		VkDeviceSize Offset() const { return offset; }
-		size_t Size() const { return size; }
+				return *this;
+			}
+
+			VMAVirtualAllocation(const VMAVirtualAllocation&) = delete;
+			VMAVirtualAllocation& operator=(const VMAVirtualAllocation&) = delete;
+
+			~VMAVirtualAllocation()
+			{
+				free();
+			}
+
+			VkDeviceSize Offset() const { return offset; }
+			size_t Size() const { return size; }
 
 		private:
 			VmaVirtualBlock block = nullptr;

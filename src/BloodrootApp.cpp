@@ -1,32 +1,33 @@
 #include "BloodrootApp.h"
 
 #include "ChunkIndicies.h"
-#include "MeshGen.h"
 
 #include <GLFW/glfw3.h>
 
 #include <chrono>
 #include <vector>
 
+//TODO: Build chunks locally and send posisition to renderer, and connect chunks to their allocation.  
+
 BloodrootApp::BloodrootApp()
 	: window(&appData, WINDOW_WIDTH, WINDOW_HEIGHT, "Bloodroot App!"),
 	  renderer(window, glfwInstance.getRequiredInstanceExtensions()),
 	  camera(glm::vec3(8.0f, 66.0f, 8.0f), glm::vec3(0.0f, 1.0f, 0.0f)),
-	  appData{ .renderer = &renderer, .camera = &camera }	  
+	  appData{ .renderer = &renderer, .camera = &camera },
+	  meshGen{ { 0, 0, 0 }, { 64, 64, 64 }, { 16, 16, 16 } }
 {
-	Game::MeshGen meshGen{ { 0, 0, 0 }, { 64, 64, 64 }, { 16, 16, 16 } };
-
 	meshGen.GenerateChunkMeshes();
 
 	auto chunkIndicies = Game::ChunkIndicies{ { 16, 16, 16 } };
 
 	renderer.SendIndexData(chunkIndicies.Indicies());
 
-	for (const auto& chunk : meshGen.Chunks())
+	for (auto& chunk : meshGen.Chunks())
 	{
 		if (chunk.ShouldDraw())
 		{
-			renderer.SendVertexData(chunk.Mesh().Verticies());
+			auto allocationPtr = renderer.SendVertexData(chunk.Mesh().Verticies());
+			chunk.SetAllocation(allocationPtr);
 		}	
 	}
 }
@@ -49,7 +50,14 @@ void BloodrootApp::mainLoop()
 		processInput(deltaTime);
 
 		window.pollEvents();
-		renderer.drawFrame(window, camera.getViewMatrix());
+
+		Core::UniformBufferObject uniforms
+		{
+			.model = glm::mat4(1.0f),
+			.view = camera.getViewMatrix(),
+		};
+
+		renderer.drawFrame(window, uniforms, meshGen.Renderables());
 	}
 
 	renderer.waitIdle();
