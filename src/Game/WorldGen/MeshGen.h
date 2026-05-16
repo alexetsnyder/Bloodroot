@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Chunk.h"
-#include "IRenderable.h"
 #include "SimplexNoise.h"
 #include "Voxel.h"
 
@@ -21,16 +20,12 @@ namespace Game
 
 			MeshGen(const glm::i32vec3& worldCenter, const glm::u32vec3& worldSize, const glm::u32vec3& chunkSize);
 
-			void GenerateChunkMeshes();
-
-			std::vector<Chunk>& Chunks() { return chunks; }
-			std::vector<std::shared_ptr<Core::IRenderable>> Renderables();
+			void GenerateChunkMeshes(std::vector<Chunk>& chunks, std::vector<Core::Mesh>& chunkMeshes);
 
 		private:
 			glm::u32vec3 worldSize;
 			glm::i32vec3 worldCenter;
 			glm::u32vec3 chunkSize;
-			std::vector<Chunk> chunks;
 			Core::Math::SimplexNoise noise;
 
 			bool isInBounds(const glm::vec3& position) const;
@@ -38,7 +33,7 @@ namespace Game
 			std::vector<glm::i32vec3> getAdjChunkRow(const Chunk& chunk, uint32_t height, bool excludeMiddle);
 			std::vector<glm::i32vec3> getAdjCubes(const glm::i32vec3& cubePos);
 
-			void generateChunkMesh(Chunk& chunk, int& vertexCount);
+			void generateChunkMesh(const Chunk& chunk, std::vector<Core::Mesh>& chunkMeshes, uint32_t& vertexCount);
 			Voxel getVoxel(const glm::vec3& position);
 	};
 }

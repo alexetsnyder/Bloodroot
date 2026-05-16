@@ -1,7 +1,5 @@
 #pragma once
 
-#include "IAllocation.h"
-
 #include <vulkan/vulkan_raii.hpp>
 #include <VMA/vk_mem_alloc.h>
 
@@ -9,7 +7,7 @@
 
 namespace Core::VMA
 {
-	class VMAVirtualAllocation : public IAllocation
+	class VMAVirtualAllocation
 	{
 		public:
 			VMAVirtualAllocation(VmaVirtualBlock block, size_t allocationSize)

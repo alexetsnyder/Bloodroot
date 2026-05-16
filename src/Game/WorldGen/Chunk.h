@@ -1,12 +1,9 @@
 #pragma once
 
-#include "IRenderable.h"
 #include "Mesh.h"
 #include "Voxel.h"
 
 #include <glm/glm.hpp>
-
-#include <memory>
 
 namespace Game
 {
@@ -20,42 +17,35 @@ namespace Game
 		BACK,
 	};
 
-	class Chunk : public Core::IRenderable
+	class Chunk
 	{
 		public:
 			const int VOXEL_SIZE = 1;
 
+			Chunk();
 			Chunk(uint32_t width, uint32_t height, uint32_t depth, const glm::vec3& position);
+			Chunk(const Chunk& other);
+			Chunk(Chunk&& other) noexcept;
+			Chunk& operator=(const Chunk& other);
 			~Chunk();
 
 			uint32_t Width() const { return width; }
 			uint32_t Height() const { return height; }
 			uint32_t Depth() const { return depth; }
 
-			const glm::vec3& Position() const override { return position; }
-			const Core::Mesh& Mesh() const { return mesh; }
-
-			bool ShouldDraw() const { return shouldDraw; }
+			const glm::vec3& Position() const { return position; }
+			glm::i32vec3 ChunkId() const;
 
 			bool IsInBounds(const glm::vec3& position) const;
-			void CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel);
-
-			uint32_t IndexCount() const override { return indexCount; }
-			std::shared_ptr<Core::IAllocation> Allocation() const override { return allocationPtr; }
-
-			void SetAllocation(std::shared_ptr<Core::IAllocation> allocation) { allocationPtr = allocation; }
+			void CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel, Core::Mesh& mesh) const;
 
 		private:
 			uint32_t width, height, depth;
 			glm::vec3 position;
-			Core::Mesh mesh;
-			bool shouldDraw = false;
-			uint32_t indexCount = 0;
-			std::shared_ptr<Core::IAllocation> allocationPtr = nullptr;
 			
-			void createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel);
+			void createFace( CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::Mesh& mesh) const;
 
 			glm::i32vec3 mapToLocal(const glm::vec3& position) const;
-			void generateVoxel(const glm::vec3& voxelPos, const Voxel& voxel);
+			void generateVoxel(const glm::vec3& voxelPos, const Voxel& voxel, Core::Mesh& mesh);
 	};
 }

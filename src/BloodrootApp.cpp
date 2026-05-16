@@ -13,22 +13,30 @@ BloodrootApp::BloodrootApp()
 	: window(&appData, WINDOW_WIDTH, WINDOW_HEIGHT, "Bloodroot App!"),
 	  renderer(window, glfwInstance.getRequiredInstanceExtensions()),
 	  camera(glm::vec3(8.0f, 66.0f, 8.0f), glm::vec3(0.0f, 1.0f, 0.0f)),
-	  appData{ .renderer = &renderer, .camera = &camera },
-	  meshGen{ { 0, 0, 0 }, { 64, 64, 64 }, { 16, 16, 16 } }
+	  appData{ .renderer = &renderer, .camera = &camera }
 {
-	meshGen.GenerateChunkMeshes();
+	std::vector<Core::Mesh> chunkMeshes;
+	std::vector<Game::Chunk> chunkVct;
+
+	auto meshGen = Game::MeshGen{ { 0, 0, 0 }, { 64, 64, 64 }, { 16, 16, 16 } };
+
+	meshGen.GenerateChunkMeshes(chunkVct, chunkMeshes);
 
 	auto chunkIndicies = Game::ChunkIndicies{ { 16, 16, 16 } };
 
 	renderer.SendIndexData(chunkIndicies.Indicies());
 
-	for (auto& chunk : meshGen.Chunks())
+	for (auto& mesh : chunkMeshes)
 	{
-		if (chunk.ShouldDraw())
+		if (!mesh.IsEmpty())
 		{
-			auto allocationPtr = renderer.SendVertexData(chunk.Mesh().Verticies());
-			chunk.SetAllocation(allocationPtr);
-		}	
+			renderer.SendVertexData(mesh);
+		}
+	}
+
+	for (auto& chunk : chunkVct)
+	{
+		chunks[chunk.ChunkId()] = chunk;
 	}
 }
 
@@ -51,13 +59,7 @@ void BloodrootApp::mainLoop()
 
 		window.pollEvents();
 
-		Core::UniformBufferObject uniforms
-		{
-			.model = glm::mat4(1.0f),
-			.view = camera.getViewMatrix(),
-		};
-
-		renderer.drawFrame(window, uniforms, meshGen.Renderables());
+		renderer.drawFrame(window, camera.getViewMatrix());
 	}
 
 	renderer.waitIdle();

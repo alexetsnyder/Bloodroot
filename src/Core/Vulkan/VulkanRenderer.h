@@ -1,7 +1,5 @@
 #pragma once
 
-#include "IAllocation.h"
-#include "IRenderable.h"
 #include "IRenderer.h"
 #include "Mesh.h"
 #include "Window.h"
@@ -42,12 +40,10 @@ namespace Core
 			VulkanRenderer(const Window& window, std::vector<const char*>&& requiredExtensions);
 			~VulkanRenderer();
 
-			std::shared_ptr<Core::IAllocation> SendVertexData(const std::vector<Vertex>& verticies);
+			void SendVertexData(const Mesh& mesh);
 			void SendIndexData(const std::vector<uint32_t>& indicies);
 			
-			void drawFrame(const Window& window, 
-						   const UniformBufferObject& uniforms, 
-						   const std::vector<std::shared_ptr<Core::IRenderable>>& renderables);
+			void drawFrame(const Window& window, const glm::mat4& view);
 
 			void waitIdle();
 
@@ -92,7 +88,7 @@ namespace Core
 
 			Core::VMA::VMABuffer indexBuffer;
 
-			//std::vector<Core::VMA::VMAVirtualAllocation> vertexAllocations;
+			std::vector<Core::VMA::VMAVirtualAllocation> vertexAllocations;
 
 			std::vector<vk::raii::Buffer> uniformBuffers;
 			std::vector<vk::raii::DeviceMemory> uniformBuffersMemory;
@@ -168,7 +164,7 @@ namespace Core
 			void createVertexBuffer();
 			void createIndexBuffer(const std::vector<uint32_t>& indicies);
 
-			std::shared_ptr<Core::IAllocation> AllocateToVertexBuffer(const std::vector<Vertex>& verticies);
+			void AllocateToVertexBuffer(const std::vector<Vertex>& verticies);
 			void copyBuffer(Core::VMA::VMABuffer& srcBuffer, Core::VMA::VMABuffer& dstBuffer, vk::BufferCopy bufferCopy);
 
 			void createUniformBuffers();
@@ -180,8 +176,8 @@ namespace Core
 
 			void recreateSwapChain(const Window& window);
 			void cleanUpSwapChain();
-			void updateUniformBuffer(uint32_t currentImage, const UniformBufferObject& uniforms);
-			void recordCommandBuffer(uint32_t imageIndex, const std::vector<std::shared_ptr<Core::IRenderable>>& renderables);
+			void updateUniformBuffer(uint32_t currentImage, const glm::mat4& view);
+			void recordCommandBuffer(uint32_t imageIndex);
 			void transitionImageLayout(vk::Image image,
 				vk::ImageLayout oldLayout,
 				vk::ImageLayout newLayout,

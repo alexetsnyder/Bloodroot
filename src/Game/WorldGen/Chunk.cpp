@@ -4,6 +4,14 @@
 
 namespace Game
 {
+	Chunk::Chunk()
+	{
+		this->width = 0;
+		this->height = 0;
+		this->depth = 0;
+		this->position = glm::vec3(0.0f);
+	}
+
 	Chunk::Chunk(uint32_t width, uint32_t height, uint32_t depth, const glm::vec3& position)
 	{
 		this->width = width;
@@ -12,9 +20,53 @@ namespace Game
 		this->position = position;
 	}
 
+	Chunk::Chunk(const Chunk& other)
+	{
+		width = other.width;
+		height = other.height;
+		depth = other.depth;
+		position = other.position;
+	}
+
+	Chunk::Chunk(Chunk&& other) noexcept
+	{
+		width = other.width;
+		height = other.height;
+		depth = other.depth;
+		position = other.position;
+
+		other.width = 0;
+		other.height = 0;
+		other.depth = 0;
+		other.position = glm::vec3(0.0f);
+	}
+
+	Chunk& Chunk::operator=(const Chunk& other)
+	{
+		if (this != &other)
+		{
+			width = other.width;
+			height = other.height;
+			depth = other.depth;
+			position = other.position;
+		}
+
+		return *this;
+	}
+
 	Chunk::~Chunk()
 	{
 
+	}
+
+	glm::i32vec3 Chunk::ChunkId() const
+	{
+		return 
+		{
+			static_cast<int32_t>(std::floorf(position.x)),
+			static_cast<int32_t>(std::floorf(position.y)),
+			static_cast<int32_t>(std::floorf(position.z))
+		};
 	}
 
 	bool Chunk::IsInBounds(const glm::vec3& position) const
@@ -31,20 +83,18 @@ namespace Game
 		return false;
 	}
 
-	void Chunk::CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel)
+	void Chunk::CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel, Core::Mesh& mesh) const
 	{
 		//auto cubePos = mapToLocal(position);
-
-		shouldDraw = true;
 
 		int32_t x = static_cast<int>(std::floorf(position.x));
 		int32_t y = static_cast<int>(std::floorf(position.y));
 		int32_t z = static_cast<int>(std::floorf(position.z));
 
-		createFace(face, { x, y, z }, voxel);
+		createFace(face, { x, y, z }, voxel, mesh);
 	}
 
-	void Chunk::createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel)
+	void Chunk::createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::Mesh& mesh) const
 	{
 		int32_t x = cubePos.x;
 		int32_t y = cubePos.y;
@@ -90,7 +140,7 @@ namespace Game
 				break;
 		}
 
-		indexCount += 6;
+		mesh.IndexCount() += 6;
 	}
 
 	glm::i32vec3 Chunk::mapToLocal(const glm::vec3& position) const
@@ -102,7 +152,7 @@ namespace Game
 		return glm::i32vec3(x, y, z);
 	}
 
-	void Chunk::generateVoxel(const glm::vec3& voxelPos, const Voxel& voxel)
+	void Chunk::generateVoxel(const glm::vec3& voxelPos, const Voxel& voxel, Core::Mesh& mesh)
 	{
 		uint32_t vertexCount = 0;
 
@@ -159,7 +209,7 @@ namespace Game
 			mesh.AddIndex(vertexCount + 3);
 
 			vertexCount += 4;
-			indexCount += 6;
+			mesh.IndexCount() += 6;
 		}
 	}
 }

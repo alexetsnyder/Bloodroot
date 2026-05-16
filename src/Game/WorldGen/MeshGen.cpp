@@ -1,5 +1,6 @@
 #include "MeshGen.h"
-#include "MeshGen.h"
+
+#include "GLMExtensions.h"
 
 #include <map>
 #include <stack>
@@ -24,17 +25,9 @@ namespace Game
 		
 	}
 
-	struct I32Vec3Comparator
+	void MeshGen::GenerateChunkMeshes(std::vector<Chunk>& chunks, std::vector<Core::Mesh>& chunkMeshes)
 	{
-		bool operator()(const glm::i32vec3& lhs, const glm::i32vec3& rhs) const
-		{
-			return (std::tie(lhs.x, lhs.y, lhs.z) < std::tie(rhs.x, rhs.y, rhs.z));
-		}
-	};
-
-	void MeshGen::GenerateChunkMeshes()
-	{
-		int vertexCount = 0;
+		uint32_t vertexCount = 0;
 
 		int32_t xPos = worldCenter.x;
 		int32_t yPos = worldCenter.y;
@@ -50,7 +43,7 @@ namespace Game
 		int32_t zEndPos = zPos + static_cast<int32_t>(worldSize.z) / 2;
 
 		//Visited
-		std::map<glm::i32vec3, bool, I32Vec3Comparator> visited;
+		std::map<glm::i32vec3, bool, Core::Ext::I32Vec3Comparator> visited;
 		for (int32_t x = xStartPos; x < xEndPos; x += chunkSize.x)
 		{
 			for (int32_t y = yStartPos; y < yEndPos; y += chunkSize.y)
@@ -74,7 +67,7 @@ namespace Game
 			chunkStack.pop();
 
 			auto chunk = Chunk{ chunkSize.x, chunkSize.y, chunkSize.z, chunkPos };
-			generateChunkMesh(chunk, vertexCount);
+			generateChunkMesh(chunk, chunkMeshes, vertexCount);
 			chunks.push_back(chunk);
 
 			auto adjChunks = getAdjChunks(chunk);
@@ -88,21 +81,6 @@ namespace Game
 				}
 			}
 		}
-	}
-
-	std::vector<std::shared_ptr<Core::IRenderable>> MeshGen::Renderables()
-	{
-		auto renderables = std::vector<std::shared_ptr<Core::IRenderable>>();
-
-		for (auto& chunk : chunks)
-		{
-			if (chunk.ShouldDraw())
-			{
-				renderables.push_back(std::make_shared<Chunk>(chunk));
-			}
-		}
-
-		return renderables;
 	}
 
 	bool MeshGen::isInBounds(const glm::vec3& position) const
@@ -202,15 +180,17 @@ namespace Game
 		return adjCubes;
 	}
 
-	void MeshGen::generateChunkMesh(Chunk& chunk, int& vertexCount)
+	void MeshGen::generateChunkMesh(const Chunk& chunk, std::vector<Core::Mesh>& chunkMeshes, uint32_t& vertexCount)
 	{
+		auto mesh = Core::Mesh{};
+
 		int32_t xPos = static_cast<int32_t>(std::floorf(chunk.Position().x));
 		int32_t yPos = static_cast<int32_t>(std::floorf(chunk.Position().y));
 		int32_t zPos = static_cast<int32_t>(std::floorf(chunk.Position().z));
 		glm::i32vec3 chunkSize = { chunk.Width(), chunk.Height(), chunk.Depth() };
 
 		//Visited
-		std::map<glm::i32vec3, bool, I32Vec3Comparator> visited;
+		std::map<glm::i32vec3, bool, Core::Ext::I32Vec3Comparator> visited;
 		for (int32_t x = xPos - 1; x <= xPos + chunkSize.x; x++)
 		{
 			for (int32_t y = yPos - 1; y <= yPos + chunkSize.y; y++)
@@ -267,10 +247,15 @@ namespace Game
 					{
 						CubeFace face = static_cast<CubeFace>(i);
 
-						chunk.CreateFace(face, cubePos, currentVoxel);
+						chunk.CreateFace(face, cubePos, currentVoxel, mesh);
 					}
 				}
 			}
+		}
+
+		if (!mesh.IsEmpty())
+		{
+			chunkMeshes.push_back(mesh);
 		}
 	}
 
