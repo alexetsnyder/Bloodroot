@@ -1,54 +1,39 @@
 #include "Chunk.h"
+#include "Chunk.h"
 
 #include <vector>
 
 namespace Game
 {
+	uint32_t Chunk::NextId = 1;
+
 	Chunk::Chunk()
 	{
-		this->width = 0;
-		this->height = 0;
-		this->depth = 0;
-		this->position = glm::vec3(0.0f);
+		init(0, 0, 0, glm::vec3(0.0f));
 	}
 
 	Chunk::Chunk(uint32_t width, uint32_t height, uint32_t depth, const glm::vec3& position)
 	{
-		this->width = width;
-		this->height = height;
-		this->depth = depth;
-		this->position = position;
+		init(width, height, depth, position);
 	}
 
 	Chunk::Chunk(const Chunk& other)
 	{
-		width = other.width;
-		height = other.height;
-		depth = other.depth;
-		position = other.position;
+		init(other.width, other.height, other.depth, other.position);
 	}
 
 	Chunk::Chunk(Chunk&& other) noexcept
 	{
-		width = other.width;
-		height = other.height;
-		depth = other.depth;
-		position = other.position;
+		init(other.width, other.height, other.depth, other.position);
 
-		other.width = 0;
-		other.height = 0;
-		other.depth = 0;
-		other.position = glm::vec3(0.0f);
+		other.init(0, 0, 0, glm::vec3(0.0f));
 	}
 
 	Chunk& Chunk::operator=(const Chunk& other)
 	{
 		if (this != &other)
 		{
-			width = other.width;
-			height = other.height;
-			depth = other.depth;
-			position = other.position;
+			init(other.width, other.height, other.depth, other.position);
 		}
 
 		return *this;
@@ -92,6 +77,15 @@ namespace Game
 		int32_t z = static_cast<int>(std::floorf(position.z));
 
 		createFace(face, { x, y, z }, voxel, mesh);
+	}
+
+	void Chunk::init(uint32_t width, uint32_t height, uint32_t depth, const glm::vec3& position)
+	{
+		this->uniqueId = NextId++;
+		this->width = width;
+		this->height = height;
+		this->depth = depth;
+		this->position = position;
 	}
 
 	void Chunk::createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::Mesh& mesh) const

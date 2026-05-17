@@ -1,8 +1,8 @@
 #pragma once
 
 #include "IRenderer.h"
-#include "Mesh.h"
 #include "Window.h"
+#include "Vertex.h"
 #include "VMAAllocator.h"
 #include "VMABuffer.h"
 #include "VMAVirtualBlock.h"
@@ -34,13 +34,63 @@ namespace Core
 		alignas(16) glm::mat4 projection;
 	};
 
+	struct Drawable
+	{
+		uint32_t uniqueId;	
+		uint32_t indexCount;
+		glm::vec3 position;
+		VMA::VMAVirtualAllocation allocation;
+
+		Drawable(uint32_t uniqueId, uint32_t indexCount, glm::vec3 position, VMA::VMAVirtualAllocation allocation)
+			: uniqueId{ uniqueId }, indexCount{ indexCount }, position{ position }, allocation{ std::move(allocation) }
+		{
+
+		}
+
+		Drawable(Drawable&& other) noexcept
+		{
+			uniqueId = other.uniqueId;
+			indexCount = other.indexCount;
+			position = other.position;
+			allocation = std::move(other.allocation);
+
+			other.uniqueId = 0;
+			other.indexCount = 0;
+			other.position = glm::vec3(0.0f);
+		}
+
+		Drawable& operator=(Drawable&& other) noexcept
+		{
+			if (this != &other)
+			{
+				uniqueId = other.uniqueId;
+				indexCount = other.indexCount;
+				position = other.position;
+				allocation = std::move(allocation);
+
+				other.uniqueId = 0;
+				other.indexCount = 0;
+				other.position = glm::vec3(0.0f);
+			}
+
+			return *this;
+		}
+
+		Drawable(const Drawable&) = delete;
+		Drawable& operator=(const Drawable&) = delete;
+	};
+
 	class VulkanRenderer : public IRenderer
 	{
 		public:
 			VulkanRenderer(const Window& window, std::vector<const char*>&& requiredExtensions);
 			~VulkanRenderer();
 
-			void SendVertexData(const Mesh& mesh);
+			void SendVertexData(uint32_t uniqueId, 
+								uint32_t indexCount, 
+								const glm::vec3& position, 
+								const std::vector<Vertex>& verticies);
+
 			void SendIndexData(const std::vector<uint32_t>& indicies);
 			
 			void drawFrame(const Window& window, const glm::mat4& view);
@@ -88,7 +138,7 @@ namespace Core
 
 			Core::VMA::VMABuffer indexBuffer;
 
-			std::vector<Core::VMA::VMAVirtualAllocation> vertexAllocations;
+			std::vector<Drawable> drawables;
 
 			std::vector<vk::raii::Buffer> uniformBuffers;
 			std::vector<vk::raii::DeviceMemory> uniformBuffersMemory;
@@ -164,7 +214,11 @@ namespace Core
 			void createVertexBuffer();
 			void createIndexBuffer(const std::vector<uint32_t>& indicies);
 
-			void AllocateToVertexBuffer(const std::vector<Vertex>& verticies);
+			void AllocateToVertexBuffer(uint32_t uniqueId,
+										uint32_t indexCount,
+										const glm::vec3& position,
+										const std::vector<Vertex>& verticies);
+
 			void copyBuffer(Core::VMA::VMABuffer& srcBuffer, Core::VMA::VMABuffer& dstBuffer, vk::BufferCopy bufferCopy);
 
 			void createUniformBuffers();

@@ -27,10 +27,13 @@ BloodrootApp::BloodrootApp()
 
 	for (auto& chunkMesh : chunkMeshes)
 	{
-		chunks[chunkMesh.chunk.ChunkId()] = chunkMesh.chunk;
-		if (!chunkMesh.mesh.IsEmpty())
+		auto& chunk = chunkMesh.chunk;
+		auto& mesh = chunkMesh.mesh;
+
+		chunks[chunk.ChunkId()] = chunk;
+		if (!mesh.IsEmpty())
 		{
-			renderer.SendVertexData(chunkMesh.mesh);
+			renderer.SendVertexData(chunk.UniqueId(), mesh.IndexCount(), chunk.Position(), mesh.Verticies());
 		}
 	}
 }

@@ -3,7 +3,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "FileIO.h"
 #include "Image.h"
-#include "Vertex.h"
 
 #include <assert.h>
 #include <chrono>
@@ -251,14 +250,11 @@ namespace Core
 
 		commandBuffers[frameIndex].bindIndexBuffer(indexBuffer.Buffer(), 0, vk::IndexType::eUint32);
 
-		for (int i = 0; i < vertexAllocations.size(); i++)
+		for (const auto& drawable : drawables)
 		{
-			commandBuffers[frameIndex].bindVertexBuffers(0, { vertexBuffer.Buffer() }, { vertexAllocations[i].Offset() });
+			commandBuffers[frameIndex].bindVertexBuffers(0, { vertexBuffer.Buffer() }, { drawable.allocation.Offset() });
 
-			//There are 4 verticies per 6 indicies.
-			uint32_t indexCount = ((vertexAllocations[i].Size() / sizeof(Vertex)) / 4) * 6;
-
-			commandBuffers[frameIndex].drawIndexed(indexCount, 1, 0, 0, 0);
+			commandBuffers[frameIndex].drawIndexed(drawable.indexCount, 1, 0, 0, 0);
 		}
 
 		commandBuffers[frameIndex].endRendering();
@@ -1151,9 +1147,12 @@ namespace Core
 		textureSampler = vk::raii::Sampler(device, samplerInfo);
 	}
 
-	void VulkanRenderer::SendVertexData(const Mesh& mesh)
+	void VulkanRenderer::SendVertexData(uint32_t uniqueId,
+										uint32_t indexCount,
+										const glm::vec3& position,
+										const std::vector<Vertex>& verticies)
 	{
-		AllocateToVertexBuffer(mesh.Verticies());
+		AllocateToVertexBuffer(uniqueId, indexCount, position, verticies);
 	}
 
 	void VulkanRenderer::SendIndexData(const std::vector<uint32_t>& indicies)
@@ -1205,7 +1204,10 @@ namespace Core
 		copyBuffer(stagingBuffer, indexBuffer, vk::BufferCopy(0, 0, bufferSize));
 	}
 
-	void VulkanRenderer::AllocateToVertexBuffer(const std::vector<Vertex>& verticies)
+	void VulkanRenderer::AllocateToVertexBuffer(uint32_t uniqueId,
+												uint32_t indexCount,
+												const glm::vec3& position,
+												const std::vector<Vertex>& verticies)
 	{
 		vk::DeviceSize bufferSize = sizeof(verticies[0]) * verticies.size();
 
@@ -1220,15 +1222,21 @@ namespace Core
 
 		stagingBuffer.CopyData(verticies.data());
 
-		auto tempAllocation = Core::VMA::VMAVirtualAllocation
+		Drawable drawable
 		{
-			vertexBufferBlock.Block(),
-			bufferSize,
+			uniqueId,
+			indexCount,
+			position,
+			Core::VMA::VMAVirtualAllocation
+			{
+				vertexBufferBlock.Block(),
+				bufferSize,
+			},
 		};
 
-		copyBuffer(stagingBuffer, vertexBuffer, vk::BufferCopy(0, tempAllocation.Offset(), bufferSize));
+		copyBuffer(stagingBuffer, vertexBuffer, vk::BufferCopy(0, drawable.allocation.Offset(), bufferSize));
 
-		vertexAllocations.emplace_back(std::move(tempAllocation));
+		drawables.emplace_back(std::move(drawable));
 	}
 
 	void VulkanRenderer::copyBuffer(Core::VMA::VMABuffer& srcBuffer, Core::VMA::VMABuffer& dstBuffer, vk::BufferCopy bufferCopy)

@@ -21,6 +21,7 @@ namespace Game
 	{
 		public:
 			const int VOXEL_SIZE = 1;
+			static uint32_t NextId;
 
 			Chunk();
 			Chunk(uint32_t width, uint32_t height, uint32_t depth, const glm::vec3& position);
@@ -36,14 +37,18 @@ namespace Game
 
 			const glm::vec3& Position() const { return position; }
 			glm::i32vec3 ChunkId() const;
+			const uint32_t UniqueId() const { return uniqueId; }
 
 			bool IsInBounds(const glm::vec3& position) const;
 			void CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel, Core::Mesh& mesh) const;
 
 		private:
+			uint32_t uniqueId;
 			uint32_t width, height, depth;
 			glm::vec3 position;
 			
+			void init(uint32_t width, uint32_t height, uint32_t depth, const glm::vec3& position);
+
 			void createFace( CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::Mesh& mesh) const;
 
 			glm::i32vec3 mapToLocal(const glm::vec3& position) const;

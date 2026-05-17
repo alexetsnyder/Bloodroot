@@ -10,6 +10,8 @@ namespace Core::VMA
 	class VMAVirtualAllocation
 	{
 		public:
+			VMAVirtualAllocation() {}
+
 			VMAVirtualAllocation(VmaVirtualBlock block, size_t allocationSize)
 			{
 				this->block = block;
@@ -74,7 +76,7 @@ namespace Core::VMA
 			size_t Size() const { return size; }
 
 		private:
-			VmaVirtualBlock block = nullptr;
+			VmaVirtualBlock block = VK_NULL_HANDLE;
 			VmaVirtualAllocation allocation = VK_NULL_HANDLE;
 			VkDeviceSize offset = 0;
 			size_t size = 0;
