@@ -32,6 +32,7 @@ namespace Game
 			uint32_t Width() const { return width; }
 			uint32_t Height() const { return height; }
 			uint32_t Depth() const { return depth; }
+			glm::u32vec3 ChunkSize() const { return { width, height, depth }; }
 
 			const glm::vec3& Position() const { return position; }
 			glm::i32vec3 ChunkId() const;

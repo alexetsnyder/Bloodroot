@@ -11,6 +11,12 @@
 
 namespace Game
 {
+	struct ChunkMesh
+	{
+		Chunk chunk;
+		Core::Mesh mesh;
+	};
+
 	class MeshGen
 	{
 		public:
@@ -20,7 +26,7 @@ namespace Game
 
 			MeshGen(const glm::i32vec3& worldCenter, const glm::u32vec3& worldSize, const glm::u32vec3& chunkSize);
 
-			void GenerateChunkMeshes(std::vector<Chunk>& chunks, std::vector<Core::Mesh>& chunkMeshes);
+			void GenerateChunkMeshes(std::vector<ChunkMesh>& chunkMeshes);
 
 		private:
 			glm::u32vec3 worldSize;
@@ -29,11 +35,11 @@ namespace Game
 			Core::Math::SimplexNoise noise;
 
 			bool isInBounds(const glm::vec3& position) const;
-			std::vector<glm::i32vec3> getAdjChunks(const Chunk& chunk);
-			std::vector<glm::i32vec3> getAdjChunkRow(const Chunk& chunk, uint32_t height, bool excludeMiddle);
+			std::vector<glm::i32vec3> getAdjChunks(const ChunkMesh& chunkMesh);
+			std::vector<glm::i32vec3> getAdjChunkRow(const ChunkMesh& chunkMesh, uint32_t height, bool excludeMiddle);
 			std::vector<glm::i32vec3> getAdjCubes(const glm::i32vec3& cubePos);
 
-			void generateChunkMesh(const Chunk& chunk, std::vector<Core::Mesh>& chunkMeshes, uint32_t& vertexCount);
+			void generateChunkMesh(std::vector<ChunkMesh>& chunkMeshes, uint32_t& vertexCount);
 			Voxel getVoxel(const glm::vec3& position);
 	};
 }

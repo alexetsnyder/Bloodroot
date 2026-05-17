@@ -15,28 +15,23 @@ BloodrootApp::BloodrootApp()
 	  camera(glm::vec3(8.0f, 66.0f, 8.0f), glm::vec3(0.0f, 1.0f, 0.0f)),
 	  appData{ .renderer = &renderer, .camera = &camera }
 {
-	std::vector<Core::Mesh> chunkMeshes;
-	std::vector<Game::Chunk> chunkVct;
-
-	auto meshGen = Game::MeshGen{ { 0, 0, 0 }, { 64, 64, 64 }, { 16, 16, 16 } };
-
-	meshGen.GenerateChunkMeshes(chunkVct, chunkMeshes);
-
 	auto chunkIndicies = Game::ChunkIndicies{ { 16, 16, 16 } };
 
 	renderer.SendIndexData(chunkIndicies.Indicies());
 
-	for (auto& mesh : chunkMeshes)
-	{
-		if (!mesh.IsEmpty())
-		{
-			renderer.SendVertexData(mesh);
-		}
-	}
+	std::vector<Game::ChunkMesh> chunkMeshes;
 
-	for (auto& chunk : chunkVct)
+	auto meshGen = Game::MeshGen{ { 0, 0, 0 }, { 64, 64, 64 }, { 16, 16, 16 } };
+
+	meshGen.GenerateChunkMeshes(chunkMeshes);
+
+	for (auto& chunkMesh : chunkMeshes)
 	{
-		chunks[chunk.ChunkId()] = chunk;
+		chunks[chunkMesh.chunk.ChunkId()] = chunkMesh.chunk;
+		if (!chunkMesh.mesh.IsEmpty())
+		{
+			renderer.SendVertexData(chunkMesh.mesh);
+		}
 	}
 }
 

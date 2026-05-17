@@ -25,7 +25,7 @@ namespace Game
 		
 	}
 
-	void MeshGen::GenerateChunkMeshes(std::vector<Chunk>& chunks, std::vector<Core::Mesh>& chunkMeshes)
+	void MeshGen::GenerateChunkMeshes(std::vector<ChunkMesh>& chunkMeshes)
 	{
 		uint32_t vertexCount = 0;
 
@@ -66,11 +66,17 @@ namespace Game
 			auto chunkPos = chunkStack.top();
 			chunkStack.pop();
 
-			auto chunk = Chunk{ chunkSize.x, chunkSize.y, chunkSize.z, chunkPos };
-			generateChunkMesh(chunk, chunkMeshes, vertexCount);
-			chunks.push_back(chunk);
+			auto chunkMesh = ChunkMesh
+			{
+				Chunk{ chunkSize.x, chunkSize.y, chunkSize.z, chunkPos },
+				Core::Mesh{},
+			};
 
-			auto adjChunks = getAdjChunks(chunk);
+			chunkMeshes.push_back(chunkMesh);
+
+			generateChunkMesh(chunkMeshes, vertexCount);
+
+			auto adjChunks = getAdjChunks(chunkMeshes.back());
 
 			for (const auto& adjChunkPos : adjChunks)
 			{
@@ -95,17 +101,17 @@ namespace Game
 		return false;
 	}
 
-	std::vector<glm::i32vec3> MeshGen::getAdjChunks(const Chunk& chunk)
+	std::vector<glm::i32vec3> MeshGen::getAdjChunks(const ChunkMesh& chunkMesh)
 	{
-		uint32_t width = chunk.Width();
-		uint32_t height = chunk.Height();
-		uint32_t depth = chunk.Depth();
+		uint32_t width = chunkMesh.chunk.Width();
+		uint32_t height = chunkMesh.chunk.Height();
+		uint32_t depth = chunkMesh.chunk.Depth();
 
 		std::vector<glm::i32vec3> adjChunks;
 
-		auto firstRow = getAdjChunkRow(chunk, -height, false);
-		auto secondRow = getAdjChunkRow(chunk, 0, true);
-		auto thirdRow = getAdjChunkRow(chunk, height, false);
+		auto firstRow = getAdjChunkRow(chunkMesh, -height, false);
+		auto secondRow = getAdjChunkRow(chunkMesh, 0, true);
+		auto thirdRow = getAdjChunkRow(chunkMesh, height, false);
 
 		adjChunks.insert(adjChunks.end(), firstRow.begin(), firstRow.end());
 		adjChunks.insert(adjChunks.end(), secondRow.begin(), secondRow.end());
@@ -114,11 +120,11 @@ namespace Game
 		return adjChunks;
 	}
 
-	std::vector<glm::i32vec3> MeshGen::getAdjChunkRow(const Chunk& chunk, uint32_t height, bool excludeMiddle)
+	std::vector<glm::i32vec3> MeshGen::getAdjChunkRow(const ChunkMesh& chunkMesh, uint32_t height, bool excludeMiddle)
 	{
-		uint32_t width = chunk.Width();
-		uint32_t depth = chunk.Depth();
-		auto chunkPos = glm::i32vec3{ chunk.Position() };
+		uint32_t width = chunkMesh.chunk.Width();
+		uint32_t depth = chunkMesh.chunk.Depth();
+		auto chunkPos = chunkMesh.chunk.ChunkId();
 
 		std::vector<glm::i32vec3> adjChunks;
 
@@ -180,14 +186,14 @@ namespace Game
 		return adjCubes;
 	}
 
-	void MeshGen::generateChunkMesh(const Chunk& chunk, std::vector<Core::Mesh>& chunkMeshes, uint32_t& vertexCount)
+	void MeshGen::generateChunkMesh(std::vector<ChunkMesh>& chunkMeshes, uint32_t& vertexCount)
 	{
-		auto mesh = Core::Mesh{};
+		auto& chunkMesh = chunkMeshes.back();
 
-		int32_t xPos = static_cast<int32_t>(std::floorf(chunk.Position().x));
-		int32_t yPos = static_cast<int32_t>(std::floorf(chunk.Position().y));
-		int32_t zPos = static_cast<int32_t>(std::floorf(chunk.Position().z));
-		glm::i32vec3 chunkSize = { chunk.Width(), chunk.Height(), chunk.Depth() };
+		auto xPos = static_cast<int32_t>(std::floorf(chunkMesh.chunk.Position().x));
+		auto yPos = static_cast<int32_t>(std::floorf(chunkMesh.chunk.Position().y));
+		auto zPos = static_cast<int32_t>(std::floorf(chunkMesh.chunk.Position().z));
+		auto chunkSize = glm::i32vec3{ chunkMesh.chunk.ChunkSize() };
 
 		//Visited
 		std::map<glm::i32vec3, bool, Core::Ext::I32Vec3Comparator> visited;
@@ -236,7 +242,7 @@ namespace Game
 			//Check all cube sides
 			auto currentVoxel = getVoxel(cubePos);
 
-			bool isCurrentCubeSolid = chunk.IsInBounds(cubePos) && currentVoxel.Type != VoxelType::AIR;
+			bool isCurrentCubeSolid = chunkMesh.chunk.IsInBounds(cubePos) && currentVoxel.Type != VoxelType::AIR;
 			if (isCurrentCubeSolid)
 			{
 				for (int i = 0; i < adjCubes.size(); i++)
@@ -247,15 +253,10 @@ namespace Game
 					{
 						CubeFace face = static_cast<CubeFace>(i);
 
-						chunk.CreateFace(face, cubePos, currentVoxel, mesh);
+						chunkMesh.chunk.CreateFace(face, cubePos, currentVoxel, chunkMesh.mesh);
 					}
 				}
 			}
-		}
-
-		if (!mesh.IsEmpty())
-		{
-			chunkMeshes.push_back(mesh);
 		}
 	}
 
