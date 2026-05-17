@@ -70,13 +70,9 @@ namespace Game
 
 	void Chunk::CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel, Core::Mesh& mesh) const
 	{
-		//auto cubePos = mapToLocal(position);
+		auto cubePos = mapToLocal(position);
 
-		int32_t x = static_cast<int>(std::floorf(position.x));
-		int32_t y = static_cast<int>(std::floorf(position.y));
-		int32_t z = static_cast<int>(std::floorf(position.z));
-
-		createFace(face, { x, y, z }, voxel, mesh);
+		createFace(face, cubePos, voxel, mesh);
 	}
 
 	void Chunk::init(uint32_t width, uint32_t height, uint32_t depth, const glm::vec3& position)

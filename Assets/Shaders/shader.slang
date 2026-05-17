@@ -11,18 +11,22 @@ struct VSOutput {
 
 struct UniformBuffer
 {
-    float4x4 model;
     float4x4 view;
     float4x4 projection;
 };
 ConstantBuffer<UniformBuffer> ubo;
 
+struct PushConstants
+{
+    float4x4 model;
+};
+
 [shader("vertex")]
-VSOutput vertMain(VSInput input)
+VSOutput vertMain(uniform PushConstants pc, VSInput input)
 {
 	VSOutput output;
 
-	output.sv_position = mul(ubo.projection, mul(ubo.view, mul(ubo.model, float4(input.inPosition, 1.0))));
+	output.sv_position = mul(ubo.projection, mul(ubo.view, mul(pc.model, float4(input.inPosition, 1.0))));
     output.fragTexCoord = input.inTexCoord;
 
 	return output;

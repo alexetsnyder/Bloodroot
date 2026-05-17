@@ -172,7 +172,6 @@ namespace Core
 	void VulkanRenderer::updateUniformBuffer(uint32_t currentImage, const glm::mat4& view)
 	{
 		UniformBufferObject ubo{};
-		ubo.model = glm::mat4(1.0f);
 		ubo.view = view;
 		ubo.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height), 0.1f, 100.0f);
 
@@ -253,6 +252,18 @@ namespace Core
 		for (const auto& drawable : drawables)
 		{
 			commandBuffers[frameIndex].bindVertexBuffers(0, { vertexBuffer.Buffer() }, { drawable.allocation.Offset() });
+
+			PushConstants pushConstants
+			{
+				glm::translate(glm::mat4(1.0f), drawable.position)
+			};
+
+			commandBuffers[frameIndex].pushConstants<PushConstants>(
+				pipelineLayout,
+				vk::ShaderStageFlagBits::eVertex,
+				0,
+				pushConstants
+			);
 
 			commandBuffers[frameIndex].drawIndexed(drawable.indexCount, 1, 0, 0, 0);
 		}
@@ -681,7 +692,21 @@ namespace Core
 		std::vector<vk::DynamicState> dynamicStates = { vk::DynamicState::eViewport, vk::DynamicState::eScissor };
 		vk::PipelineDynamicStateCreateInfo dynamicState{ .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()), .pDynamicStates = dynamicStates.data() };
 
-		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{ .setLayoutCount = 1, .pSetLayouts = &*descriptorSetLayout, .pushConstantRangeCount = 0 };
+		vk::PushConstantRange pushConstantRange
+		{
+			.stageFlags = vk::ShaderStageFlagBits::eVertex,
+			.offset = 0,
+			.size = sizeof(PushConstants),
+		};
+
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo
+		{ 
+			.setLayoutCount = 1, 
+			.pSetLayouts = &*descriptorSetLayout, 
+			.pushConstantRangeCount = 1,
+			.pPushConstantRanges = &pushConstantRange,
+			
+		};
 		pipelineLayout = vk::raii::PipelineLayout(device, pipelineLayoutInfo);
 
 		vk::PipelineDepthStencilStateCreateInfo depthStencil
