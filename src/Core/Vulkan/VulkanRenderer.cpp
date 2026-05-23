@@ -705,7 +705,6 @@ namespace Core
 			.pSetLayouts = &*descriptorSetLayout, 
 			.pushConstantRangeCount = 1,
 			.pPushConstantRanges = &pushConstantRange,
-			
 		};
 		pipelineLayout = vk::raii::PipelineLayout(device, pipelineLayoutInfo);
 

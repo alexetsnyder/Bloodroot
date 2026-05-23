@@ -6,7 +6,6 @@ target_sources(
 		Vulkan/VulkanRenderer.cpp
 		Image/Image.cpp
 		"Math/Noise/SimplexNoise.cpp"
-		Data/Octree.cpp
 		Vulkan/VMA/VMAAllocator.cpp
 		Vulkan/VMA/VMAVirtualBlock.cpp
 
@@ -24,12 +23,12 @@ target_sources(
 		Image/Image.h
 		"Math/Noise/FastNoiseLite.h"
 		"Math/Noise/SimplexNoise.h"
-		Data/Octree.h
 		Vulkan/VMA/VMAAllocator.h
 		Vulkan/VMA/VMABuffer.h
 		Vulkan/VMA/VMAVirtualBlock.h
 		Vulkan/VMA/VMAVirtualAllocation.h
 		Extensions/GLMExtensions.h
+		"Math/RLEncoding/RLEncoding.h"
 )
 
 target_include_directories(
@@ -41,6 +40,7 @@ target_include_directories(
 		Vulkan/Geometry
 		Image
 		"Math/Noise"
+		"Math/RLEncoding"
 		Data
 		Vulkan/VMA
 		Extensions

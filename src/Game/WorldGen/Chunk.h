@@ -5,8 +5,17 @@
 
 #include <glm/glm.hpp>
 
+#include <array>
+#include <cstdint>
+#include <vector>
+
 namespace Game
 {
+	constexpr uint16_t VOXEL_COUNT = 5;
+	constexpr uint32_t WIDTH = 16;
+	constexpr uint32_t HEIGHT = 256;
+	constexpr uint32_t DEPTH = 16;
+
 	enum class CubeFace
 	{
 		LEFT,
@@ -46,6 +55,7 @@ namespace Game
 			uint32_t uniqueId;
 			uint32_t width, height, depth;
 			glm::vec3 position;
+			std::array<std::vector<uint16_t>, WIDTH * DEPTH> voxels;
 			
 			void init(uint32_t width, uint32_t height, uint32_t depth, const glm::vec3& position);
 

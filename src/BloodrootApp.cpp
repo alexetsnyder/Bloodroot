@@ -1,10 +1,13 @@
 #include "BloodrootApp.h"
 
 #include "ChunkIndicies.h"
+#include "RLEncoding.h"
+#include "Voxel.h"
 
 #include <GLFW/glfw3.h>
 
 #include <chrono>
+#include <iostream>
 #include <vector>
 
 //TODO: Build chunks locally and send posisition to renderer, and connect chunks to their allocation.  
@@ -15,6 +18,34 @@ BloodrootApp::BloodrootApp()
 	  camera(glm::vec3(8.0f, 66.0f, 8.0f), glm::vec3(0.0f, 1.0f, 0.0f)),
 	  appData{ .renderer = &renderer, .camera = &camera }
 {
+	std::vector<Game::VoxelType> voxelRow
+	{
+		Game::VoxelType::AIR,
+		Game::VoxelType::AIR,
+		Game::VoxelType::AIR,
+		Game::VoxelType::GRASS,
+		Game::VoxelType::DIRT,
+		Game::VoxelType::DIRT,
+		Game::VoxelType::STONE,
+		Game::VoxelType::STONE,
+		Game::VoxelType::STONE,
+		Game::VoxelType::STONE,
+		Game::VoxelType::BEDROCK,
+	};
+
+	std::vector<uint16_t> encodedData{};
+
+	Core::Math::RLEncoding::Encode<Game::VoxelType>(voxelRow, encodedData);
+	Core::Math::RLEncoding::Print<uint16_t>(encodedData);
+
+	for (int i = 0; i < voxelRow.size(); i++)
+	{
+		std::cout << Core::Math::RLEncoding::GetData<Game::VoxelType>(encodedData, i) << std::endl;
+	}
+
+	std::vector<Game::VoxelType> decodedData = Core::Math::RLEncoding::Decode<Game::VoxelType>(encodedData);
+	Core::Math::RLEncoding::Print<Game::VoxelType>(decodedData);
+
 	auto chunkIndicies = Game::ChunkIndicies{ { 16, 16, 16 } };
 
 	renderer.SendIndexData(chunkIndicies.Indicies());

@@ -4,6 +4,7 @@ target_sources(
 		Camera/Camera.cpp
 		WorldGen/Chunk.cpp
 		WorldGen/MeshGen.cpp
+		WorldGen/WorldGen.cpp
 		
 	PUBLIC
 	FILE_SET HEADERS
@@ -13,6 +14,7 @@ target_sources(
 		WorldGen/Voxel.h
 		WorldGen/MeshGen.h
 		WorldGen/ChunkIndicies.h
+		WorldGen/WorldGen.h
 )
 
 target_include_directories(
