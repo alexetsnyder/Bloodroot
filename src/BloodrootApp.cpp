@@ -2,7 +2,7 @@
 
 #include "ChunkIndicies.h"
 #include "RLEncoding.h"
-#include "Voxel.h"
+#include "WorldGen.h"
 
 #include <GLFW/glfw3.h>
 
@@ -10,63 +10,50 @@
 #include <iostream>
 #include <vector>
 
-//TODO: Build chunks locally and send posisition to renderer, and connect chunks to their allocation.  
-
 BloodrootApp::BloodrootApp()
 	: window(&appData, WINDOW_WIDTH, WINDOW_HEIGHT, "Bloodroot App!"),
 	  renderer(window, glfwInstance.getRequiredInstanceExtensions()),
 	  camera(glm::vec3(8.0f, 66.0f, 8.0f), glm::vec3(0.0f, 1.0f, 0.0f)),
 	  appData{ .renderer = &renderer, .camera = &camera }
 {
-	std::vector<Game::VoxelType> voxelRow
-	{
-		Game::VoxelType::AIR,
-		Game::VoxelType::AIR,
-		Game::VoxelType::AIR,
-		Game::VoxelType::GRASS,
-		Game::VoxelType::DIRT,
-		Game::VoxelType::DIRT,
-		Game::VoxelType::STONE,
-		Game::VoxelType::STONE,
-		Game::VoxelType::STONE,
-		Game::VoxelType::STONE,
-		Game::VoxelType::BEDROCK,
-	};
-
-	std::vector<uint16_t> encodedData{};
-
-	Core::Math::RLEncoding::Encode<Game::VoxelType>(voxelRow, encodedData);
-	Core::Math::RLEncoding::Print<uint16_t>(encodedData);
-
-	for (int i = 0; i < voxelRow.size(); i++)
-	{
-		std::cout << Core::Math::RLEncoding::GetData<Game::VoxelType>(encodedData, i) << std::endl;
-	}
-
-	std::vector<Game::VoxelType> decodedData = Core::Math::RLEncoding::Decode<Game::VoxelType>(encodedData);
-	Core::Math::RLEncoding::Print<Game::VoxelType>(decodedData);
-
-	auto chunkIndicies = Game::ChunkIndicies{ { 16, 16, 16 } };
+	auto chunkIndicies = Game::ChunkIndicies{ { Game::CHUNK_WIDTH, Game::CHUNK_HEIGHT, Game::CHUNK_DEPTH } };
 
 	renderer.SendIndexData(chunkIndicies.Indicies());
 
+	auto worldGen = Game::WorldGen{ { 0, 0, 0 }, { 64, Game::CHUNK_HEIGHT, 64 } };
+
+	worldGen.GenerateChunks(chunks);
+
+	std::cout << "Finished Generating Chunks!\n";
+
 	std::vector<Game::ChunkMesh> chunkMeshes;
+	worldGen.GenerateMeshes(chunks, chunkMeshes);
 
-	auto meshGen = Game::MeshGen{ { 0, 0, 0 }, { 64, 64, 64 }, { 16, 16, 16 } };
-
-	meshGen.GenerateChunkMeshes(chunkMeshes);
+	std::cout << "Finished Generating Meshes!\n";
 
 	for (auto& chunkMesh : chunkMeshes)
 	{
-		auto& chunk = chunkMesh.chunk;
+		auto uniqueId = chunkMesh.uniqueId;
 		auto& mesh = chunkMesh.mesh;
 
-		chunks[chunk.ChunkId()] = chunk;
 		if (!mesh.IsEmpty())
 		{
-			renderer.SendVertexData(chunk.UniqueId(), mesh.IndexCount(), chunk.Position(), mesh.Verticies());
+			auto chunkIt = std::ranges::find_if(
+				chunks, 
+				[&uniqueId](const auto& chunkPair)
+				{
+					return (chunkPair.second.UniqueId() == uniqueId);
+				}
+			);
+
+			if (chunkIt != chunks.end())
+			{
+				renderer.SendVertexData(uniqueId, mesh.IndexCount(), chunkIt->second.Position(), mesh.Verticies());
+			}
 		}
 	}
+
+	std::cout << "Finished Allocating Meshes!\n";
 }
 
 void BloodrootApp::run()

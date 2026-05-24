@@ -2,9 +2,9 @@
 
 #include "AppData.h"
 #include "Camera.h"
+#include "Chunk.h"
 #include "GLFWInstance.h"
 #include "GLMExtensions.h"
-#include "MeshGen.h"
 #include "Window.h"
 #include "VulkanRenderer.h"
 

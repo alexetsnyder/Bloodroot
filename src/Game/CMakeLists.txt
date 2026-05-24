@@ -2,19 +2,19 @@ target_sources(
 	BloodrootApp
 	PRIVATE 
 		Camera/Camera.cpp
-		WorldGen/Chunk.cpp
-		WorldGen/MeshGen.cpp
+		WorldGen/TerrainGen/Chunk.cpp	
 		WorldGen/WorldGen.cpp
+		WorldGen/TerrainGen/TerrainGen.cpp
 		
 	PUBLIC
 	FILE_SET HEADERS
 	FILES
 		Camera/Camera.h
-		WorldGen/Chunk.h
-		WorldGen/Voxel.h
-		WorldGen/MeshGen.h
+		WorldGen/TerrainGen/Chunk.h
+		WorldGen/TerrainGen/Voxel.h
 		WorldGen/ChunkIndicies.h
 		WorldGen/WorldGen.h
+		WorldGen/TerrainGen/TerrainGen.h
 )
 
 target_include_directories(
@@ -22,4 +22,5 @@ target_include_directories(
 	PUBLIC
 		Camera
 		WorldGen
+		WorldGen/TerrainGen
 )

@@ -1,5 +1,7 @@
 #include "Chunk.h"
 
+#include "RLEncoding.h"
+
 #include <vector>
 
 namespace Game
@@ -7,32 +9,36 @@ namespace Game
 	uint32_t Chunk::NextId = 1;
 
 	Chunk::Chunk()
+		: uniqueId{ NextId++ }, position{{ 0.0f }}
 	{
-		init(0, 0, 0, glm::vec3(0.0f));
+		
 	}
 
-	Chunk::Chunk(uint32_t width, uint32_t height, uint32_t depth, const glm::vec3& position)
+	Chunk::Chunk(const glm::vec3& position)
+		: uniqueId{ NextId++ }, position{ position }
 	{
-		init(width, height, depth, position);
+		
 	}
 
 	Chunk::Chunk(const Chunk& other)
+		: uniqueId{ other.uniqueId }, position{ other.position }
 	{
-		init(other.width, other.height, other.depth, other.position);
+		
 	}
 
 	Chunk::Chunk(Chunk&& other) noexcept
+		: uniqueId{ other.uniqueId }, position{ other.position }, voxels{ other.voxels }
 	{
-		init(other.width, other.height, other.depth, other.position);
-
-		other.init(0, 0, 0, glm::vec3(0.0f));
+		other.uniqueId = 0;
 	}
 
 	Chunk& Chunk::operator=(const Chunk& other)
 	{
 		if (this != &other)
 		{
-			init(other.width, other.height, other.depth, other.position);
+			uniqueId = other.uniqueId;
+			position = other.position;
+			voxels = other.voxels;
 		}
 
 		return *this;
@@ -43,23 +49,35 @@ namespace Game
 
 	}
 
+	glm::i32vec3 Chunk::MapToChunkId(const glm::vec3& voxelPos)
+	{
+		auto x = static_cast<int32_t>(std::floorf(voxelPos.x / CHUNK_WIDTH));
+		auto y = static_cast<int32_t>(std::floorf(voxelPos.y / CHUNK_HEIGHT));
+		auto z = static_cast<int32_t>(std::floorf(voxelPos.z / CHUNK_DEPTH));
+
+		return { x, y, z };
+	}
+
 	glm::i32vec3 Chunk::ChunkId() const
 	{
-		return 
-		{
-			static_cast<int32_t>(std::floorf(position.x)),
-			static_cast<int32_t>(std::floorf(position.y)),
-			static_cast<int32_t>(std::floorf(position.z))
-		};
+		return MapToChunkId(position);
+	}
+
+	const VoxelType Chunk::GetVoxelType(const glm::i32vec3& position) const
+	{
+		auto localPos = mapToLocal(position);
+
+		int32_t index = (localPos.x * CHUNK_WIDTH) + localPos.z;
+		return Core::Math::RLEncoding::GetData<VoxelType>(voxels[index], localPos.y);
 	}
 
 	bool Chunk::IsInBounds(const glm::vec3& position) const
 	{
 		auto localPos = mapToLocal(position);
 
-		if ((localPos.y >= 0 && localPos.y < height) &&
-			(localPos.x >= 0 && localPos.x < width) &&
-			(localPos.z >= 0 && localPos.z < depth))
+		if ((localPos.y >= 0 && localPos.y < CHUNK_HEIGHT) &&
+			(localPos.x >= 0 && localPos.x < CHUNK_WIDTH) &&
+			(localPos.z >= 0 && localPos.z < CHUNK_DEPTH))
 		{
 			return true;
 		}
@@ -74,13 +92,13 @@ namespace Game
 		createFace(face, cubePos, voxel, mesh);
 	}
 
-	void Chunk::init(uint32_t width, uint32_t height, uint32_t depth, const glm::vec3& position)
+	void Chunk::AddVoxelColumn(int32_t xPos, int32_t yPos, int32_t zPos, const std::vector<VoxelType>& voxelTypes)
 	{
-		this->uniqueId = NextId++;
-		this->width = width;
-		this->height = height;
-		this->depth = depth;
-		this->position = position;
+		auto localPos = mapToLocal({ xPos, yPos, zPos });
+
+		int32_t index = (localPos.x * CHUNK_WIDTH) + localPos.z;
+
+		Core::Math::RLEncoding::Encode<VoxelType>(voxelTypes, voxels[index]);
 	}
 
 	void Chunk::createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::Mesh& mesh) const

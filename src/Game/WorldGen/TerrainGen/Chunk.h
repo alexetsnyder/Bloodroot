@@ -11,10 +11,9 @@
 
 namespace Game
 {
-	constexpr uint16_t VOXEL_COUNT = 5;
-	constexpr uint32_t WIDTH = 16;
-	constexpr uint32_t HEIGHT = 256;
-	constexpr uint32_t DEPTH = 16;
+	constexpr uint32_t CHUNK_WIDTH = 16;
+	constexpr uint32_t CHUNK_HEIGHT = 256;
+	constexpr uint32_t CHUNK_DEPTH = 16;
 
 	enum class CubeFace
 	{
@@ -33,33 +32,28 @@ namespace Game
 			static uint32_t NextId;
 
 			Chunk();
-			Chunk(uint32_t width, uint32_t height, uint32_t depth, const glm::vec3& position);
+			Chunk(const glm::vec3& position);
 			Chunk(const Chunk& other);
 			Chunk(Chunk&& other) noexcept;
 			Chunk& operator=(const Chunk& other);
 			~Chunk();
 
-			uint32_t Width() const { return width; }
-			uint32_t Height() const { return height; }
-			uint32_t Depth() const { return depth; }
-			glm::u32vec3 ChunkSize() const { return { width, height, depth }; }
-
+			static glm::i32vec3 MapToChunkId(const glm::vec3& voxelPos);
 			const glm::vec3& Position() const { return position; }
 			glm::i32vec3 ChunkId() const;
 			const uint32_t UniqueId() const { return uniqueId; }
+			const VoxelType GetVoxelType(const glm::i32vec3& position) const;
 
 			bool IsInBounds(const glm::vec3& position) const;
 			void CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel, Core::Mesh& mesh) const;
+			void AddVoxelColumn(int32_t xPos, int32_t yPos, int32_t zPos, const std::vector<VoxelType>& voxelTypes);
 
 		private:
 			uint32_t uniqueId;
-			uint32_t width, height, depth;
 			glm::vec3 position;
-			std::array<std::vector<uint16_t>, WIDTH * DEPTH> voxels;
-			
-			void init(uint32_t width, uint32_t height, uint32_t depth, const glm::vec3& position);
+			std::array<std::vector<uint16_t>, CHUNK_WIDTH * CHUNK_DEPTH> voxels;
 
-			void createFace( CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::Mesh& mesh) const;
+			void createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::Mesh& mesh) const;
 
 			glm::i32vec3 mapToLocal(const glm::vec3& position) const;
 			void generateVoxel(const glm::vec3& voxelPos, const Voxel& voxel, Core::Mesh& mesh);
