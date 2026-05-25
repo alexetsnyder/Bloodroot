@@ -76,4 +76,50 @@ namespace Game
 		}
 	}
 
+	std::vector<VoxelType> TerrainGen::GetVoxelTypeColumn(int32_t xPos, int32_t zPos)
+	{
+		auto voxelTypes = std::vector<VoxelType>{};
+
+		float noiseValue = noise.GetNoise(xPos, zPos);
+
+		uint32_t height = std::floor(noiseValue * VARY_HEIGHT + MIN_HEIGHT);
+
+		for (uint32_t y = worldCenter.y; y < worldCenter.y + worldSize.y; y++)
+		{
+			voxelTypes.push_back(getVoxelType(y, height));
+		}
+
+		return voxelTypes;
+	}
+
+	VoxelType TerrainGen::getVoxelType(uint32_t yPos, uint32_t height) const
+	{
+		if (yPos < worldCenter.y)
+		{
+			return VoxelType::AIR;
+		}
+
+		if (yPos == worldCenter.y)
+		{
+			return VoxelType::BEDROCK;
+		}
+
+		if (yPos > height)
+		{
+			return VoxelType::AIR;
+		}
+		else if (yPos == height)
+		{
+			return VoxelType::GRASS;
+		}
+		else if (yPos >= height - DIRT_DEPTH)
+		{
+			return VoxelType::DIRT;
+		}
+		else
+		{
+			return VoxelType::STONE;
+		}
+	}
+
 }

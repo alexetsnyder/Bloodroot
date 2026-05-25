@@ -5,6 +5,8 @@
 
 #include <glm/glm.hpp>
 
+#include <vector>
+
 namespace Game
 {
 	class TerrainGen
@@ -21,10 +23,13 @@ namespace Game
 			Voxel GetVoxel(VoxelType voxelType);
 			Voxel GetVoxel(const glm::vec3& position);
 			VoxelType GetVoxelType(const glm::vec3& position);
+			std::vector<VoxelType> GetVoxelTypeColumn(int32_t xPos, int32_t zPos);
 
 		private:
 			glm::u32vec3 worldSize;
 			glm::i32vec3 worldCenter;
 			Core::Math::SimplexNoise noise;
+
+			VoxelType getVoxelType(uint32_t yPos, uint32_t height) const;
 	};
 }

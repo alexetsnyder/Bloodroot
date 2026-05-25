@@ -78,24 +78,12 @@ namespace Game
 		{
 			for (int32_t z = position.z; z < position.z + static_cast<int32_t>(CHUNK_DEPTH); z++)
 			{
-				auto voxelTypes = generateColumn(x, z);
+				auto voxelTypes = terrainGen.GetVoxelTypeColumn(x, z);
 				chunk.AddVoxelColumn(x, position.y, z, voxelTypes);
 			}
 		}
 
 		chunks[chunk.ChunkId()] = chunk;
-	}
-
-	std::vector<VoxelType> WorldGen::generateColumn(int32_t xPos, int32_t zPos)
-	{
-		auto voxelTypes = std::vector<VoxelType>{};
-
-		for (int32_t y = worldCenter.y; y < worldCenter.y + worldSize.y; y++)
-		{
-			voxelTypes.push_back(terrainGen.GetVoxelType({ xPos, y, zPos }));
-		}
-
-		return voxelTypes;
 	}
 
 	std::vector<glm::i32vec3> WorldGen::getAdjCubes(const glm::i32vec3& cubePos)
