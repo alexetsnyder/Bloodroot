@@ -40,39 +40,39 @@ namespace Core
 
 	struct Drawable
 	{
-		uint32_t uniqueId;	
+		glm::i32vec3 chunkId;	
 		uint32_t indexCount;
 		glm::vec3 position;
 		VMA::VMAVirtualAllocation allocation;
 
-		Drawable(uint32_t uniqueId, uint32_t indexCount, glm::vec3 position, VMA::VMAVirtualAllocation allocation)
-			: uniqueId{ uniqueId }, indexCount{ indexCount }, position{ position }, allocation{ std::move(allocation) }
+		Drawable(const glm::i32vec3& chunkId, uint32_t indexCount, glm::vec3 position, VMA::VMAVirtualAllocation allocation)
+			: chunkId{ chunkId }, indexCount{ indexCount }, position{ position }, allocation{ std::move(allocation) }
 		{
 
 		}
 
 		Drawable(Drawable&& other) noexcept
 		{
-			uniqueId = other.uniqueId;
+			chunkId = other.chunkId;
 			indexCount = other.indexCount;
 			position = other.position;
 			allocation = std::move(other.allocation);
 
-			other.uniqueId = 0;
+			other.chunkId = glm::i32vec3{ 0 };
 			other.indexCount = 0;
-			other.position = glm::vec3(0.0f);
+			other.position = glm::vec3{ 0.0f };
 		}
 
 		Drawable& operator=(Drawable&& other) noexcept
 		{
 			if (this != &other)
 			{
-				uniqueId = other.uniqueId;
+				chunkId = other.chunkId;
 				indexCount = other.indexCount;
 				position = other.position;
 				allocation = std::move(allocation);
 
-				other.uniqueId = 0;
+				other.chunkId = glm::i32vec3{ 0 };
 				other.indexCount = 0;
 				other.position = glm::vec3(0.0f);
 			}
@@ -90,7 +90,7 @@ namespace Core
 			VulkanRenderer(const Window& window, std::vector<const char*>&& requiredExtensions);
 			~VulkanRenderer();
 
-			void SendVertexData(uint32_t uniqueId, 
+			void SendVertexData(const glm::i32vec3& chunkId,
 								uint32_t indexCount, 
 								const glm::vec3& position, 
 								const std::vector<Vertex>& verticies);
@@ -218,7 +218,7 @@ namespace Core
 			void createVertexBuffer();
 			void createIndexBuffer(const std::vector<uint32_t>& indicies);
 
-			void AllocateToVertexBuffer(uint32_t uniqueId,
+			void AllocateToVertexBuffer(const glm::i32vec3& chunkId,
 										uint32_t indexCount,
 										const glm::vec3& position,
 										const std::vector<Vertex>& verticies);

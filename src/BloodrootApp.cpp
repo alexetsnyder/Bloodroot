@@ -33,23 +33,12 @@ BloodrootApp::BloodrootApp()
 
 	for (auto& chunkMesh : chunkMeshes)
 	{
-		auto uniqueId = chunkMesh.uniqueId;
+		auto chunkId = chunkMesh.chunkId;
 		auto& mesh = chunkMesh.mesh;
 
 		if (!mesh.IsEmpty())
 		{
-			auto chunkIt = std::ranges::find_if(
-				chunks, 
-				[&uniqueId](const auto& chunkPair)
-				{
-					return (chunkPair.second.UniqueId() == uniqueId);
-				}
-			);
-
-			if (chunkIt != chunks.end())
-			{
-				renderer.SendVertexData(uniqueId, mesh.IndexCount(), chunkIt->second.Position(), mesh.Verticies());
-			}
+			renderer.SendVertexData(chunkId, mesh.IndexCount(), chunks[chunkId].Position(), mesh.Verticies());
 		}
 	}
 

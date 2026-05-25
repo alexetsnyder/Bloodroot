@@ -2,7 +2,6 @@
 
 #include "Chunk.h"
 #include "GLMExtensions.h"
-#include "Mesh.h"
 #include "TerrainGen.h"
 
 #include <glm/glm.hpp>
@@ -14,7 +13,7 @@ namespace Game
 {
 	struct ChunkMesh
 	{
-		uint32_t uniqueId;
+		glm::i32vec3 chunkId;
 		Core::Mesh mesh;
 	};
 
@@ -37,7 +36,6 @@ namespace Game
 			TerrainGen terrainGen;
 
 			void generateChunk(const glm::i32vec3& position, std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks);
-			std::vector<VoxelType> generateColumn(int32_t xPos, int32_t zPos);
 
 			std::vector<glm::i32vec3> getAdjCubes(const glm::i32vec3& cubePos);
 			Voxel getVoxel(const std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks,

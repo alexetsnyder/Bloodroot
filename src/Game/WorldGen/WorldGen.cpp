@@ -129,7 +129,7 @@ namespace Game
 	{
 		auto chunkMesh = ChunkMesh
 		{
-			chunk.UniqueId(),
+			chunk.ChunkId(),
 			Core::Mesh{},
 		};
 

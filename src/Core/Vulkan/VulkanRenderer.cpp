@@ -1171,12 +1171,12 @@ namespace Core
 		textureSampler = vk::raii::Sampler(device, samplerInfo);
 	}
 
-	void VulkanRenderer::SendVertexData(uint32_t uniqueId,
+	void VulkanRenderer::SendVertexData(const glm::i32vec3& chunkId,
 										uint32_t indexCount,
 										const glm::vec3& position,
 										const std::vector<Vertex>& verticies)
 	{
-		AllocateToVertexBuffer(uniqueId, indexCount, position, verticies);
+		AllocateToVertexBuffer(chunkId, indexCount, position, verticies);
 	}
 
 	void VulkanRenderer::SendIndexData(const std::vector<uint32_t>& indicies)
@@ -1228,7 +1228,7 @@ namespace Core
 		copyBuffer(stagingBuffer, indexBuffer, vk::BufferCopy(0, 0, bufferSize));
 	}
 
-	void VulkanRenderer::AllocateToVertexBuffer(uint32_t uniqueId,
+	void VulkanRenderer::AllocateToVertexBuffer(const glm::i32vec3& chunkId,
 												uint32_t indexCount,
 												const glm::vec3& position,
 												const std::vector<Vertex>& verticies)
@@ -1248,7 +1248,7 @@ namespace Core
 
 		Drawable drawable
 		{
-			uniqueId,
+			chunkId,
 			indexCount,
 			position,
 			Core::VMA::VMAVirtualAllocation

@@ -6,37 +6,47 @@
 
 namespace Game
 {
-	uint32_t Chunk::NextId = 1;
-
 	Chunk::Chunk()
-		: uniqueId{ NextId++ }, position{{ 0.0f }}
+		: position{{ 0.0f }}
 	{
 		
 	}
 
 	Chunk::Chunk(const glm::vec3& position)
-		: uniqueId{ NextId++ }, position{ position }
+		: position{ position }
 	{
 		
 	}
 
 	Chunk::Chunk(const Chunk& other)
-		: uniqueId{ other.uniqueId }, position{ other.position }
+		: position{ other.position }
 	{
 		
 	}
 
 	Chunk::Chunk(Chunk&& other) noexcept
-		: uniqueId{ other.uniqueId }, position{ other.position }, voxels{ other.voxels }
+		: position{ other.position }, voxels{ other.voxels }
 	{
-		other.uniqueId = 0;
+		
+	}
+
+	Chunk& Chunk::operator=(Chunk&& other) noexcept
+	{
+		if (this != &other)
+		{
+			position = other.position;
+			voxels = other.voxels;
+
+			other.position = glm::vec3(0.0f);
+		}
+
+		return *this;
 	}
 
 	Chunk& Chunk::operator=(const Chunk& other)
 	{
 		if (this != &other)
 		{
-			uniqueId = other.uniqueId;
 			position = other.position;
 			voxels = other.voxels;
 		}

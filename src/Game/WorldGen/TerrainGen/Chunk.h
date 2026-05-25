@@ -29,19 +29,18 @@ namespace Game
 	{
 		public:
 			const int VOXEL_SIZE = 1;
-			static uint32_t NextId;
 
 			Chunk();
 			Chunk(const glm::vec3& position);
 			Chunk(const Chunk& other);
 			Chunk(Chunk&& other) noexcept;
+			Chunk& operator=(Chunk&& other) noexcept;
 			Chunk& operator=(const Chunk& other);
 			~Chunk();
 
 			static glm::i32vec3 MapToChunkId(const glm::vec3& voxelPos);
 			const glm::vec3& Position() const { return position; }
 			glm::i32vec3 ChunkId() const;
-			const uint32_t UniqueId() const { return uniqueId; }
 			const VoxelType GetVoxelType(const glm::i32vec3& position) const;
 
 			bool IsInBounds(const glm::vec3& position) const;
@@ -49,7 +48,6 @@ namespace Game
 			void AddVoxelColumn(int32_t xPos, int32_t yPos, int32_t zPos, const std::vector<VoxelType>& voxelTypes);
 
 		private:
-			uint32_t uniqueId;
 			glm::vec3 position;
 			std::array<std::vector<uint16_t>, CHUNK_WIDTH * CHUNK_DEPTH> voxels;
 
