@@ -192,7 +192,7 @@ namespace Game
 				{
 					auto adjVoxel = getVoxel(chunks, adjCubes[i]);
 
-					if (!IsInBounds(adjCubes[i]) || adjVoxel.Type == VoxelType::AIR)
+					if (adjVoxel.Type == VoxelType::AIR)
 					{
 						CubeFace face = static_cast<CubeFace>(i);
 

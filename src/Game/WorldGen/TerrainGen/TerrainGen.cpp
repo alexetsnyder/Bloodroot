@@ -42,14 +42,9 @@ namespace Game
 
 	VoxelType TerrainGen::GetVoxelType(const glm::vec3& position)
 	{
-		uint32_t y = static_cast<uint32_t>(std::floorf(position.y));
+		int32_t y = static_cast<int32_t>(std::floorf(position.y));
 
-		if (y < worldCenter.y)
-		{
-			return VoxelType::AIR;
-		}
-
-		if (y == worldCenter.y)
+		if (y <= worldCenter.y)
 		{
 			return VoxelType::BEDROCK;
 		}
@@ -94,12 +89,7 @@ namespace Game
 
 	VoxelType TerrainGen::getVoxelType(uint32_t yPos, uint32_t height) const
 	{
-		if (yPos < worldCenter.y)
-		{
-			return VoxelType::AIR;
-		}
-
-		if (yPos == worldCenter.y)
+		if (yPos <= worldCenter.y)
 		{
 			return VoxelType::BEDROCK;
 		}
