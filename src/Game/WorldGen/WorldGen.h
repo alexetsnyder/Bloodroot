@@ -2,6 +2,7 @@
 
 #include "Chunk.h"
 #include "GLMExtensions.h"
+#include "Mesh.h"
 #include "TerrainGen.h"
 
 #include <glm/glm.hpp>
@@ -27,6 +28,8 @@ namespace Game
 			void GenerateChunks(std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks);
 			void GenerateMeshes(const std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks, 
 								std::vector<ChunkMesh>& chunkMeshes);
+			void GenerateMeshes(const std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks,
+								std::map<glm::i32vec3, Core::Mesh, Core::Ext::I32Vec3Comparator>& meshes);
 
 			bool IsInBounds(const glm::vec3& position) const;
 
@@ -34,6 +37,8 @@ namespace Game
 			glm::vec3 worldCenter;
 			glm::u32vec3 worldSize;
 			TerrainGen terrainGen;
+
+			size_t getIndex(const glm::i32vec3& cubePos) const;
 
 			void generateChunk(const glm::i32vec3& position, std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks);
 

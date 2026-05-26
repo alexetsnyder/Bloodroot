@@ -1,5 +1,7 @@
 #include "WorldGen.h"
 
+#include <chrono>
+#include <iostream>
 #include <stack>
 
 namespace Game
@@ -52,9 +54,121 @@ namespace Game
 	void WorldGen::GenerateMeshes(const std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks, 
 								  std::vector<ChunkMesh>& chunkMeshes)
 	{
+		uint32_t chunkCount = 1;
+		uint32_t totalChunks = chunks.size();
 		for (const auto& [chunkId, chunk] : chunks)
 		{
+			auto start = std::chrono::high_resolution_clock::now();
 			generateMesh(chunks, chunk, chunkMeshes);
+			auto end = std::chrono::high_resolution_clock::now();
+
+			std::chrono::duration<double, std::milli> elapsed = end - start;
+
+			std::cout << "Creating Chunk Mesh: " << chunkCount++ << " of " << totalChunks;
+			std::cout << " in " << (elapsed.count()) << "ms\n";
+		}
+	}
+
+	void WorldGen::GenerateMeshes(const std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks, 
+								  std::map<glm::i32vec3, Core::Mesh, Core::Ext::I32Vec3Comparator>& meshes)
+	{
+		auto start = std::chrono::high_resolution_clock::now();
+		auto end = std::chrono::high_resolution_clock::now();
+
+		auto startPos = glm::i32vec3
+		{ 
+			worldCenter.x - worldSize.x / 2.0f - 1, 
+			worldCenter.y - 1, 
+			worldCenter.z - worldSize.z / 2.0f - 1
+		};
+
+		auto endPos = glm::i32vec3
+		{
+			worldCenter.x + worldSize.x / 2.0f,
+			worldCenter.y + worldSize.y,
+			worldCenter.z + worldSize.z / 2.0f,
+		};
+
+		std::vector<bool> visited((worldSize.x + 2) * (worldSize.y + 2) * (worldSize.z + 2), false);
+
+		std::cout << "Created Visited map!\n";
+
+		auto isInVisited = [&startPos, &endPos](const glm::i32vec3& cubePos)
+			{
+				return ((cubePos.x >= startPos.x && cubePos.x <= endPos.x) &&
+						(cubePos.y >= startPos.y && cubePos.y <= endPos.y) &&
+						(cubePos.z >= startPos.z && cubePos.z <= endPos.z)
+				);
+			};
+
+		//Stack
+		std::stack<glm::i32vec3> cubes;
+		cubes.push(startPos);
+		visited[getIndex(startPos)] = true;
+		//visited[startPos] = true;
+
+		uint32_t voxelCount = 1;
+
+		while (!cubes.empty())
+		{
+			if (voxelCount++ % 100000 == 0)
+			{
+				end = std::chrono::high_resolution_clock::now();
+				std::chrono::duration<double, std::milli> elapsed = end - start;
+				std::cout << "Completed Voxels " << voxelCount << " of " << visited.size();
+				std::cout << " percent complete: " << (voxelCount / (float)visited.size()) * 100.0f;
+				std::cout << " in " << (elapsed.count()) << "ms\n";
+
+				start = std::chrono::high_resolution_clock::now();
+			}
+
+			auto cubePos = cubes.top();
+			cubes.pop();
+
+			auto adjCubes = getAdjCubes(cubePos);
+
+			//Grab cube and add all neighbors to stack if not visited
+			for (auto adjCubePos : adjCubes)
+			{
+				if (isInVisited(adjCubePos))
+				{
+					auto index = getIndex(adjCubePos);
+					if (!visited[index])
+					{
+						visited[index] = true;
+						cubes.push(adjCubePos);
+					}
+				}	
+			}
+
+			//Check all cube sides
+			if (IsInBounds(cubePos))
+			{
+				const auto chunkId = Chunk::MapToChunkId(cubePos);
+				const auto& chunk = chunks.at(chunkId);
+
+				if (!meshes.contains(chunkId))
+				{
+					meshes.insert({ chunkId, Core::Mesh{} });
+				}
+
+				auto& mesh = meshes[chunkId];
+
+				auto currentVoxel = getVoxel(chunks, cubePos);
+
+				if (currentVoxel.Type != VoxelType::AIR)
+				{
+					for (int i = 0; i < adjCubes.size(); i++)
+					{
+						auto adjVoxel = getVoxel(chunks, adjCubes[i]);
+
+						if (adjVoxel.Type == VoxelType::AIR)
+						{
+							chunk.CreateFace(static_cast<CubeFace>(i), cubePos, currentVoxel, mesh);
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -68,6 +182,15 @@ namespace Game
 		}
 
 		return false;
+	}
+
+	size_t WorldGen::getIndex(const glm::i32vec3& cubePos) const
+	{
+		size_t xPos = cubePos.x + worldSize.x / 2.0f + 1.0f;
+		size_t yPos = cubePos.y + 1.0f;
+		size_t zPos = cubePos.z + worldSize.z / 2.0f + 1.0f;
+
+		return xPos + yPos * worldSize.x + zPos * worldSize.x * worldSize.y;
 	}
 
 	void WorldGen::generateChunk(const glm::i32vec3& position, std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks)

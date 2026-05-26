@@ -39,6 +39,7 @@ target_include_directories(
 		Vulkan
 		Vulkan/Geometry
 		Image
+		"Math"
 		"Math/Noise"
 		"Math/RLEncoding"
 		Data

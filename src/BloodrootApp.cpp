@@ -1,6 +1,7 @@
 #include "BloodrootApp.h"
 
 #include "ChunkIndicies.h"
+#include "GLMExtensions.h"
 #include "RLEncoding.h"
 #include "WorldGen.h"
 
@@ -20,25 +21,23 @@ BloodrootApp::BloodrootApp()
 
 	renderer.SendIndexData(chunkIndicies.Indicies());
 
+	//{ 320, Game::CHUNK_HEIGHT, 320 }
 	auto worldGen = Game::WorldGen{ { 0, 0, 0 }, { 64, Game::CHUNK_HEIGHT, 64 } };
 
 	worldGen.GenerateChunks(chunks);
 
 	std::cout << "Finished Generating Chunks!\n";
 
-	std::vector<Game::ChunkMesh> chunkMeshes;
-	worldGen.GenerateMeshes(chunks, chunkMeshes);
+	std::map<glm::i32vec3, Core::Mesh, Core::Ext::I32Vec3Comparator> meshes;
+	worldGen.GenerateMeshes(chunks, meshes);
 
 	std::cout << "Finished Generating Meshes!\n";
 
-	for (auto& chunkMesh : chunkMeshes)
+	for (const auto& [chunkId, mesh] : meshes)
 	{
-		auto chunkId = chunkMesh.chunkId;
-		auto& mesh = chunkMesh.mesh;
-
 		if (!mesh.IsEmpty())
 		{
-			renderer.SendVertexData(chunkId, mesh.IndexCount(), chunks[chunkId].Position(), mesh.Verticies());
+			renderer.SendVertexData(chunkId, mesh.ConstIndexCount(), chunks[chunkId].Position(), mesh.Verticies());
 		}
 	}
 

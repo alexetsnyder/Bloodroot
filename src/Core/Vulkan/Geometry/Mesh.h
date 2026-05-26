@@ -53,6 +53,7 @@ namespace Core
 			void AddIndex(int index) { indicies.push_back(index); }
 
 			uint32_t& IndexCount() { return indexCount; }
+			uint32_t ConstIndexCount() const { return indexCount; }
 			bool IsEmpty() const { return indexCount <= 0; }
 
 		private:
