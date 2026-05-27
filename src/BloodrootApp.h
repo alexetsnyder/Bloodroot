@@ -8,7 +8,10 @@
 #include "Window.h"
 #include "VulkanRenderer.h"
 
-#include <map>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
+
+#include <unordered_map>
 
 class BloodrootApp
 {
@@ -25,7 +28,7 @@ class BloodrootApp
 		Core::Window window;
 		Core::VulkanRenderer renderer;
 		Game::Camera camera;
-		std::map<glm::i32vec3, Game::Chunk, Core::Ext::I32Vec3Comparator> chunks;
+		std::unordered_map<glm::i32vec3, Game::Chunk> chunks;
 
 		void mainLoop();
 		void processInput(float deltaTime);	

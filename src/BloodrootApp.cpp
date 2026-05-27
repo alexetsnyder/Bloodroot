@@ -28,7 +28,7 @@ BloodrootApp::BloodrootApp()
 
 	std::cout << "Finished Generating Chunks!\n";
 
-	std::map<glm::i32vec3, Core::Mesh, Core::Ext::I32Vec3Comparator> meshes;
+	std::unordered_map<glm::i32vec3, Core::Mesh> meshes;
 	worldGen.GenerateMeshes(chunks, meshes);
 
 	std::cout << "Finished Generating Meshes!\n";

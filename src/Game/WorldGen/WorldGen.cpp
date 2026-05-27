@@ -23,7 +23,7 @@ namespace Game
 
 	}
 
-	void WorldGen::GenerateChunks(std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks)
+	void WorldGen::GenerateChunks(std::unordered_map<glm::i32vec3, Chunk>& chunks)
 	{
 		auto startPos = glm::i32vec3
 		{
@@ -51,34 +51,12 @@ namespace Game
 		}
 	}
 
-	void WorldGen::GenerateMeshes(const std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks, 
-								  std::vector<ChunkMesh>& chunkMeshes)
+	void WorldGen::GenerateMeshes(const std::unordered_map<glm::i32vec3, Chunk>& chunks, std::unordered_map<glm::i32vec3, Core::Mesh>& meshes)
 	{
-		uint32_t chunkCount = 1;
-		uint32_t totalChunks = chunks.size();
-		for (const auto& [chunkId, chunk] : chunks)
-		{
-			auto start = std::chrono::high_resolution_clock::now();
-			generateMesh(chunks, chunk, chunkMeshes);
-			auto end = std::chrono::high_resolution_clock::now();
-
-			std::chrono::duration<double, std::milli> elapsed = end - start;
-
-			std::cout << "Creating Chunk Mesh: " << chunkCount++ << " of " << totalChunks;
-			std::cout << " in " << (elapsed.count()) << "ms\n";
-		}
-	}
-
-	void WorldGen::GenerateMeshes(const std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks, 
-								  std::map<glm::i32vec3, Core::Mesh, Core::Ext::I32Vec3Comparator>& meshes)
-	{
-		auto start = std::chrono::high_resolution_clock::now();
-		auto end = std::chrono::high_resolution_clock::now();
-
 		auto startPos = glm::i32vec3
-		{ 
-			worldCenter.x - worldSize.x / 2.0f - 1, 
-			worldCenter.y - 1, 
+		{
+			worldCenter.x - worldSize.x / 2.0f - 1,
+			worldCenter.y - 1,
 			worldCenter.z - worldSize.z / 2.0f - 1
 		};
 
@@ -96,22 +74,27 @@ namespace Game
 		auto isInVisited = [&startPos, &endPos](const glm::i32vec3& cubePos)
 			{
 				return ((cubePos.x >= startPos.x && cubePos.x <= endPos.x) &&
-						(cubePos.y >= startPos.y && cubePos.y <= endPos.y) &&
-						(cubePos.z >= startPos.z && cubePos.z <= endPos.z)
-				);
+					(cubePos.y >= startPos.y && cubePos.y <= endPos.y) &&
+					(cubePos.z >= startPos.z && cubePos.z <= endPos.z)
+					);
 			};
+
+		auto start = std::chrono::high_resolution_clock::now();
+		auto end = std::chrono::high_resolution_clock::now();
 
 		//Stack
 		std::stack<glm::i32vec3> cubes;
 		cubes.push(startPos);
 		visited[getIndex(startPos)] = true;
-		//visited[startPos] = true;
 
 		uint32_t voxelCount = 1;
+		glm::i32vec3 adjCubes[6];
+
+		auto tenPercent = static_cast<int32_t>(std::floorf(0.1f * visited.size()));
 
 		while (!cubes.empty())
 		{
-			if (voxelCount++ % 100000 == 0)
+			if (voxelCount++ % tenPercent == 0)
 			{
 				end = std::chrono::high_resolution_clock::now();
 				std::chrono::duration<double, std::milli> elapsed = end - start;
@@ -125,7 +108,7 @@ namespace Game
 			auto cubePos = cubes.top();
 			cubes.pop();
 
-			auto adjCubes = getAdjCubes(cubePos);
+			getAdjCubes(cubePos, adjCubes);
 
 			//Grab cube and add all neighbors to stack if not visited
 			for (auto adjCubePos : adjCubes)
@@ -138,27 +121,27 @@ namespace Game
 						visited[index] = true;
 						cubes.push(adjCubePos);
 					}
-				}	
+				}
 			}
 
 			//Check all cube sides
 			if (IsInBounds(cubePos))
 			{
 				const auto chunkId = Chunk::MapToChunkId(cubePos);
-				const auto& chunk = chunks.at(chunkId);
 
 				if (!meshes.contains(chunkId))
 				{
 					meshes.insert({ chunkId, Core::Mesh{} });
 				}
 
-				auto& mesh = meshes[chunkId];
-
 				auto currentVoxel = getVoxel(chunks, cubePos);
 
 				if (currentVoxel.Type != VoxelType::AIR)
 				{
-					for (int i = 0; i < adjCubes.size(); i++)
+					const auto& chunk = chunks.at(chunkId);
+					auto& mesh = meshes[chunkId];
+
+					for (int i = 0; i < 6; i++)
 					{
 						auto adjVoxel = getVoxel(chunks, adjCubes[i]);
 
@@ -193,7 +176,7 @@ namespace Game
 		return xPos + yPos * worldSize.x + zPos * worldSize.x * worldSize.y;
 	}
 
-	void WorldGen::generateChunk(const glm::i32vec3& position, std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks)
+	void WorldGen::generateChunk(const glm::i32vec3& position, std::unordered_map<glm::i32vec3, Chunk>& chunks)
 	{
 		auto chunk = Chunk{ position };
 
@@ -209,33 +192,28 @@ namespace Game
 		chunks[chunk.ChunkId()] = chunk;
 	}
 
-	std::vector<glm::i32vec3> WorldGen::getAdjCubes(const glm::i32vec3& cubePos)
+	void WorldGen::getAdjCubes(const glm::i32vec3& cubePos, glm::i32vec3 adjCubes[])
 	{
-		std::vector<glm::i32vec3> adjCubes;
-
 		//Left
-		adjCubes.push_back(cubePos + glm::i32vec3(-1, 0, 0));
+		adjCubes[0] = cubePos + glm::i32vec3(-1, 0, 0);
 
 		//Right
-		adjCubes.push_back(cubePos + glm::i32vec3(1, 0, 0));
+		adjCubes[1] = cubePos + glm::i32vec3(1, 0, 0);
 
 		//Top
-		adjCubes.push_back(cubePos + glm::i32vec3(0, 1, 0));
+		adjCubes[2] = cubePos + glm::i32vec3(0, 1, 0);
 
 		//Bottom
-		adjCubes.push_back(cubePos + glm::i32vec3(0, -1, 0));
+		adjCubes[3] = cubePos + glm::i32vec3(0, -1, 0);
 
 		//Front
-		adjCubes.push_back(cubePos + glm::i32vec3(0, 0, 1));
+		adjCubes[4] = cubePos + glm::i32vec3(0, 0, 1);
 
 		//Back
-		adjCubes.push_back(cubePos + glm::i32vec3(0, 0, -1));
-
-		return adjCubes;
+		adjCubes[5] = cubePos + glm::i32vec3(0, 0, -1);
 	}
 
-	Voxel WorldGen::getVoxel(const std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks,
-							 const glm::i32vec3& cubePos)
+	Voxel WorldGen::getVoxel(const std::unordered_map<glm::i32vec3, Chunk>& chunks, const glm::i32vec3& cubePos)
 	{
 		if (!IsInBounds(cubePos))
 		{
@@ -245,86 +223,5 @@ namespace Game
 		auto chunkId = Chunk::MapToChunkId(cubePos);
 		auto voxelType = chunks.at(chunkId).GetVoxelType(cubePos);
 		return terrainGen.GetVoxel(voxelType);
-	}
-
-	void WorldGen::generateMesh(const std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks, 
-								const Chunk& chunk, std::vector<ChunkMesh>& chunkMeshes)
-	{
-		auto chunkMesh = ChunkMesh
-		{
-			chunk.ChunkId(),
-			Core::Mesh{},
-		};
-
-		auto xPos = static_cast<int32_t>(std::floorf(chunk.Position().x));
-		auto yPos = static_cast<int32_t>(std::floorf(chunk.Position().y));
-		auto zPos = static_cast<int32_t>(std::floorf(chunk.Position().z));
-		auto chunkSize = glm::i32vec3{ CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH };
-
-		//Visited
-		std::map<glm::i32vec3, bool, Core::Ext::I32Vec3Comparator> visited;
-		for (int32_t x = xPos - 1; x <= xPos + chunkSize.x; x++)
-		{
-			for (int32_t y = yPos - 1; y <= yPos + chunkSize.y; y++)
-			{
-				for (int32_t z = zPos - 1; z <= zPos + chunkSize.z; z++)
-				{
-					visited[glm::i32vec3(x, y, z)] = false;
-				}
-			}
-		}
-
-		auto isInVisited = [xPos, yPos, zPos, chunkSize](const glm::i32vec3& cubePos)
-			{
-				return ((cubePos.x >= xPos - 1 && cubePos.x <= xPos + chunkSize.x) &&
-						(cubePos.y >= yPos - 1 && cubePos.y <= yPos + chunkSize.y) &&
-						(cubePos.z >= zPos - 1 && cubePos.z <= zPos + chunkSize.z)
-				);
-			};
-
-		//Stack
-		std::stack<glm::i32vec3> cubes;
-		auto startPos = glm::i32vec3(xPos, yPos, zPos);
-		cubes.push(startPos);
-		visited[startPos] = true;
-
-		while (!cubes.empty())
-		{
-			auto cubePos = cubes.top();
-			cubes.pop();
-
-			auto adjCubes = getAdjCubes(cubePos);
-
-			//Grab cube and add all neighbors to stack if not visited
-			for (auto adjCubePos : adjCubes)
-			{
-				if (isInVisited(adjCubePos) && !visited[adjCubePos])
-				{
-					visited[adjCubePos] = true;
-					cubes.push(adjCubePos);
-				}
-			}
-
-			//Check all cube sides
-			auto currentVoxel = getVoxel(chunks, cubePos);
-			bool isCurrentCubeSolid = chunk.IsInBounds(cubePos) && currentVoxel.Type != VoxelType::AIR;
-
-			if (isCurrentCubeSolid)
-			{
-				for (int i = 0; i < adjCubes.size(); i++)
-				{
-					auto adjVoxel = getVoxel(chunks, adjCubes[i]);
-
-					if (adjVoxel.Type == VoxelType::AIR)
-					{
-						CubeFace face = static_cast<CubeFace>(i);
-
-						chunk.CreateFace(face, cubePos, currentVoxel, chunkMesh.mesh);
-					}
-				}
-			}
-		}
-
-		chunkMeshes.push_back(chunkMesh);
 	}
 }

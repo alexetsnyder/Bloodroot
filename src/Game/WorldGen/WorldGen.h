@@ -5,9 +5,11 @@
 #include "Mesh.h"
 #include "TerrainGen.h"
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
+#include <glm/gtx/hash.hpp>
 
-#include <map>
+#include <unordered_map>
 #include <vector>
 
 namespace Game
@@ -25,11 +27,9 @@ namespace Game
 			WorldGen(const glm::vec3& center, const glm::vec3& size);
 			~WorldGen();
 
-			void GenerateChunks(std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks);
-			void GenerateMeshes(const std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks, 
-								std::vector<ChunkMesh>& chunkMeshes);
-			void GenerateMeshes(const std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks,
-								std::map<glm::i32vec3, Core::Mesh, Core::Ext::I32Vec3Comparator>& meshes);
+			void GenerateChunks(std::unordered_map<glm::i32vec3, Chunk>& chunks);
+			void GenerateMeshes(const std::unordered_map<glm::i32vec3, Chunk>& chunks,
+								std::unordered_map<glm::i32vec3, Core::Mesh>& meshes);
 
 			bool IsInBounds(const glm::vec3& position) const;
 
@@ -40,12 +40,10 @@ namespace Game
 
 			size_t getIndex(const glm::i32vec3& cubePos) const;
 
-			void generateChunk(const glm::i32vec3& position, std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks);
+			void generateChunk(const glm::i32vec3& position, std::unordered_map<glm::i32vec3, Chunk>& chunks);
 
-			std::vector<glm::i32vec3> getAdjCubes(const glm::i32vec3& cubePos);
-			Voxel getVoxel(const std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks,
+			void getAdjCubes(const glm::i32vec3& cubePos, glm::i32vec3 adjCubes[]);
+			Voxel getVoxel(const std::unordered_map<glm::i32vec3, Chunk>& chunks,
 						   const glm::i32vec3& cubePos);
-			void generateMesh(const std::map<glm::i32vec3, Chunk, Core::Ext::I32Vec3Comparator>& chunks,
-							  const Chunk& chunk, std::vector<ChunkMesh>& chunkMeshes);
 	};
 }
