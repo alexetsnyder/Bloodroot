@@ -136,7 +136,7 @@ namespace Game
 
 				auto currentVoxel = getVoxel(chunks, cubePos);
 
-				if (currentVoxel.Type != VoxelType::AIR)
+				if (currentVoxel.Type != VoxelType::AIR) // && currentVoxel.Type != VoxelType::WATER)
 				{
 					const auto& chunk = chunks.at(chunkId);
 					auto& mesh = meshes[chunkId];
@@ -145,7 +145,7 @@ namespace Game
 					{
 						auto adjVoxel = getVoxel(chunks, adjCubes[i]);
 
-						if (adjVoxel.Type == VoxelType::AIR)
+						if (adjVoxel.Type == VoxelType::AIR) // || adjVoxel.Type == VoxelType::WATER)
 						{
 							chunk.CreateFace(static_cast<CubeFace>(i), cubePos, currentVoxel, mesh);
 						}

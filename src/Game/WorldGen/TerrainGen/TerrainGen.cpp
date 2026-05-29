@@ -6,21 +6,23 @@ namespace Game
 {
 	std::map<VoxelType, Voxel> VoxelMap
 	{
-		{ VoxelType::AIR, { VoxelType::AIR, -1, -1, -1, -1, -1, -1 } },
-		{ VoxelType::GRASS, { VoxelType::GRASS, 1, 1, 2, 0, 1, 1 } },
-		{ VoxelType::DIRT, { VoxelType::DIRT, 0, 0, 0, 0, 0, 0  } },
-		{ VoxelType::STONE, { VoxelType::STONE, 3, 3, 3, 3, 3, 3 } },
-		{ VoxelType::BEDROCK, { VoxelType::BEDROCK, 4, 4, 4, 4, 4, 4 } },
+		{ VoxelType::AIR, { VoxelType::AIR, -1, -1, -1, -1, -1, -1 }},
+		{ VoxelType::WATER, { VoxelType::WATER, 6, 6, 6, 6, 6, 6 }},
+		{ VoxelType::GRASS, { VoxelType::GRASS, 1, 1, 2, 0, 1, 1 }},
+		{ VoxelType::DIRT, { VoxelType::DIRT, 0, 0, 0, 0, 0, 0  }},
+		{ VoxelType::STONE, { VoxelType::STONE, 3, 3, 3, 3, 3, 3 }},
+		{ VoxelType::BEDROCK, { VoxelType::BEDROCK, 4, 4, 4, 4, 4, 4 }},
+		{ VoxelType::SAND, { VoxelType::SAND, 5, 5, 5, 5, 5, 5 }}
 	};
 
 	TerrainGen::TerrainGen()
-		: worldCenter{ { 0 } }, worldSize{ { 0 } }, noise{ 42 }
+		: worldCenter{ { 0 } }, worldSize{ { 0 } }, biomeNoise{ 0 }, noise{ 42 }
 	{
 
 	}
 
 	TerrainGen::TerrainGen(const glm::i32vec3 & worldCenter, const glm::u32vec3 & worldSize)
-		: worldCenter{ worldCenter }, worldSize{ worldSize }, noise{ 42 }
+		: worldCenter{ worldCenter }, worldSize{ worldSize }, biomeNoise{ 0 }, noise{ 42 }
 	{
 
 	}
@@ -44,65 +46,83 @@ namespace Game
 	{
 		int32_t y = static_cast<int32_t>(std::floorf(position.y));
 
-		if (y <= worldCenter.y)
-		{
-			return VoxelType::BEDROCK;
-		}
+		uint32_t biome = getBiome(position.x, position.z);
+		uint32_t height = getHeight(position.x, position.z);
 
-		float noiseValue = noise.GetNoise(position.x, position.z);
-
-		int height = std::floor(noiseValue * VARY_HEIGHT + MIN_HEIGHT);
-
-		if (y > height)
-		{
-			return VoxelType::AIR;
-		}
-		else if (y == height)
-		{
-			return VoxelType::GRASS;
-		}
-		else if (y >= height - DIRT_DEPTH)
-		{
-			return VoxelType::DIRT;
-		}
-		else
-		{
-			return VoxelType::STONE;
-		}
+		return getVoxelType(y, biome, height);
 	}
 
 	std::vector<VoxelType> TerrainGen::GetVoxelTypeColumn(int32_t xPos, int32_t zPos)
 	{
 		auto voxelTypes = std::vector<VoxelType>{};
 
-		float noiseValue = noise.GetNoise(xPos, zPos);
-
-		uint32_t height = std::floor(noiseValue * VARY_HEIGHT + MIN_HEIGHT);
+		auto biome = getBiome(xPos, zPos);
+		auto height = getHeight(xPos, zPos);
 
 		for (uint32_t y = worldCenter.y; y < worldCenter.y + worldSize.y; y++)
 		{
-			voxelTypes.push_back(getVoxelType(y, height));
+			voxelTypes.push_back(getVoxelType(y, biome, height));
 		}
 
 		return voxelTypes;
 	}
 
-	VoxelType TerrainGen::getVoxelType(uint32_t yPos, uint32_t height) const
+	uint32_t TerrainGen::getHeight(int32_t xPos, int32_t zPos)
+	{
+		float noiseValue = noise.GetNoise(xPos, zPos);
+
+		return static_cast<uint32_t>(std::floorf(noiseValue * VARY_HEIGHT + MIN_HEIGHT));
+	}
+
+	uint32_t TerrainGen::getBiome(int32_t xPos, int32_t zPos)
+	{
+		float noiseValue = biomeNoise.GetNoise(xPos, zPos);
+
+		return static_cast<uint32_t>(std::floorf(noiseValue * VARY_HEIGHT + MIN_HEIGHT));
+	}
+
+	VoxelType TerrainGen::getVoxelType(uint32_t yPos, uint32_t biome, uint32_t height) const
 	{
 		if (yPos <= worldCenter.y)
 		{
 			return VoxelType::BEDROCK;
 		}
 
-		if (yPos > height)
+		if (yPos > biome)
 		{
-			return VoxelType::AIR;
+			if (yPos > height)
+			{
+				return VoxelType::AIR;
+			}
+			else if (yPos == height)
+			{
+				return VoxelType::GRASS;
+			}
 		}
-		else if (yPos == height)
+		else if (yPos >= biome - 1)
 		{
-			return VoxelType::GRASS;
+			if (yPos > height)
+			{
+				return VoxelType::AIR;
+			}
+			else if (yPos >= height - SAND_DEPTH)
+			{
+				return VoxelType::SAND;
+			}
 		}
-		else if (yPos >= height - DIRT_DEPTH)
+		else
+		{
+			if (yPos > height)
+			{
+				return VoxelType::AIR;
+			}
+			else if (yPos >= height - WATER_DEPTH)
+			{
+				return VoxelType::WATER;
+			}	
+		}
+
+		if (yPos >= height - DIRT_DEPTH)
 		{
 			return VoxelType::DIRT;
 		}
@@ -111,5 +131,4 @@ namespace Game
 			return VoxelType::STONE;
 		}
 	}
-
 }

@@ -7,8 +7,10 @@ namespace Game
 	enum class VoxelType
 	{
 		AIR,
+		WATER,
 		GRASS,
 		DIRT,
+		SAND,
 		STONE,
 		BEDROCK,
 	};
@@ -19,10 +21,14 @@ namespace Game
 		{
 			case VoxelType::AIR:
 				return os << "VoxelType::AIR";
+			case VoxelType::WATER:
+				return os << "VoxelType::WATER";
 			case VoxelType::GRASS:
 				return os << "VoxelType::GRASS";
 			case VoxelType::DIRT:
 				return os << "VoxelType::DIRT";
+			case VoxelType::SAND:
+				return os << "VoxelType::SAND";
 			case VoxelType::STONE:
 				return os << "VoxelType::STONE";
 			case VoxelType::BEDROCK:
