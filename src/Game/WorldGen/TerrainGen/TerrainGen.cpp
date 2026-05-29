@@ -88,47 +88,48 @@ namespace Game
 			return VoxelType::BEDROCK;
 		}
 
-		if (yPos > biome)
+		if (height == WATER_HEIGHT)
 		{
-			if (yPos > height)
+			if (yPos > WATER_HEIGHT)
 			{
 				return VoxelType::AIR;
 			}
-			else if (yPos == height)
-			{
-				return VoxelType::GRASS;
-			}
-		}
-		else if (yPos >= biome - 1)
-		{
-			if (yPos > height)
-			{
-				return VoxelType::AIR;
-			}
-			else if (yPos >= height - SAND_DEPTH)
+			else if (yPos >= WATER_HEIGHT - SAND_DEPTH)
 			{
 				return VoxelType::SAND;
 			}
 		}
+		else if (height <= WATER_HEIGHT)
+		{
+			if (yPos > WATER_HEIGHT)
+			{
+				return VoxelType::AIR;
+			}
+			else if (yPos >= WATER_HEIGHT - WATER_DEPTH)
+			{
+				return VoxelType::WATER;
+			}
+			else if (yPos >= height - DIRT_DEPTH)
+			{
+				return VoxelType::DIRT;
+			}
+		}
 		else
 		{
 			if (yPos > height)
 			{
 				return VoxelType::AIR;
 			}
-			else if (yPos >= height - WATER_DEPTH)
+			if (yPos == height)
 			{
-				return VoxelType::WATER;
-			}	
+				return VoxelType::GRASS;
+			}
+			else if (yPos >= height - DIRT_DEPTH)
+			{
+				return VoxelType::DIRT;
+			}
 		}
 
-		if (yPos >= height - DIRT_DEPTH)
-		{
-			return VoxelType::DIRT;
-		}
-		else
-		{
-			return VoxelType::STONE;
-		}
+		return VoxelType::STONE;
 	}
 }

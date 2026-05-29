@@ -15,6 +15,7 @@ namespace Game
 			static const uint32_t MIN_HEIGHT = 32;
 			static const uint32_t VARY_HEIGHT = 16;
 			static const uint32_t DIRT_DEPTH = 3;
+			static const uint32_t WATER_HEIGHT = 32;
 			static const uint32_t WATER_DEPTH = 1;
 			static const uint32_t SAND_DEPTH = 1;
 
