@@ -99,6 +99,17 @@ namespace Game
 				return VoxelType::SAND;
 			}
 		}
+		else if (height == WATER_HEIGHT + 1)
+		{
+			if (yPos > WATER_HEIGHT + 1)
+			{
+				return VoxelType::AIR;
+			}
+			else if (yPos >= WATER_HEIGHT - SAND_DEPTH)
+			{
+				return VoxelType::SAND;
+			}
+		}
 		else if (height <= WATER_HEIGHT)
 		{
 			if (yPos > WATER_HEIGHT)

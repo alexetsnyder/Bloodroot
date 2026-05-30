@@ -173,7 +173,7 @@ namespace Core
 	{
 		UniformBufferObject ubo{};
 		ubo.view = view;
-		ubo.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height), 0.1f, 100.0f);
+		ubo.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height), 0.1f, 200.0f);
 
 		//glm designed for OpenGl where y coordinate is inverted.
 		ubo.projection[1][1] *= -1;
@@ -240,12 +240,12 @@ namespace Core
 
 		commandBuffers[frameIndex].beginRendering(renderingInfo);
 
-		commandBuffers[frameIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, *graphicsPipeline);
+		commandBuffers[frameIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, *graphicsPipeline.Pipeline());
 
 		commandBuffers[frameIndex].setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height), 0.0f, 1.0f));
 		commandBuffers[frameIndex].setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapChainExtent));
 
-		commandBuffers[frameIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, *descriptorSets[frameIndex], nullptr);
+		commandBuffers[frameIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipeline.PipelineLayout(), 0, *descriptorSets[frameIndex], nullptr);
 
 		commandBuffers[frameIndex].bindIndexBuffer(indexBuffer.Buffer(), 0, vk::IndexType::eUint32);
 
@@ -259,7 +259,7 @@ namespace Core
 			};
 
 			commandBuffers[frameIndex].pushConstants<PushConstants>(
-				pipelineLayout,
+				graphicsPipeline.PipelineLayout(),
 				vk::ShaderStageFlagBits::eVertex,
 				0,
 				pushConstants
@@ -643,114 +643,13 @@ namespace Core
 
 	void VulkanRenderer::createGraphicsPipeline()
 	{
-		vk::raii::ShaderModule shaderModule = createShaderModule(FileIO::readFile("Shaders/slang.spv"));
-
-		vk::PipelineShaderStageCreateInfo vertShaderStageInfo{ .stage = vk::ShaderStageFlagBits::eVertex, .module = shaderModule, .pName = "vertMain" };
-		vk::PipelineShaderStageCreateInfo fragShaderStageInfo{ .stage = vk::ShaderStageFlagBits::eFragment, .module = shaderModule, .pName = "fragMain" };
-		vk::PipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
-
-		auto bindingDescription = Vertex::getBindingDescription();
-		auto attibuteDescriptions = Vertex::getAttibuteDescriptions();
-		vk::PipelineVertexInputStateCreateInfo vertexInputInfo
-		{
-			.vertexBindingDescriptionCount = 1,
-			.pVertexBindingDescriptions = &bindingDescription,
-			.vertexAttributeDescriptionCount = static_cast<uint32_t>(attibuteDescriptions.size()),
-			.pVertexAttributeDescriptions = attibuteDescriptions.data()
-		};
-
-		vk::PipelineInputAssemblyStateCreateInfo inputAssembly{ .topology = vk::PrimitiveTopology::eTriangleList };
-		vk::PipelineViewportStateCreateInfo viewPortState{ .viewportCount = 1, .scissorCount = 1 };
-
-		vk::PipelineRasterizationStateCreateInfo rasterizer
-		{
-			.depthClampEnable = vk::False,
-			.rasterizerDiscardEnable = vk::False,
-			.polygonMode = vk::PolygonMode::eFill,
-			.cullMode = vk::CullModeFlagBits::eBack,
-			.frontFace = vk::FrontFace::eCounterClockwise,
-			.depthBiasEnable = vk::False,
-			.lineWidth = 1.0f
-		};
-
-		vk::PipelineMultisampleStateCreateInfo multisampling{ .rasterizationSamples = vk::SampleCountFlagBits::e1, .sampleShadingEnable = vk::False };
-
-		vk::PipelineColorBlendAttachmentState colorBlendAttachment
-		{
-			.blendEnable = vk::False,
-			.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
-		};
-
-		vk::PipelineColorBlendStateCreateInfo colorBlending
-		{
-			.logicOpEnable = vk::False,
-			.logicOp = vk::LogicOp::eCopy,
-			.attachmentCount = 1,
-			.pAttachments = &colorBlendAttachment
-		};
-
-		std::vector<vk::DynamicState> dynamicStates = { vk::DynamicState::eViewport, vk::DynamicState::eScissor };
-		vk::PipelineDynamicStateCreateInfo dynamicState{ .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()), .pDynamicStates = dynamicStates.data() };
-
-		vk::PushConstantRange pushConstantRange
-		{
-			.stageFlags = vk::ShaderStageFlagBits::eVertex,
-			.offset = 0,
-			.size = sizeof(PushConstants),
-		};
-
-		vk::PipelineLayoutCreateInfo pipelineLayoutInfo
+		graphicsPipeline = GraphicsPipeline
 		{ 
-			.setLayoutCount = 1, 
-			.pSetLayouts = &*descriptorSetLayout, 
-			.pushConstantRangeCount = 1,
-			.pPushConstantRanges = &pushConstantRange,
+			device,
+			swapChainSurfaceFormat.format,
+			findDepthFormat(),
+			descriptorSetLayout 
 		};
-		pipelineLayout = vk::raii::PipelineLayout(device, pipelineLayoutInfo);
-
-		vk::PipelineDepthStencilStateCreateInfo depthStencil
-		{
-			.depthTestEnable = vk::True,
-			.depthWriteEnable = vk::True,
-			.depthCompareOp = vk::CompareOp::eLess,
-			.depthBoundsTestEnable = vk::False,
-			.stencilTestEnable = vk::False
-		};
-
-		vk::Format depthFormat = findDepthFormat();
-
-		vk::StructureChain<vk::GraphicsPipelineCreateInfo, vk::PipelineRenderingCreateInfo> pipelineCreateInfoChain =
-		{
-			{
-				.stageCount = 2,
-				.pStages = shaderStages,
-				.pVertexInputState = &vertexInputInfo,
-				.pInputAssemblyState = &inputAssembly,
-				.pViewportState = &viewPortState,
-				.pRasterizationState = &rasterizer,
-				.pMultisampleState = &multisampling,
-				.pDepthStencilState = &depthStencil,
-				.pColorBlendState = &colorBlending,
-				.pDynamicState = &dynamicState,
-				.layout = pipelineLayout,
-				.renderPass = nullptr
-			},
-			{
-				.colorAttachmentCount = 1,
-				.pColorAttachmentFormats = &swapChainSurfaceFormat.format,
-				.depthAttachmentFormat = depthFormat
-			}
-		};
-
-		graphicsPipeline = vk::raii::Pipeline(device, nullptr, pipelineCreateInfoChain.get<vk::GraphicsPipelineCreateInfo>());
-	}
-
-	[[nodiscard]] vk::raii::ShaderModule VulkanRenderer::createShaderModule(const std::vector<char>& code) const
-	{
-		vk::ShaderModuleCreateInfo createInfo{ .codeSize = code.size() * sizeof(char), .pCode = reinterpret_cast<const uint32_t*>(code.data()) };
-		vk::raii::ShaderModule shaderModule{ device, createInfo };
-
-		return shaderModule;
 	}
 
 	vk::Format VulkanRenderer::findDepthFormat()

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "GraphicsPipeline.h"
 #include "IRenderer.h"
 #include "Window.h"
 #include "Vertex.h"
@@ -31,11 +32,6 @@ namespace Core
 	{
 		alignas(16) glm::mat4 view;
 		alignas(16) glm::mat4 projection;
-	};
-
-	struct PushConstants
-	{
-		alignas(16) glm::mat4 model;
 	};
 
 	struct Drawable
@@ -124,8 +120,7 @@ namespace Core
 			std::vector<vk::raii::ImageView> swapChainImageViews;
 
 			vk::raii::DescriptorSetLayout descriptorSetLayout = nullptr;
-			vk::raii::PipelineLayout pipelineLayout = nullptr;
-			vk::raii::Pipeline graphicsPipeline = nullptr;
+			GraphicsPipeline graphicsPipeline;
 
 			vk::raii::CommandPool commandPool = nullptr;
 			std::vector<vk::raii::CommandBuffer> commandBuffers;
@@ -182,11 +177,12 @@ namespace Core
 			static vk::SurfaceFormatKHR chooseSwapChainSurfaceFormat(std::vector<vk::SurfaceFormatKHR> const& availableFormats);
 			static vk::PresentModeKHR chooseSwapChainPresentMode(std::vector<vk::PresentModeKHR> const& availablePresentModes);
 			void createImageViews();
+
 			void createDescriptorSetLayout();
 			void createGraphicsPipeline();
-			[[nodiscard]] vk::raii::ShaderModule createShaderModule(const std::vector<char>& code) const;
 			vk::Format findDepthFormat();
 			vk::Format findSupportedFormat(const std::vector<vk::Format>& canidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
+			
 			void createCommandPool();
 			void createDepthResources();
 			void createImage(

@@ -8,6 +8,7 @@ target_sources(
 		"Math/Noise/SimplexNoise.cpp"
 		Vulkan/VMA/VMAAllocator.cpp
 		Vulkan/VMA/VMAVirtualBlock.cpp
+		Vulkan/Pipeline/GraphicsPipeline.cpp
 
 	PUBLIC
 	FILE_SET HEADERS
@@ -29,6 +30,7 @@ target_sources(
 		Vulkan/VMA/VMAVirtualAllocation.h
 		Extensions/GLMExtensions.h
 		"Math/RLEncoding/RLEncoding.h"
+		Vulkan/Pipeline/GraphicsPipeline.h
 )
 
 target_include_directories(
@@ -44,6 +46,7 @@ target_include_directories(
 		"Math/RLEncoding"
 		Data
 		Vulkan/VMA
+		Vulkan/Pipeline
 		Extensions
 )
 
