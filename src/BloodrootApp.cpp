@@ -22,7 +22,7 @@ BloodrootApp::BloodrootApp()
 	renderer.SendIndexData(chunkIndicies.Indicies());
 
 	//{ 320, Game::CHUNK_HEIGHT, 320 }
-	auto worldGen = Game::WorldGen{ { 0, 0, 0 }, { 64, Game::CHUNK_HEIGHT, 64 } };
+	auto worldGen = Game::WorldGen{ { 0, 0, 0 }, { 320, Game::CHUNK_HEIGHT, 320 } };
 
 	worldGen.GenerateChunks(chunks);
 

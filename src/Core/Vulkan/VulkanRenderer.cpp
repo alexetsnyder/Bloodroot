@@ -4,6 +4,7 @@
 #include "FileIO.h"
 #include "Image.h"
 
+#include <algorithm>
 #include <assert.h>
 #include <chrono>
 #include <iostream>
@@ -283,16 +284,23 @@ namespace Core
 
 		commandBuffers[frameIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, *tGraphicsPipeline.Pipeline());
 
-		std::map<float, uint32_t> sorted;
+		std::map<uint32_t, float> distances;
+		std::vector<uint32_t> indicies(tDrawables.size());
 		for (uint32_t i = 0; i < tDrawables.size(); i++)
 		{
 			float distance = glm::length(cameraPos - tDrawables[i].position);
-			sorted[distance] = i;
+			distances[i] = distance;
+			indicies[i] = i;
 		}
 
-		for (auto rIt = sorted.rbegin(); rIt != sorted.rend(); ++rIt)
+		std::sort(indicies.begin(), indicies.end(), 
+			      [&distances](const uint32_t& i1, const uint32_t& i2) {
+						return distances[i1] > distances[i2];
+				  });
+
+		for (const auto& index : indicies)
 		{
-			const auto& drawable = tDrawables[rIt->second];
+			const auto& drawable = tDrawables[index];
 
 			commandBuffers[frameIndex].bindVertexBuffers(0, { vertexBuffer.Buffer() }, { drawable.allocation.Offset() });
 
