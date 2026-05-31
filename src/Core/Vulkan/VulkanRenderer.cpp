@@ -240,14 +240,14 @@ namespace Core
 
 		commandBuffers[frameIndex].beginRendering(renderingInfo);
 
-		commandBuffers[frameIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, *graphicsPipeline.Pipeline());
-
 		commandBuffers[frameIndex].setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height), 0.0f, 1.0f));
 		commandBuffers[frameIndex].setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapChainExtent));
 
 		commandBuffers[frameIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipeline.PipelineLayout(), 0, *descriptorSets[frameIndex], nullptr);
 
 		commandBuffers[frameIndex].bindIndexBuffer(indexBuffer.Buffer(), 0, vk::IndexType::eUint32);
+
+		commandBuffers[frameIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, *graphicsPipeline.Pipeline());
 
 		for (const auto& drawable : drawables)
 		{

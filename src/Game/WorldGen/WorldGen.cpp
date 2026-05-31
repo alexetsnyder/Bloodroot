@@ -51,7 +51,9 @@ namespace Game
 		}
 	}
 
-	void WorldGen::GenerateMeshes(const std::unordered_map<glm::i32vec3, Chunk>& chunks, std::unordered_map<glm::i32vec3, Core::Mesh>& meshes)
+	void WorldGen::GenerateMeshes(const std::unordered_map<glm::i32vec3, Chunk>& chunks,
+								  std::unordered_map<glm::i32vec3, Core::Mesh>& meshes,
+								  std::unordered_map<glm::i32vec3, Core::Mesh>& tMeshes)
 	{
 		auto startPos = glm::i32vec3
 		{
@@ -128,16 +130,35 @@ namespace Game
 			if (IsInBounds(cubePos))
 			{
 				const auto chunkId = Chunk::MapToChunkId(cubePos);
-
-				if (!meshes.contains(chunkId))
-				{
-					meshes.insert({ chunkId, Core::Mesh{} });
-				}
-
 				auto currentVoxel = getVoxel(chunks, cubePos);
 
-				if (currentVoxel.Type != VoxelType::AIR) // && currentVoxel.Type != VoxelType::WATER)
+				if (currentVoxel.Type == VoxelType::WATER)
 				{
+					if (!tMeshes.contains(chunkId))
+					{
+						tMeshes.insert({ chunkId, Core::Mesh{} });
+					}
+
+					const auto& chunk = chunks.at(chunkId);
+					auto& tMesh = tMeshes[chunkId];
+
+					for (int i = 0; i < 6; i++)
+					{
+						auto adjVoxel = getVoxel(chunks, adjCubes[i]);
+
+						if (adjVoxel.Type == VoxelType::AIR)
+						{
+							chunk.CreateFace(static_cast<CubeFace>(i), cubePos, currentVoxel, tMesh);
+						}
+					}
+				}
+				else if (currentVoxel.Type != VoxelType::AIR)
+				{
+					if (!meshes.contains(chunkId))
+					{
+						meshes.insert({ chunkId, Core::Mesh{} });
+					}
+
 					const auto& chunk = chunks.at(chunkId);
 					auto& mesh = meshes[chunkId];
 
@@ -145,7 +166,7 @@ namespace Game
 					{
 						auto adjVoxel = getVoxel(chunks, adjCubes[i]);
 
-						if (adjVoxel.Type == VoxelType::AIR) // || adjVoxel.Type == VoxelType::WATER)
+						if (adjVoxel.Type == VoxelType::AIR || adjVoxel.Type == VoxelType::WATER)
 						{
 							chunk.CreateFace(static_cast<CubeFace>(i), cubePos, currentVoxel, mesh);
 						}

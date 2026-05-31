@@ -29,7 +29,8 @@ BloodrootApp::BloodrootApp()
 	std::cout << "Finished Generating Chunks!\n";
 
 	std::unordered_map<glm::i32vec3, Core::Mesh> meshes;
-	worldGen.GenerateMeshes(chunks, meshes);
+	std::unordered_map<glm::i32vec3, Core::Mesh> tMeshes;
+	worldGen.GenerateMeshes(chunks, meshes, tMeshes);
 
 	std::cout << "Finished Generating Meshes!\n";
 
@@ -38,6 +39,14 @@ BloodrootApp::BloodrootApp()
 		if (!mesh.IsEmpty())
 		{
 			renderer.SendVertexData(chunkId, mesh.ConstIndexCount(), chunks[chunkId].Position(), mesh.Verticies());
+		}
+	}
+
+	for (const auto& [chunkId, tMesh] : tMeshes)
+	{
+		if (!tMesh.IsEmpty())
+		{
+			renderer.SendVertexData(chunkId, tMesh.ConstIndexCount(), chunks[chunkId].Position(), tMesh.Verticies());
 		}
 	}
 

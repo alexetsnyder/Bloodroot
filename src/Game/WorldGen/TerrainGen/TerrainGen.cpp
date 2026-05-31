@@ -16,13 +16,13 @@ namespace Game
 	};
 
 	TerrainGen::TerrainGen()
-		: worldCenter{ { 0 } }, worldSize{ { 0 } }, biomeNoise{ 0 }, noise{ 42 }
+		: worldCenter{ { 0 } }, worldSize{ { 0 } }, noise{ 42 }
 	{
 
 	}
 
 	TerrainGen::TerrainGen(const glm::i32vec3 & worldCenter, const glm::u32vec3 & worldSize)
-		: worldCenter{ worldCenter }, worldSize{ worldSize }, biomeNoise{ 0 }, noise{ 42 }
+		: worldCenter{ worldCenter }, worldSize{ worldSize }, noise{ 42 }
 	{
 
 	}
@@ -46,22 +46,20 @@ namespace Game
 	{
 		int32_t y = static_cast<int32_t>(std::floorf(position.y));
 
-		uint32_t biome = getBiome(position.x, position.z);
 		uint32_t height = getHeight(position.x, position.z);
 
-		return getVoxelType(y, biome, height);
+		return getVoxelType(y, height);
 	}
 
 	std::vector<VoxelType> TerrainGen::GetVoxelTypeColumn(int32_t xPos, int32_t zPos)
 	{
 		auto voxelTypes = std::vector<VoxelType>{};
 
-		auto biome = getBiome(xPos, zPos);
 		auto height = getHeight(xPos, zPos);
 
 		for (uint32_t y = worldCenter.y; y < worldCenter.y + worldSize.y; y++)
 		{
-			voxelTypes.push_back(getVoxelType(y, biome, height));
+			voxelTypes.push_back(getVoxelType(y, height));
 		}
 
 		return voxelTypes;
@@ -74,58 +72,14 @@ namespace Game
 		return static_cast<uint32_t>(std::floorf(noiseValue * VARY_HEIGHT + MIN_HEIGHT));
 	}
 
-	uint32_t TerrainGen::getBiome(int32_t xPos, int32_t zPos)
-	{
-		float noiseValue = biomeNoise.GetNoise(xPos, zPos);
-
-		return static_cast<uint32_t>(std::floorf(noiseValue * VARY_HEIGHT + MIN_HEIGHT));
-	}
-
-	VoxelType TerrainGen::getVoxelType(uint32_t yPos, uint32_t biome, uint32_t height) const
+	VoxelType TerrainGen::getVoxelType(uint32_t yPos, uint32_t height) const
 	{
 		if (yPos <= worldCenter.y)
 		{
 			return VoxelType::BEDROCK;
 		}
 
-		if (height == WATER_HEIGHT)
-		{
-			if (yPos > WATER_HEIGHT)
-			{
-				return VoxelType::AIR;
-			}
-			else if (yPos >= WATER_HEIGHT - SAND_DEPTH)
-			{
-				return VoxelType::SAND;
-			}
-		}
-		else if (height == WATER_HEIGHT + 1)
-		{
-			if (yPos > WATER_HEIGHT + 1)
-			{
-				return VoxelType::AIR;
-			}
-			else if (yPos >= WATER_HEIGHT - SAND_DEPTH)
-			{
-				return VoxelType::SAND;
-			}
-		}
-		else if (height <= WATER_HEIGHT)
-		{
-			if (yPos > WATER_HEIGHT)
-			{
-				return VoxelType::AIR;
-			}
-			else if (yPos >= WATER_HEIGHT - WATER_DEPTH)
-			{
-				return VoxelType::WATER;
-			}
-			else if (yPos >= height - DIRT_DEPTH)
-			{
-				return VoxelType::DIRT;
-			}
-		}
-		else
+		if (height >= DIRT_HEIGHT)
 		{
 			if (yPos > height)
 			{
@@ -135,9 +89,31 @@ namespace Game
 			{
 				return VoxelType::GRASS;
 			}
-			else if (yPos >= height - DIRT_DEPTH)
+			else if (yPos >= DIRT_HEIGHT)
 			{
 				return VoxelType::DIRT;
+			}
+		}
+		else if (height >= SAND_HEIGHT)
+		{
+			if (yPos > height)
+			{
+				return VoxelType::AIR;
+			}
+			else if (yPos >= SAND_HEIGHT)
+			{
+				return VoxelType::SAND;
+			}
+		}
+		else //(height < WATER_HEIGHT)
+		{
+			if (yPos > WATER_HEIGHT)
+			{
+				return VoxelType::AIR;
+			}
+			else if (yPos > height)
+			{
+				return VoxelType::WATER;
 			}
 		}
 
