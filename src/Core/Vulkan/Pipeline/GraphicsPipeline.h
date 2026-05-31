@@ -17,7 +17,9 @@ namespace Core
 			GraphicsPipeline(const vk::raii::Device& device, 
 							 const vk::Format& colorAttatchmentFormat,
 							 const vk::Format& depthFormat,
-							 const vk::raii::DescriptorSetLayout& descriptorSetLayout);
+							 const vk::raii::DescriptorSetLayout& descriptorSetLayout,
+							 const vk::PipelineColorBlendAttachmentState& colorBlendAttachment,
+							 const vk::PipelineDepthStencilStateCreateInfo& depthStateCreateInfo);
 			GraphicsPipeline(GraphicsPipeline&& other) noexcept;
 			GraphicsPipeline& operator=(GraphicsPipeline&& other) noexcept;
 

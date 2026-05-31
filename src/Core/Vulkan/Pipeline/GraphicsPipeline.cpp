@@ -14,7 +14,9 @@ namespace Core
 	GraphicsPipeline::GraphicsPipeline(const vk::raii::Device& device,
 									   const vk::Format& colorAttatchmentFormat,
 									   const vk::Format& depthFormat,
-									   const vk::raii::DescriptorSetLayout& descriptorSetLayout)
+									   const vk::raii::DescriptorSetLayout& descriptorSetLayout,
+									   const vk::PipelineColorBlendAttachmentState& colorBlendAttachment,
+									   const vk::PipelineDepthStencilStateCreateInfo& depthStateCreateInfo)
 	{
 		vk::raii::ShaderModule shaderModule = createShaderModule(device, FileIO::readFile("Shaders/slang.spv"));
 
@@ -48,12 +50,6 @@ namespace Core
 
 		vk::PipelineMultisampleStateCreateInfo multisampling{ .rasterizationSamples = vk::SampleCountFlagBits::e1, .sampleShadingEnable = vk::False };
 
-		vk::PipelineColorBlendAttachmentState colorBlendAttachment
-		{
-			.blendEnable = vk::False,
-			.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
-		};
-
 		vk::PipelineColorBlendStateCreateInfo colorBlending
 		{
 			.logicOpEnable = vk::False,
@@ -81,15 +77,6 @@ namespace Core
 		};
 		pipelineLayout = vk::raii::PipelineLayout(device, pipelineLayoutInfo);
 
-		vk::PipelineDepthStencilStateCreateInfo depthStencil
-		{
-			.depthTestEnable = vk::True,
-			.depthWriteEnable = vk::True,
-			.depthCompareOp = vk::CompareOp::eLess,
-			.depthBoundsTestEnable = vk::False,
-			.stencilTestEnable = vk::False
-		};
-
 		vk::StructureChain<vk::GraphicsPipelineCreateInfo, vk::PipelineRenderingCreateInfo> pipelineCreateInfoChain =
 		{
 			{
@@ -100,7 +87,7 @@ namespace Core
 				.pViewportState = &viewPortState,
 				.pRasterizationState = &rasterizer,
 				.pMultisampleState = &multisampling,
-				.pDepthStencilState = &depthStencil,
+				.pDepthStencilState = &depthStateCreateInfo,
 				.pColorBlendState = &colorBlending,
 				.pDynamicState = &dynamicState,
 				.layout = pipelineLayout,

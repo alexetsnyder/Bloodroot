@@ -86,14 +86,19 @@ namespace Core
 			VulkanRenderer(const Window& window, std::vector<const char*>&& requiredExtensions);
 			~VulkanRenderer();
 
-			void SendVertexData(const glm::i32vec3& chunkId,
-								uint32_t indexCount, 
-								const glm::vec3& position, 
-								const std::vector<Vertex>& verticies);
+			void AddOpaqueMesh(const glm::i32vec3& chunkId,
+							   uint32_t indexCount,
+							   const glm::vec3& position,
+							   const std::vector<Vertex>& verticies);
+
+			void AddTransparentMesh(const glm::i32vec3& chunkId,
+								    uint32_t indexCount,
+								    const glm::vec3& position,
+								    const std::vector<Vertex>& verticies);
 
 			void SendIndexData(const std::vector<uint32_t>& indicies);
 			
-			void drawFrame(const Window& window, const glm::mat4& view);
+			void drawFrame(const Window& window, const glm::vec3& cameraPos, const glm::mat4& view);
 
 			void waitIdle();
 
@@ -120,7 +125,8 @@ namespace Core
 			std::vector<vk::raii::ImageView> swapChainImageViews;
 
 			vk::raii::DescriptorSetLayout descriptorSetLayout = nullptr;
-			GraphicsPipeline graphicsPipeline;
+			GraphicsPipeline opaqueGraphicsPipeline;
+			GraphicsPipeline tGraphicsPipeline;
 
 			vk::raii::CommandPool commandPool = nullptr;
 			std::vector<vk::raii::CommandBuffer> commandBuffers;
@@ -138,6 +144,7 @@ namespace Core
 			Core::VMA::VMABuffer indexBuffer;
 
 			std::vector<Drawable> drawables;
+			std::vector<Drawable> tDrawables;
 
 			std::vector<vk::raii::Buffer> uniformBuffers;
 			std::vector<vk::raii::DeviceMemory> uniformBuffersMemory;
@@ -179,7 +186,7 @@ namespace Core
 			void createImageViews();
 
 			void createDescriptorSetLayout();
-			void createGraphicsPipeline();
+			void createGraphicsPipelines();
 			vk::Format findDepthFormat();
 			vk::Format findSupportedFormat(const std::vector<vk::Format>& canidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
 			
@@ -217,7 +224,8 @@ namespace Core
 			void AllocateToVertexBuffer(const glm::i32vec3& chunkId,
 										uint32_t indexCount,
 										const glm::vec3& position,
-										const std::vector<Vertex>& verticies);
+										const std::vector<Vertex>& verticies,
+										std::vector<Drawable>& drawables);
 
 			void copyBuffer(Core::VMA::VMABuffer& srcBuffer, Core::VMA::VMABuffer& dstBuffer, vk::BufferCopy bufferCopy);
 
@@ -231,7 +239,7 @@ namespace Core
 			void recreateSwapChain(const Window& window);
 			void cleanUpSwapChain();
 			void updateUniformBuffer(uint32_t currentImage, const glm::mat4& view);
-			void recordCommandBuffer(uint32_t imageIndex);
+			void recordCommandBuffer(uint32_t imageIndex, const glm::vec3& cameraPos);
 			void transitionImageLayout(vk::Image image,
 				vk::ImageLayout oldLayout,
 				vk::ImageLayout newLayout,

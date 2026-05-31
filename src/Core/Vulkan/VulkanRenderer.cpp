@@ -8,6 +8,7 @@
 #include <chrono>
 #include <iostream>
 #include <math.h>
+#include <map>
 
 namespace Core
 {
@@ -41,7 +42,7 @@ namespace Core
 		createImageViews();
 
 		createDescriptorSetLayout();
-		createGraphicsPipeline();
+		createGraphicsPipelines();
 
 		createCommandPool();
 		createDepthResources();
@@ -67,7 +68,17 @@ namespace Core
 		cleanUpSwapChain();
 	}
 
-	void VulkanRenderer::drawFrame(const Window& window, const glm::mat4& view)
+	void VulkanRenderer::AddOpaqueMesh(const glm::i32vec3& chunkId, uint32_t indexCount, const glm::vec3& position, const std::vector<Vertex>& verticies)
+	{
+		AllocateToVertexBuffer(chunkId, indexCount, position, verticies, this->drawables);
+	}
+
+	void VulkanRenderer::AddTransparentMesh(const glm::i32vec3& chunkId, uint32_t indexCount, const glm::vec3& position, const std::vector<Vertex>& verticies)
+	{
+		AllocateToVertexBuffer(chunkId, indexCount, position, verticies, this->tDrawables);
+	}
+
+	void VulkanRenderer::drawFrame(const Window& window, const glm::vec3& cameraPos, const glm::mat4& view)
 	{
 		auto fenceResult = device.waitForFences(*inFlightFences[frameIndex], vk::True, UINT64_MAX);
 		if (fenceResult != vk::Result::eSuccess)
@@ -94,7 +105,7 @@ namespace Core
 		device.resetFences(*inFlightFences[frameIndex]);
 
 		commandBuffers[frameIndex].reset();
-		recordCommandBuffer(imageIndex);
+		recordCommandBuffer(imageIndex, cameraPos);
 
 		vk::PipelineStageFlags waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
 		const vk::SubmitInfo submitInfo
@@ -182,7 +193,7 @@ namespace Core
 		memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 	}
 
-	void VulkanRenderer::recordCommandBuffer(uint32_t imageIndex)
+	void VulkanRenderer::recordCommandBuffer(uint32_t imageIndex, const glm::vec3& cameraPos)
 	{
 		commandBuffers[frameIndex].begin({});
 
@@ -243,11 +254,11 @@ namespace Core
 		commandBuffers[frameIndex].setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height), 0.0f, 1.0f));
 		commandBuffers[frameIndex].setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapChainExtent));
 
-		commandBuffers[frameIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipeline.PipelineLayout(), 0, *descriptorSets[frameIndex], nullptr);
+		commandBuffers[frameIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, opaqueGraphicsPipeline.PipelineLayout(), 0, *descriptorSets[frameIndex], nullptr);
 
 		commandBuffers[frameIndex].bindIndexBuffer(indexBuffer.Buffer(), 0, vk::IndexType::eUint32);
 
-		commandBuffers[frameIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, *graphicsPipeline.Pipeline());
+		commandBuffers[frameIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, *opaqueGraphicsPipeline.Pipeline());
 
 		for (const auto& drawable : drawables)
 		{
@@ -259,7 +270,39 @@ namespace Core
 			};
 
 			commandBuffers[frameIndex].pushConstants<PushConstants>(
-				graphicsPipeline.PipelineLayout(),
+				opaqueGraphicsPipeline.PipelineLayout(),
+				vk::ShaderStageFlagBits::eVertex,
+				0,
+				pushConstants
+			);
+
+			commandBuffers[frameIndex].drawIndexed(drawable.indexCount, 1, 0, 0, 0);
+		}
+
+		commandBuffers[frameIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, tGraphicsPipeline.PipelineLayout(), 0, *descriptorSets[frameIndex], nullptr);
+
+		commandBuffers[frameIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, *tGraphicsPipeline.Pipeline());
+
+		std::map<float, uint32_t> sorted;
+		for (uint32_t i = 0; i < tDrawables.size(); i++)
+		{
+			float distance = glm::length(cameraPos - tDrawables[i].position);
+			sorted[distance] = i;
+		}
+
+		for (auto rIt = sorted.rbegin(); rIt != sorted.rend(); ++rIt)
+		{
+			const auto& drawable = tDrawables[rIt->second];
+
+			commandBuffers[frameIndex].bindVertexBuffers(0, { vertexBuffer.Buffer() }, { drawable.allocation.Offset() });
+
+			PushConstants pushConstants
+			{
+				glm::translate(glm::mat4(1.0f), drawable.position)
+			};
+
+			commandBuffers[frameIndex].pushConstants<PushConstants>(
+				tGraphicsPipeline.PipelineLayout(),
 				vk::ShaderStageFlagBits::eVertex,
 				0,
 				pushConstants
@@ -641,14 +684,62 @@ namespace Core
 		descriptorSetLayout = vk::raii::DescriptorSetLayout(device, layoutInfo);
 	}
 
-	void VulkanRenderer::createGraphicsPipeline()
+	void VulkanRenderer::createGraphicsPipelines()
 	{
-		graphicsPipeline = GraphicsPipeline
+		vk::PipelineColorBlendAttachmentState opaqueColorBlendAttachment
+		{
+			.blendEnable = vk::False,
+			.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+		};
+
+		vk::PipelineDepthStencilStateCreateInfo opaqueDepthStateCreateInfo
+		{
+			.depthTestEnable = vk::True,
+			.depthWriteEnable = vk::True,
+			.depthCompareOp = vk::CompareOp::eLess,
+			.depthBoundsTestEnable = vk::False,
+			.stencilTestEnable = vk::False
+		};
+
+		opaqueGraphicsPipeline = GraphicsPipeline
 		{ 
 			device,
 			swapChainSurfaceFormat.format,
 			findDepthFormat(),
-			descriptorSetLayout 
+			descriptorSetLayout,
+			opaqueColorBlendAttachment,
+			opaqueDepthStateCreateInfo
+		};
+
+		vk::PipelineColorBlendAttachmentState tColorBlendAttachment
+		{
+			.blendEnable = vk::True,
+			.srcColorBlendFactor = vk::BlendFactor::eSrcAlpha,
+			.dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
+			.colorBlendOp = vk::BlendOp::eAdd,
+			.srcAlphaBlendFactor = vk::BlendFactor::eOne,
+			.dstAlphaBlendFactor = vk::BlendFactor::eZero,
+			.alphaBlendOp = vk::BlendOp::eAdd,
+			.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+		};
+
+		vk::PipelineDepthStencilStateCreateInfo tDepthStateCreateInfo
+		{
+			.depthTestEnable = vk::True,
+			.depthWriteEnable = vk::False,
+			.depthCompareOp = vk::CompareOp::eLess,
+			.depthBoundsTestEnable = vk::False,
+			.stencilTestEnable = vk::False
+		};
+
+		tGraphicsPipeline = GraphicsPipeline
+		{
+			device,
+			swapChainSurfaceFormat.format,
+			findDepthFormat(),
+			descriptorSetLayout,
+			tColorBlendAttachment,
+			tDepthStateCreateInfo
 		};
 	}
 
@@ -1072,14 +1163,6 @@ namespace Core
 		textureSampler = vk::raii::Sampler(device, samplerInfo);
 	}
 
-	void VulkanRenderer::SendVertexData(const glm::i32vec3& chunkId,
-										uint32_t indexCount,
-										const glm::vec3& position,
-										const std::vector<Vertex>& verticies)
-	{
-		AllocateToVertexBuffer(chunkId, indexCount, position, verticies);
-	}
-
 	void VulkanRenderer::SendIndexData(const std::vector<uint32_t>& indicies)
 	{
 		createIndexBuffer(indicies);
@@ -1132,7 +1215,8 @@ namespace Core
 	void VulkanRenderer::AllocateToVertexBuffer(const glm::i32vec3& chunkId,
 												uint32_t indexCount,
 												const glm::vec3& position,
-												const std::vector<Vertex>& verticies)
+												const std::vector<Vertex>& verticies,
+												std::vector<Drawable>& drawables)
 	{
 		vk::DeviceSize bufferSize = sizeof(verticies[0]) * verticies.size();
 

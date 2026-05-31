@@ -14,7 +14,7 @@
 BloodrootApp::BloodrootApp()
 	: window(&appData, WINDOW_WIDTH, WINDOW_HEIGHT, "Bloodroot App!"),
 	  renderer(window, glfwInstance.getRequiredInstanceExtensions()),
-	  camera(glm::vec3(8.0f, 66.0f, 8.0f), glm::vec3(0.0f, 1.0f, 0.0f)),
+	  camera(glm::vec3(8.0f, 68.0f, 8.0f), glm::vec3(0.0f, 1.0f, 0.0f)),
 	  appData{ .renderer = &renderer, .camera = &camera }
 {
 	auto chunkIndicies = Game::ChunkIndicies{ { Game::CHUNK_WIDTH, Game::CHUNK_HEIGHT, Game::CHUNK_DEPTH } };
@@ -38,7 +38,7 @@ BloodrootApp::BloodrootApp()
 	{
 		if (!mesh.IsEmpty())
 		{
-			renderer.SendVertexData(chunkId, mesh.ConstIndexCount(), chunks[chunkId].Position(), mesh.Verticies());
+			renderer.AddOpaqueMesh(chunkId, mesh.ConstIndexCount(), chunks[chunkId].Position(), mesh.Verticies());
 		}
 	}
 
@@ -46,7 +46,7 @@ BloodrootApp::BloodrootApp()
 	{
 		if (!tMesh.IsEmpty())
 		{
-			renderer.SendVertexData(chunkId, tMesh.ConstIndexCount(), chunks[chunkId].Position(), tMesh.Verticies());
+			renderer.AddTransparentMesh(chunkId, tMesh.ConstIndexCount(), chunks[chunkId].Position(), tMesh.Verticies());
 		}
 	}
 
@@ -72,7 +72,7 @@ void BloodrootApp::mainLoop()
 
 		window.pollEvents();
 
-		renderer.drawFrame(window, camera.getViewMatrix());
+		renderer.drawFrame(window, camera.Position(), camera.getViewMatrix());
 	}
 
 	renderer.waitIdle();
