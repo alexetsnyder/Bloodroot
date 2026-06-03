@@ -96,6 +96,23 @@ namespace Core::VMA
 				vmaUnmapMemory(allocator, allocation);
 			}
 
+			template <typename T>
+			void CopyData(T inData, size_t elementSize)
+			{
+				void* data;
+
+				vmaMapMemory(allocator, allocation, &data);
+
+				vk::DeviceSize offset = 0;
+				for (auto& d : inData)
+				{
+					memcpy((char*)data + offset, d, elementSize);
+					offset += elementSize;
+				}
+
+				vmaUnmapMemory(allocator, allocation);
+			}
+
 			VkBuffer Buffer() const { return buffer; }
 
 		private:

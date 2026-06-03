@@ -23,7 +23,7 @@ namespace Core
 		}
 	}
 
-	uint32_t Image::getMipLevels()
+	uint32_t Image::getMipLevels() const
 	{
 		if (pixels)
 		{

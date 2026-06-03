@@ -16,7 +16,7 @@ namespace Core
 			int Width() const { return width; }
 			int Height() const { return height; }
 			const stbi_uc* const Data() const { return pixels; }
-			uint32_t getMipLevels();
+			uint32_t getMipLevels() const;
 
 		private:
 			int width, height, channels;

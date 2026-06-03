@@ -1323,7 +1323,12 @@ namespace Core
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
-			vk::DescriptorBufferInfo bufferInfo{ .buffer = uniformBuffers[i], .offset = 0, .range = sizeof(UniformBufferObject) };
+			vk::DescriptorBufferInfo bufferInfo
+			{ 
+				.buffer = uniformBuffers[i],
+				.offset = 0, 
+				.range = sizeof(UniformBufferObject)
+			};
 			
 			vk::DescriptorImageInfo imageInfo
 			{

@@ -8,6 +8,7 @@ target_sources(
 		"Math/Noise/SimplexNoise.cpp"
 		Vulkan/VMA/VMAAllocator.cpp
 		Vulkan/VMA/VMAVirtualBlock.cpp
+		Vulkan/VMA/VMAImage.cpp
 		Vulkan/Pipeline/GraphicsPipeline.cpp
 
 	PUBLIC
@@ -16,11 +17,11 @@ target_sources(
 		Window/Window.h
 		Interfaces/IRenderer.h
 		Window/GLFWInstance.h 
-		Vulkan/VulkanRenderer.h 
-		Vulkan/Geometry/Square.h 
+		Vulkan/VulkanRenderer.h  
 		Vulkan/Geometry/Vertex.h 
 		Vulkan/Geometry/Cube.h 
 		Vulkan/Geometry/Mesh.h 
+		Vulkan/Geometry/Quad.h
 		Image/Image.h
 		"Math/Noise/FastNoiseLite.h"
 		"Math/Noise/SimplexNoise.h"
@@ -28,6 +29,7 @@ target_sources(
 		Vulkan/VMA/VMABuffer.h
 		Vulkan/VMA/VMAVirtualBlock.h
 		Vulkan/VMA/VMAVirtualAllocation.h
+		Vulkan/VMA/VMAImage.h
 		Extensions/GLMExtensions.h
 		"Math/RLEncoding/RLEncoding.h"
 		Vulkan/Pipeline/GraphicsPipeline.h

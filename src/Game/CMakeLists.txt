@@ -15,7 +15,7 @@ target_sources(
 		WorldGen/ChunkIndicies.h
 		WorldGen/WorldGen.h
 		WorldGen/TerrainGen/TerrainGen.h
-		GUI/Crosshair.h
+		
 )
 
 target_include_directories(
