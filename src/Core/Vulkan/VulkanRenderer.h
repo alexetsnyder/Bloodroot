@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CommandBufferManager.h"
 #include "GraphicsPipeline.h"
 #include "IRenderer.h"
 #include "Window.h"
@@ -128,8 +129,7 @@ namespace Core::VK
 			GraphicsPipeline opaqueGraphicsPipeline;
 			GraphicsPipeline tGraphicsPipeline;
 
-			vk::raii::CommandPool commandPool = nullptr;
-			std::vector<vk::raii::CommandBuffer> commandBuffers;
+			CMD::CommandBufferManager commandBufferManager;
 
 			uint32_t frameIndex = 0;
 			std::vector<vk::raii::Semaphore> presentCompleteSemaphores;
@@ -213,8 +213,7 @@ namespace Core::VK
 			void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory);
 			void transitionImageLayout(const vk::raii::Image& image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount);
 			void copyBufferToImage(const vk::raii::Buffer& buffer, vk::raii::Image& image, uint32_t width, uint32_t height, uint32_t layerCount);
-			std::unique_ptr<vk::raii::CommandBuffer> beginSingleTimeCommands();
-			void endSingleTimeCommands(vk::raii::CommandBuffer& commandBuffer);
+
 			void createTextureImageView();
 			void createTextureSampler();
 

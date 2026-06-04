@@ -105,7 +105,7 @@ namespace Core::VK
 
 		device.resetFences(*inFlightFences[frameIndex]);
 
-		commandBuffers[frameIndex].reset();
+		commandBufferManager.CommandBuffer(frameIndex).reset();
 		recordCommandBuffer(imageIndex, cameraPos);
 
 		vk::PipelineStageFlags waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
@@ -115,7 +115,7 @@ namespace Core::VK
 			.pWaitSemaphores = &*presentCompleteSemaphores[frameIndex],
 			.pWaitDstStageMask = &waitDestinationStageMask,
 			.commandBufferCount = 1,
-			.pCommandBuffers = &*commandBuffers[frameIndex],
+			.pCommandBuffers = &*commandBufferManager.CommandBuffer(frameIndex), // commandBuffers[frameIndex],
 			.signalSemaphoreCount = 1,
 			.pSignalSemaphores = &*renderFinishedSemaphores[imageIndex]
 		};
@@ -187,7 +187,7 @@ namespace Core::VK
 		ubo.view = view;
 		ubo.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height), 0.1f, 200.0f);
 
-		//glm designed for OpenGl where y coordinate is inverted.
+		//GLM designed for OpenGl where y coordinate is inverted.
 		ubo.projection[1][1] *= -1;
 
 		//Look at push constants
@@ -196,7 +196,9 @@ namespace Core::VK
 
 	void VulkanRenderer::recordCommandBuffer(uint32_t imageIndex, const glm::vec3& cameraPos)
 	{
-		commandBuffers[frameIndex].begin({});
+		const auto& commandBuffer = commandBufferManager.CommandBuffer(frameIndex);
+
+		commandBuffer.begin({});
 
 		transitionImageLayout(
 			swapChainImages[imageIndex],
@@ -250,39 +252,39 @@ namespace Core::VK
 			.pDepthAttachment = &depthAttachmentInfo
 		};
 
-		commandBuffers[frameIndex].beginRendering(renderingInfo);
+		commandBuffer.beginRendering(renderingInfo);
 
-		commandBuffers[frameIndex].setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height), 0.0f, 1.0f));
-		commandBuffers[frameIndex].setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapChainExtent));
+		commandBuffer.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height), 0.0f, 1.0f));
+		commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapChainExtent));
 
-		commandBuffers[frameIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, opaqueGraphicsPipeline.PipelineLayout(), 0, *descriptorSets[frameIndex], nullptr);
+		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, opaqueGraphicsPipeline.PipelineLayout(), 0, *descriptorSets[frameIndex], nullptr);
 
-		commandBuffers[frameIndex].bindIndexBuffer(indexBuffer.Buffer(), 0, vk::IndexType::eUint32);
+		commandBuffer.bindIndexBuffer(indexBuffer.Buffer(), 0, vk::IndexType::eUint32);
 
-		commandBuffers[frameIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, *opaqueGraphicsPipeline.Pipeline());
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *opaqueGraphicsPipeline.Pipeline());
 
 		for (const auto& drawable : drawables)
 		{
-			commandBuffers[frameIndex].bindVertexBuffers(0, { vertexBuffer.Buffer() }, { drawable.allocation.Offset() });
+			commandBuffer.bindVertexBuffers(0, { vertexBuffer.Buffer() }, { drawable.allocation.Offset() });
 
 			PushConstants pushConstants
 			{
 				glm::translate(glm::mat4(1.0f), drawable.position)
 			};
 
-			commandBuffers[frameIndex].pushConstants<PushConstants>(
+			commandBuffer.pushConstants<PushConstants>(
 				opaqueGraphicsPipeline.PipelineLayout(),
 				vk::ShaderStageFlagBits::eVertex,
 				0,
 				pushConstants
 			);
 
-			commandBuffers[frameIndex].drawIndexed(drawable.indexCount, 1, 0, 0, 0);
+			commandBuffer.drawIndexed(drawable.indexCount, 1, 0, 0, 0);
 		}
 
-		commandBuffers[frameIndex].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, tGraphicsPipeline.PipelineLayout(), 0, *descriptorSets[frameIndex], nullptr);
+		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, tGraphicsPipeline.PipelineLayout(), 0, *descriptorSets[frameIndex], nullptr);
 
-		commandBuffers[frameIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, *tGraphicsPipeline.Pipeline());
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *tGraphicsPipeline.Pipeline());
 
 		std::map<uint32_t, float> distances;
 		std::vector<uint32_t> indicies(tDrawables.size());
@@ -302,24 +304,24 @@ namespace Core::VK
 		{
 			const auto& drawable = tDrawables[index];
 
-			commandBuffers[frameIndex].bindVertexBuffers(0, { vertexBuffer.Buffer() }, { drawable.allocation.Offset() });
+			commandBuffer.bindVertexBuffers(0, { vertexBuffer.Buffer() }, { drawable.allocation.Offset() });
 
 			PushConstants pushConstants
 			{
 				glm::translate(glm::mat4(1.0f), drawable.position)
 			};
 
-			commandBuffers[frameIndex].pushConstants<PushConstants>(
+			commandBuffer.pushConstants<PushConstants>(
 				tGraphicsPipeline.PipelineLayout(),
 				vk::ShaderStageFlagBits::eVertex,
 				0,
 				pushConstants
 			);
 
-			commandBuffers[frameIndex].drawIndexed(drawable.indexCount, 1, 0, 0, 0);
+			commandBuffer.drawIndexed(drawable.indexCount, 1, 0, 0, 0);
 		}
 
-		commandBuffers[frameIndex].endRendering();
+		commandBuffer.endRendering();
 
 		transitionImageLayout(
 			swapChainImages[imageIndex],
@@ -332,7 +334,7 @@ namespace Core::VK
 			vk::ImageAspectFlagBits::eColor
 		);
 
-		commandBuffers[frameIndex].end();
+		commandBuffer.end();
 	}
 
 	void VulkanRenderer::transitionImageLayout(vk::Image image,
@@ -372,7 +374,7 @@ namespace Core::VK
 			.pImageMemoryBarriers = &barrier
 		};
 
-		commandBuffers[frameIndex].pipelineBarrier2(dependencyInfo);
+		commandBufferManager.CommandBuffer(frameIndex).pipelineBarrier2(dependencyInfo);
 	}
 
 	void VulkanRenderer::createInstance(const std::vector<const char*>& requiredExtensions)
@@ -782,13 +784,11 @@ namespace Core::VK
 
 	void VulkanRenderer::createCommandPool()
 	{
-		vk::CommandPoolCreateInfo poolInfo
+		commandBufferManager = CMD::CommandBufferManager
 		{
-			.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
-			.queueFamilyIndex = queueIndex
+			device,
+			queueIndex
 		};
-
-		commandPool = vk::raii::CommandPool(device, poolInfo);
 	}
 
 	void VulkanRenderer::createDepthResources()
@@ -954,7 +954,7 @@ namespace Core::VK
 			throw std::runtime_error("Texture image format does not support linear blitting!");
 		}
 
-		std::unique_ptr<vk::raii::CommandBuffer> commandBuffer = beginSingleTimeCommands();
+		std::unique_ptr<vk::raii::CommandBuffer> commandBuffer = commandBufferManager.BeginSingleTimeCommands(device);
 
 		vk::ImageMemoryBarrier barrier
 		{
@@ -1029,7 +1029,7 @@ namespace Core::VK
 
 		commandBuffer->pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {}, barrier);
 
-		endSingleTimeCommands(*commandBuffer);
+		commandBufferManager.EndSingleTimeCommands(graphicsQueue, *commandBuffer);
 	}
 
 	void VulkanRenderer::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory)
@@ -1058,7 +1058,7 @@ namespace Core::VK
 
 	void VulkanRenderer::transitionImageLayout(const vk::raii::Image& image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount)
 	{
-		auto commandBuffer = beginSingleTimeCommands();
+		auto commandBuffer = commandBufferManager.BeginSingleTimeCommands(device);
 
 		vk::ImageMemoryBarrier barrier
 		{
@@ -1094,12 +1094,12 @@ namespace Core::VK
 
 		commandBuffer->pipelineBarrier(sourceStage, destinationStage, {}, {}, nullptr, barrier);
 
-		endSingleTimeCommands(*commandBuffer);
+		commandBufferManager.EndSingleTimeCommands(graphicsQueue, *commandBuffer);
 	}
 
 	void VulkanRenderer::copyBufferToImage(const vk::raii::Buffer& buffer, vk::raii::Image& image, uint32_t width, uint32_t height, uint32_t layerCount)
 	{
-		auto commandBuffer = beginSingleTimeCommands();
+		auto commandBuffer = commandBufferManager.BeginSingleTimeCommands(device);
 
 		vk::BufferImageCopy region
 		{
@@ -1113,33 +1113,7 @@ namespace Core::VK
 
 		commandBuffer->copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, { region });
 
-		endSingleTimeCommands(*commandBuffer);
-	}
-
-	std::unique_ptr<vk::raii::CommandBuffer> VulkanRenderer::beginSingleTimeCommands()
-	{
-		//TODO: Could create seperate CommandBool with VK_COMMAND_POOL_CREATE_TRANSIENT_BIT
-		vk::CommandBufferAllocateInfo allocInfo
-		{
-			.commandPool = commandPool,
-			.level = vk::CommandBufferLevel::ePrimary,
-			.commandBufferCount = 1
-		};
-		std::unique_ptr<vk::raii::CommandBuffer> commandBuffer = std::make_unique<vk::raii::CommandBuffer>(std::move(device.allocateCommandBuffers(allocInfo).front()));
-
-		vk::CommandBufferBeginInfo beginInfo{ .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit };
-		commandBuffer->begin(beginInfo);
-
-		return commandBuffer;
-	}
-
-	void VulkanRenderer::endSingleTimeCommands(vk::raii::CommandBuffer& commandBuffer)
-	{
-		commandBuffer.end();
-
-		vk::SubmitInfo submitInfo{ .commandBufferCount = 1, .pCommandBuffers = &*commandBuffer };
-		graphicsQueue.submit(submitInfo, nullptr);
-		graphicsQueue.waitIdle();
+		commandBufferManager.EndSingleTimeCommands(graphicsQueue, *commandBuffer);
 	}
 
 	void VulkanRenderer::createTextureImageView()
@@ -1258,9 +1232,9 @@ namespace Core::VK
 
 	void VulkanRenderer::copyBuffer(VMA::VMABuffer& srcBuffer, VMA::VMABuffer& dstBuffer, vk::BufferCopy bufferCopy)
 	{
-		auto commandCopyBuffer = beginSingleTimeCommands();
+		auto commandCopyBuffer = commandBufferManager.BeginSingleTimeCommands(device);
 		commandCopyBuffer->copyBuffer(srcBuffer.Buffer(), dstBuffer.Buffer(), bufferCopy);
-		endSingleTimeCommands(*commandCopyBuffer);
+		commandBufferManager.EndSingleTimeCommands(graphicsQueue, *commandCopyBuffer);
 	}
 
 	void VulkanRenderer::createUniformBuffers()
@@ -1365,8 +1339,7 @@ namespace Core::VK
 
 	void VulkanRenderer::createCommandBuffers()
 	{
-		vk::CommandBufferAllocateInfo allocInfo{ .commandPool = commandPool, .level = vk::CommandBufferLevel::ePrimary, .commandBufferCount = MAX_FRAMES_IN_FLIGHT };
-		commandBuffers = vk::raii::CommandBuffers(device, allocInfo);
+		commandBufferManager.CreateCommandBuffers(device, MAX_FRAMES_IN_FLIGHT);
 	}
 
 	void VulkanRenderer::createSyncObjects()
