@@ -5,7 +5,7 @@
 
 #include <iostream>
 
-namespace Core::VMA
+namespace Core::VK::VMA
 {
 	class VMAVirtualAllocation
 	{

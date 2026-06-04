@@ -1,6 +1,5 @@
 #pragma once
 
-//#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 #include <string>
@@ -13,8 +12,8 @@ namespace Core
 			Image(const std::string& filePath);
 			~Image();
 
-			int Width() const { return width; }
-			int Height() const { return height; }
+			uint32_t Width() const { return width; }
+			uint32_t Height() const { return height; }
 			const stbi_uc* const Data() const { return pixels; }
 			uint32_t getMipLevels() const;
 

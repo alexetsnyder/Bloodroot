@@ -10,6 +10,8 @@ target_sources(
 		Vulkan/VMA/VMAVirtualBlock.cpp
 		Vulkan/VMA/VMAImage.cpp
 		Vulkan/Pipeline/GraphicsPipeline.cpp
+		Vulkan/Material/Texture.cpp
+		Vulkan/CommandBuffer/CommandBufferManager.cpp
 
 	PUBLIC
 	FILE_SET HEADERS
@@ -33,6 +35,8 @@ target_sources(
 		Extensions/GLMExtensions.h
 		"Math/RLEncoding/RLEncoding.h"
 		Vulkan/Pipeline/GraphicsPipeline.h
+		Vulkan/Material/Texture.h
+		Vulkan/CommandBuffer/CommandBufferManager.h
 )
 
 target_include_directories(
@@ -42,6 +46,7 @@ target_include_directories(
 		Interfaces
 		Vulkan
 		Vulkan/Geometry
+		Vulkan/Material
 		Image
 		"Math"
 		"Math/Noise"
@@ -50,6 +55,7 @@ target_include_directories(
 		Vulkan/VMA
 		Vulkan/Pipeline
 		Extensions
+		Vulkan/CommandBuffer
 )
 
 add_subdirectory(FileIO)

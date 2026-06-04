@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
-namespace Core
+namespace Core::VK
 {
 	struct PushConstants
 	{

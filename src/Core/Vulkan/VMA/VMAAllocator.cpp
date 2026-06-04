@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-namespace Core::VMA
+namespace Core::VK::VMA
 {
 	VMAAllocator::VMAAllocator()
 	{

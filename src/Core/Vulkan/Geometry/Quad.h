@@ -2,14 +2,14 @@
 
 #include "Mesh.h"
 
-namespace Core
+namespace Core::VK
 {
 	class Quad
 	{
 		public:
-			static Core::Mesh GenerateMesh()
+			static Mesh GenerateMesh()
 			{
-				auto mesh = Core::Mesh{};
+				auto mesh = Mesh{};
 
 				auto x = 0;
 				auto y = 0;

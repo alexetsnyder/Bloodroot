@@ -52,8 +52,8 @@ namespace Game
 	}
 
 	void WorldGen::GenerateMeshes(const std::unordered_map<glm::i32vec3, Chunk>& chunks,
-								  std::unordered_map<glm::i32vec3, Core::Mesh>& meshes,
-								  std::unordered_map<glm::i32vec3, Core::Mesh>& tMeshes)
+								  std::unordered_map<glm::i32vec3, Core::VK::Mesh>& meshes,
+								  std::unordered_map<glm::i32vec3, Core::VK::Mesh>& tMeshes)
 	{
 		auto startPos = glm::i32vec3
 		{
@@ -136,7 +136,7 @@ namespace Game
 				{
 					if (!tMeshes.contains(chunkId))
 					{
-						tMeshes.insert({ chunkId, Core::Mesh{} });
+						tMeshes.insert({ chunkId, Core::VK::Mesh{} });
 					}
 
 					const auto& chunk = chunks.at(chunkId);
@@ -156,7 +156,7 @@ namespace Game
 				{
 					if (!meshes.contains(chunkId))
 					{
-						meshes.insert({ chunkId, Core::Mesh{} });
+						meshes.insert({ chunkId, Core::VK::Mesh{} });
 					}
 
 					const auto& chunk = chunks.at(chunkId);

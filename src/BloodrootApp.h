@@ -26,7 +26,7 @@ class BloodrootApp
 		AppData appData;
 		Core::GLFWInstance glfwInstance;
 		Core::Window window;
-		Core::VulkanRenderer renderer;
+		Core::VK::VulkanRenderer renderer;
 		Game::Camera camera;
 		std::unordered_map<glm::i32vec3, Game::Chunk> chunks;
 

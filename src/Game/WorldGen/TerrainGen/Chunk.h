@@ -44,16 +44,16 @@ namespace Game
 			const VoxelType GetVoxelType(const glm::i32vec3& position) const;
 
 			bool IsInBounds(const glm::vec3& position) const;
-			void CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel, Core::Mesh& mesh) const;
+			void CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel, Core::VK::Mesh& mesh) const;
 			void AddVoxelColumn(int32_t xPos, int32_t yPos, int32_t zPos, const std::vector<VoxelType>& voxelTypes);
 
 		private:
 			glm::vec3 position;
 			std::array<std::vector<uint16_t>, CHUNK_WIDTH * CHUNK_DEPTH> voxels;
 
-			void createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::Mesh& mesh) const;
+			void createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::VK::Mesh& mesh) const;
 
 			glm::i32vec3 mapToLocal(const glm::vec3& position) const;
-			void generateVoxel(const glm::vec3& voxelPos, const Voxel& voxel, Core::Mesh& mesh);
+			void generateVoxel(const glm::vec3& voxelPos, const Voxel& voxel, Core::VK::Mesh& mesh);
 	};
 }

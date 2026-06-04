@@ -11,7 +11,7 @@
 #include <math.h>
 #include <map>
 
-namespace Core
+namespace Core::VK
 {
 	const std::vector<char const*> validationLayers =
 	{
@@ -579,7 +579,7 @@ namespace Core
 
 	void VulkanRenderer::createAllocator()
 	{
-		allocator = Core::VMA::VMAAllocator(physicalDevice, device, instance);
+		allocator = VMA::VMAAllocator(physicalDevice, device, instance);
 	}
 
 	void VulkanRenderer::createSwapChain(int windowWidth, int windowHeight)
@@ -1180,7 +1180,7 @@ namespace Core
 	{
 		vk::DeviceSize bufferSize = 400 * 1024 * 1024;
 
-		vertexBuffer = Core::VMA::VMABuffer(
+		vertexBuffer = VMA::VMABuffer(
 			allocator.Allocator(), 
 			bufferSize, 
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | 
@@ -1188,7 +1188,7 @@ namespace Core
 			0,
 			VMA_MEMORY_USAGE_GPU_ONLY);
 
-		vertexBufferBlock = Core::VMA::VMAVirtualBlock
+		vertexBufferBlock = VMA::VMAVirtualBlock
 		{
 			bufferSize,
 		};
@@ -1198,7 +1198,7 @@ namespace Core
 	{
 		vk::DeviceSize bufferSize = sizeof(indicies[0]) * indicies.size();
 
-		Core::VMA::VMABuffer stagingBuffer
+		VMA::VMABuffer stagingBuffer
 		{
 			allocator.Allocator(),
 			bufferSize,
@@ -1209,7 +1209,7 @@ namespace Core
 
 		stagingBuffer.CopyData(indicies.data());
 
-		indexBuffer = Core::VMA::VMABuffer(
+		indexBuffer = VMA::VMABuffer(
 			allocator.Allocator(),
 			bufferSize,
 			VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
@@ -1228,7 +1228,7 @@ namespace Core
 	{
 		vk::DeviceSize bufferSize = sizeof(verticies[0]) * verticies.size();
 
-		Core::VMA::VMABuffer stagingBuffer
+		VMA::VMABuffer stagingBuffer
 		{
 			allocator.Allocator(),
 			bufferSize,
@@ -1244,7 +1244,7 @@ namespace Core
 			chunkId,
 			indexCount,
 			position,
-			Core::VMA::VMAVirtualAllocation
+			VMA::VMAVirtualAllocation
 			{
 				vertexBufferBlock.Block(),
 				bufferSize,
@@ -1256,7 +1256,7 @@ namespace Core
 		drawables.emplace_back(std::move(drawable));
 	}
 
-	void VulkanRenderer::copyBuffer(Core::VMA::VMABuffer& srcBuffer, Core::VMA::VMABuffer& dstBuffer, vk::BufferCopy bufferCopy)
+	void VulkanRenderer::copyBuffer(VMA::VMABuffer& srcBuffer, VMA::VMABuffer& dstBuffer, vk::BufferCopy bufferCopy)
 	{
 		auto commandCopyBuffer = beginSingleTimeCommands();
 		commandCopyBuffer->copyBuffer(srcBuffer.Buffer(), dstBuffer.Buffer(), bufferCopy);

@@ -6,7 +6,7 @@
 #include <iostream>
 #include <ranges>
 
-namespace Core::VMA
+namespace Core::VK::VMA
 {
 	VMAImage::VMAImage()
 	{

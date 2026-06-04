@@ -7,7 +7,7 @@
 
 #include <vector>
 
-namespace Core::VMA
+namespace Core::VK::VMA
 {
 	class VMAImage
 	{
@@ -15,7 +15,7 @@ namespace Core::VMA
 			VMAImage();
 			VMAImage(uint32_t width,
 					 uint32_t height,
-					 uint32_t mipLevels,
+					 uint32_t mipLevels,  
 					 uint32_t layerCount,
 					 vk::Format format,
 					 vk::ImageUsageFlags usage,
@@ -29,7 +29,7 @@ namespace Core::VMA
 
 			~VMAImage();
 
-
+			VmaAllocation& Allocation() { return allocation; }
 
 		private:
 			VkImage vkImage = VK_NULL_HANDLE;

@@ -17,7 +17,7 @@ namespace Game
 	struct ChunkMesh
 	{
 		glm::i32vec3 chunkId;
-		Core::Mesh mesh;
+		Core::VK::Mesh mesh;
 	};
 
 	class WorldGen
@@ -29,8 +29,8 @@ namespace Game
 
 			void GenerateChunks(std::unordered_map<glm::i32vec3, Chunk>& chunks);
 			void GenerateMeshes(const std::unordered_map<glm::i32vec3, Chunk>& chunks,
-								std::unordered_map<glm::i32vec3, Core::Mesh>& meshes,
-								std::unordered_map<glm::i32vec3, Core::Mesh>& tMeshes);
+								std::unordered_map<glm::i32vec3, Core::VK::Mesh>& meshes,
+								std::unordered_map<glm::i32vec3, Core::VK::Mesh>& tMeshes);
 
 			bool IsInBounds(const glm::vec3& position) const;
 

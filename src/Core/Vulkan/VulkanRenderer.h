@@ -23,7 +23,7 @@ constexpr bool enableValidationLayers = false;
 constexpr bool enableValidationLayers = true;
 #endif
 
-namespace Core
+namespace Core::VK
 {
 	constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 	constexpr int TEXTURE_ARRAY_SIZE = 7;
@@ -136,12 +136,12 @@ namespace Core
 			std::vector<vk::raii::Semaphore> renderFinishedSemaphores;
 			std::vector<vk::raii::Fence> inFlightFences;
 
-			Core::VMA::VMAAllocator allocator;
+			Core::VK::VMA::VMAAllocator allocator;
 
-			Core::VMA::VMABuffer vertexBuffer;
-			Core::VMA::VMAVirtualBlock vertexBufferBlock;
+			Core::VK::VMA::VMABuffer vertexBuffer;
+			Core::VK::VMA::VMAVirtualBlock vertexBufferBlock;
 
-			Core::VMA::VMABuffer indexBuffer;
+			Core::VK::VMA::VMABuffer indexBuffer;
 
 			std::vector<Drawable> drawables;
 			std::vector<Drawable> tDrawables;
@@ -227,7 +227,7 @@ namespace Core
 										const std::vector<Vertex>& verticies,
 										std::vector<Drawable>& drawables);
 
-			void copyBuffer(Core::VMA::VMABuffer& srcBuffer, Core::VMA::VMABuffer& dstBuffer, vk::BufferCopy bufferCopy);
+			void copyBuffer(VMA::VMABuffer& srcBuffer, VMA::VMABuffer& dstBuffer, vk::BufferCopy bufferCopy);
 
 			void createUniformBuffers();
 			void createDescriptorPool();

@@ -4,7 +4,7 @@
 
 #include <vma/vk_mem_alloc.h>
 
-namespace Core::VMA
+namespace Core::VK::VMA
 {
 	class VMAAllocator
 	{

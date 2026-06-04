@@ -95,7 +95,7 @@ namespace Game
 		return false;
 	}
 
-	void Chunk::CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel, Core::Mesh& mesh) const
+	void Chunk::CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel, Core::VK::Mesh& mesh) const
 	{
 		auto cubePos = mapToLocal(position);
 
@@ -111,7 +111,7 @@ namespace Game
 		Core::Math::RLEncoding::Encode<VoxelType>(voxelTypes, voxels[index]);
 	}
 
-	void Chunk::createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::Mesh& mesh) const
+	void Chunk::createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::VK::Mesh& mesh) const
 	{
 		int32_t x = cubePos.x;
 		int32_t y = cubePos.y;
@@ -169,7 +169,7 @@ namespace Game
 		return glm::i32vec3(x, y, z);
 	}
 
-	void Chunk::generateVoxel(const glm::vec3& voxelPos, const Voxel& voxel, Core::Mesh& mesh)
+	void Chunk::generateVoxel(const glm::vec3& voxelPos, const Voxel& voxel, Core::VK::Mesh& mesh)
 	{
 		uint32_t vertexCount = 0;
 

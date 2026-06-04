@@ -4,7 +4,7 @@
 
 #include <vector>
 
-namespace Core
+namespace Core::VK
 {
 	class Mesh
 	{

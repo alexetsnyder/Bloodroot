@@ -3,7 +3,7 @@
 #include "FileIO.h"
 #include "Vertex.h"
 
-namespace Core
+namespace Core::VK
 {
 	GraphicsPipeline::GraphicsPipeline()
 		: pipelineLayout{ nullptr }, graphicsPipeline{ nullptr }
