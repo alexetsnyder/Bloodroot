@@ -98,6 +98,8 @@ namespace Core::VK
 								    const std::vector<Vertex>& verticies);
 
 			void SendIndexData(const std::vector<uint32_t>& indicies);
+
+			void FlushCommandBuffer();
 			
 			void drawFrame(const Window& window, const glm::vec3& cameraPos, const glm::mat4& view);
 
@@ -130,6 +132,10 @@ namespace Core::VK
 			GraphicsPipeline tGraphicsPipeline;
 
 			CMD::CommandBufferManager commandBufferManager;
+			std::vector<vk::raii::Buffer> stagingBuffers;
+			std::vector<vk::raii::DeviceMemory> stagingBuffersMemory;
+			CMD::CommandBufferManager transientCommandBufferManager;
+			std::vector<Core::VK::VMA::VMABuffer> vmaStagingBuffers;
 
 			uint32_t frameIndex = 0;
 			std::vector<vk::raii::Semaphore> presentCompleteSemaphores;
@@ -190,7 +196,7 @@ namespace Core::VK
 			vk::Format findDepthFormat();
 			vk::Format findSupportedFormat(const std::vector<vk::Format>& canidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
 			
-			void createCommandPool();
+			void createCommandBufferManagers();
 			void createDepthResources();
 			void createImage(
 				uint32_t width,
@@ -231,7 +237,6 @@ namespace Core::VK
 			void createUniformBuffers();
 			void createDescriptorPool();
 			void createDescriptorSets();
-			void createCommandBuffers();
 
 			void createSyncObjects();
 

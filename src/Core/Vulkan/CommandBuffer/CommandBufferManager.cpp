@@ -1,5 +1,6 @@
 #include "CommandBufferManager.h"
 
+#include <assert.h>
 #include <memory>
 
 namespace Core::VK::CMD
@@ -9,19 +10,30 @@ namespace Core::VK::CMD
 
 	}
 
-	CommandBufferManager::CommandBufferManager(const vk::raii::Device& device, uint32_t queueIndex)
+	CommandBufferManager::CommandBufferManager(const vk::raii::Device& device,
+											   vk::CommandPoolCreateFlags flags,
+											   uint32_t queueIndex, 
+											   uint32_t bufferCount)
 	{
+		this->device = &device;
+
 		vk::CommandPoolCreateInfo poolInfo
 		{
-			.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+			.flags = flags,
 			.queueFamilyIndex = queueIndex
 		};
 
 		commandPool = vk::raii::CommandPool(device, poolInfo);
+
+		if (bufferCount > 0)
+		{
+			createCommandBuffers(bufferCount);
+		}	
 	}
 
 	CommandBufferManager::CommandBufferManager(CommandBufferManager&& other) noexcept
 	{
+		device = other.device;
 		commandPool = std::move(other.commandPool);
 		commandBuffers = std::move(other.commandBuffers);
 	}
@@ -30,6 +42,7 @@ namespace Core::VK::CMD
 	{
 		if (this != &other)
 		{
+			device = other.device;
 			commandPool = std::move(other.commandPool);
 			commandBuffers = std::move(other.commandBuffers);
 		}
@@ -39,38 +52,47 @@ namespace Core::VK::CMD
 
 	CommandBufferManager::~CommandBufferManager()
 	{
-
+		device = VK_NULL_HANDLE;
 	}
 
-	void CommandBufferManager::CreateCommandBuffers(const vk::raii::Device& device, uint32_t bufferCount)
+	vk::raii::CommandBuffer& CommandBufferManager::CommandBuffer(uint32_t index)
 	{
-		vk::CommandBufferAllocateInfo allocInfo{ .commandPool = commandPool, .level = vk::CommandBufferLevel::ePrimary, .commandBufferCount = bufferCount };
-		commandBuffers = vk::raii::CommandBuffers(device, allocInfo);
+		if (commandBuffers.empty())
+		{
+			createCommandBuffers(1);
+
+			commandBuffers[index].begin({ .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
+		}
+
+		return commandBuffers[index];
 	}
 
-	std::unique_ptr<vk::raii::CommandBuffer> CommandBufferManager::BeginSingleTimeCommands(const vk::raii::Device& device)
+	void CommandBufferManager::FlushCommandBuffer(const vk::raii::Queue& graphicsQueue)
 	{
-		//TODO: Could create seperate CommandBool with VK_COMMAND_POOL_CREATE_TRANSIENT_BIT
+		assert(!commandBuffers.empty() && commandBuffers.size() == 1);
+
+		commandBuffers[0].end();
+
+		vk::SubmitInfo submitInfo
+		{ 
+			.commandBufferCount = 1,
+			.pCommandBuffers = &*commandBuffers[0] 
+		};
+		graphicsQueue.submit(submitInfo, nullptr);
+		graphicsQueue.waitIdle();
+		
+		commandBuffers.clear();
+	}
+
+	void CommandBufferManager::createCommandBuffers(uint32_t bufferCount)
+	{
 		vk::CommandBufferAllocateInfo allocInfo
 		{
 			.commandPool = commandPool,
 			.level = vk::CommandBufferLevel::ePrimary,
-			.commandBufferCount = 1
+			.commandBufferCount = bufferCount
 		};
-		std::unique_ptr<vk::raii::CommandBuffer> commandBuffer = std::make_unique<vk::raii::CommandBuffer>(std::move(device.allocateCommandBuffers(allocInfo).front()));
 
-		vk::CommandBufferBeginInfo beginInfo{ .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit };
-		commandBuffer->begin(beginInfo);
-
-		return commandBuffer;
-	}
-
-	void CommandBufferManager::EndSingleTimeCommands(const vk::raii::Queue graphicsQueue, const vk::raii::CommandBuffer& commandBuffer)
-	{
-		commandBuffer.end();
-
-		vk::SubmitInfo submitInfo{ .commandBufferCount = 1, .pCommandBuffers = &*commandBuffer };
-		graphicsQueue.submit(submitInfo, nullptr);
-		graphicsQueue.waitIdle();
+		commandBuffers = vk::raii::CommandBuffers(*this->device, allocInfo);
 	}
 }

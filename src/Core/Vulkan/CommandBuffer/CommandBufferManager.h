@@ -2,6 +2,7 @@
 
 #include <Vulkan/vulkan_raii.hpp>
 
+#include <memory>
 #include <vector>
 
 namespace Core::VK::CMD
@@ -10,7 +11,10 @@ namespace Core::VK::CMD
 	{
 		public:
 			CommandBufferManager();
-			CommandBufferManager(const vk::raii::Device& device, uint32_t queueIndex);
+			CommandBufferManager(const vk::raii::Device& device,
+								 vk::CommandPoolCreateFlags flags,
+								 uint32_t queueIndex,
+								 uint32_t bufferCount = 0);
 
 			CommandBufferManager(CommandBufferManager&& other) noexcept;
 			CommandBufferManager& operator=(CommandBufferManager&& other) noexcept;
@@ -20,15 +24,15 @@ namespace Core::VK::CMD
 
 			~CommandBufferManager();
 
-			vk::raii::CommandBuffer& CommandBuffer(uint32_t index = 0) { return commandBuffers[index]; }
+			vk::raii::CommandBuffer& CommandBuffer(uint32_t index = 0);
 
-			void CreateCommandBuffers(const vk::raii::Device& device, uint32_t bufferCount);
-
-			std::unique_ptr<vk::raii::CommandBuffer> BeginSingleTimeCommands(const vk::raii::Device& device);
-			void EndSingleTimeCommands(const vk::raii::Queue graphicsQueue, const vk::raii::CommandBuffer& commandBuffer);
+			void FlushCommandBuffer(const vk::raii::Queue& graphicsQueue);
 
 		private:
-			vk::raii::CommandPool commandPool = nullptr;
+			const vk::raii::Device* device = VK_NULL_HANDLE;
+			vk::raii::CommandPool commandPool = VK_NULL_HANDLE;
 			std::vector<vk::raii::CommandBuffer> commandBuffers;
+
+			void createCommandBuffers(uint32_t bufferCount);
 	};
 }

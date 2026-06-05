@@ -45,7 +45,7 @@ namespace Core::VK
 		createDescriptorSetLayout();
 		createGraphicsPipelines();
 
-		createCommandPool();
+		createCommandBufferManagers();
 		createDepthResources();
 
 		createTextureImage();
@@ -59,8 +59,11 @@ namespace Core::VK
 		createDescriptorPool();
 		createDescriptorSets();
 
-		createCommandBuffers();
 		createSyncObjects();
+
+		FlushCommandBuffer();
+		stagingBuffers.clear();
+		stagingBuffersMemory.clear();
 	}
 
 	VulkanRenderer::~VulkanRenderer()
@@ -782,11 +785,20 @@ namespace Core::VK
 		throw std::runtime_error("Failed to find supported format!");
 	}
 
-	void VulkanRenderer::createCommandPool()
+	void VulkanRenderer::createCommandBufferManagers()
 	{
 		commandBufferManager = CMD::CommandBufferManager
 		{
 			device,
+			vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+			queueIndex,
+			MAX_FRAMES_IN_FLIGHT
+		};
+
+		transientCommandBufferManager = CMD::CommandBufferManager
+		{
+			device,
+			vk::CommandPoolCreateFlagBits::eTransient,
 			queueIndex
 		};
 	}
@@ -901,7 +913,7 @@ namespace Core::VK
 		vk::DeviceSize imageSize = static_cast<vk::DeviceSize>(width) * height * 4;
 
 		vk::raii::Buffer stagingBuffer({});
-		vk::raii::DeviceMemory stagingBufferMemory({});
+		vk::raii::DeviceMemory tempStagingBufferMemory({});
 
 		createBuffer(
 			totalSize,
@@ -909,8 +921,13 @@ namespace Core::VK
 			vk::MemoryPropertyFlagBits::eHostVisible |
 			vk::MemoryPropertyFlagBits::eHostCoherent,
 			stagingBuffer,
-			stagingBufferMemory
+			tempStagingBufferMemory
 		);
+
+		stagingBuffers.emplace_back(std::move(stagingBuffer));
+		stagingBuffersMemory.emplace_back(std::move(tempStagingBufferMemory));
+
+		auto& stagingBufferMemory = stagingBuffersMemory.back();
 
 		vk::DeviceSize offset = 0;
 
@@ -941,7 +958,7 @@ namespace Core::VK
 		);
 
 		transitionImageLayout(textureImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, mipLevel, TEXTURE_ARRAY_SIZE);
-		copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height), TEXTURE_ARRAY_SIZE);
+		copyBufferToImage(stagingBuffers.back(), textureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height), TEXTURE_ARRAY_SIZE);
 		generateMipmaps(textureImage, vk::Format::eR8G8B8A8Srgb, width, height, mipLevel, TEXTURE_ARRAY_SIZE);
 	}
 
@@ -954,7 +971,7 @@ namespace Core::VK
 			throw std::runtime_error("Texture image format does not support linear blitting!");
 		}
 
-		std::unique_ptr<vk::raii::CommandBuffer> commandBuffer = commandBufferManager.BeginSingleTimeCommands(device);
+		const auto& commandBuffer = transientCommandBufferManager.CommandBuffer();
 
 		vk::ImageMemoryBarrier barrier
 		{
@@ -983,7 +1000,7 @@ namespace Core::VK
 			barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
 			barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
 
-			commandBuffer->pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, barrier);
+			commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, barrier);
 
 			vk::ArrayWrapper1D<vk::Offset3D, 2> offsets, dstOffsets;
 			offsets[0] = vk::Offset3D(0, 0, 0);
@@ -1001,14 +1018,14 @@ namespace Core::VK
 			blit.srcSubresource = vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, i - 1, 0, layerCount);
 			blit.dstSubresource = vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, i, 0, layerCount);
 
-			commandBuffer->blitImage(image, vk::ImageLayout::eTransferSrcOptimal, image, vk::ImageLayout::eTransferDstOptimal, { blit }, vk::Filter::eLinear);
+			commandBuffer.blitImage(image, vk::ImageLayout::eTransferSrcOptimal, image, vk::ImageLayout::eTransferDstOptimal, { blit }, vk::Filter::eLinear);
 
 			barrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
 			barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 			barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
 			barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
 
-			commandBuffer->pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {}, barrier);
+			commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {}, barrier);
 
 			if (mipWidth > 1)
 			{
@@ -1027,9 +1044,7 @@ namespace Core::VK
 		barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
 		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
 
-		commandBuffer->pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {}, barrier);
-
-		commandBufferManager.EndSingleTimeCommands(graphicsQueue, *commandBuffer);
+		commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {}, barrier);
 	}
 
 	void VulkanRenderer::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory)
@@ -1058,7 +1073,7 @@ namespace Core::VK
 
 	void VulkanRenderer::transitionImageLayout(const vk::raii::Image& image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount)
 	{
-		auto commandBuffer = commandBufferManager.BeginSingleTimeCommands(device);
+		const auto& commandBuffer = transientCommandBufferManager.CommandBuffer();
 
 		vk::ImageMemoryBarrier barrier
 		{
@@ -1092,14 +1107,12 @@ namespace Core::VK
 			throw std::invalid_argument("Unsupported layout transitions!");
 		}
 
-		commandBuffer->pipelineBarrier(sourceStage, destinationStage, {}, {}, nullptr, barrier);
-
-		commandBufferManager.EndSingleTimeCommands(graphicsQueue, *commandBuffer);
+		commandBuffer.pipelineBarrier(sourceStage, destinationStage, {}, {}, nullptr, barrier);
 	}
 
 	void VulkanRenderer::copyBufferToImage(const vk::raii::Buffer& buffer, vk::raii::Image& image, uint32_t width, uint32_t height, uint32_t layerCount)
 	{
-		auto commandBuffer = commandBufferManager.BeginSingleTimeCommands(device);
+		const auto& commandBuffer = transientCommandBufferManager.CommandBuffer();
 
 		vk::BufferImageCopy region
 		{
@@ -1111,9 +1124,7 @@ namespace Core::VK
 			.imageExtent = { width, height, 1 }
 		};
 
-		commandBuffer->copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, { region });
-
-		commandBufferManager.EndSingleTimeCommands(graphicsQueue, *commandBuffer);
+		commandBuffer.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, { region });
 	}
 
 	void VulkanRenderer::createTextureImageView()
@@ -1148,6 +1159,11 @@ namespace Core::VK
 	void VulkanRenderer::SendIndexData(const std::vector<uint32_t>& indicies)
 	{
 		createIndexBuffer(indicies);
+	}
+
+	void VulkanRenderer::FlushCommandBuffer()
+	{
+		transientCommandBufferManager.FlushCommandBuffer(graphicsQueue);
 	}
 
 	void VulkanRenderer::createVertexBuffer()
@@ -1232,9 +1248,9 @@ namespace Core::VK
 
 	void VulkanRenderer::copyBuffer(VMA::VMABuffer& srcBuffer, VMA::VMABuffer& dstBuffer, vk::BufferCopy bufferCopy)
 	{
-		auto commandCopyBuffer = commandBufferManager.BeginSingleTimeCommands(device);
-		commandCopyBuffer->copyBuffer(srcBuffer.Buffer(), dstBuffer.Buffer(), bufferCopy);
-		commandBufferManager.EndSingleTimeCommands(graphicsQueue, *commandCopyBuffer);
+		const auto& commandCopyBuffer = transientCommandBufferManager.CommandBuffer();
+		commandCopyBuffer.copyBuffer(srcBuffer.Buffer(), dstBuffer.Buffer(), bufferCopy);
+		FlushCommandBuffer();
 	}
 
 	void VulkanRenderer::createUniformBuffers()
@@ -1335,11 +1351,6 @@ namespace Core::VK
 
 			device.updateDescriptorSets(descriptorWrites, {});
 		}
-	}
-
-	void VulkanRenderer::createCommandBuffers()
-	{
-		commandBufferManager.CreateCommandBuffers(device, MAX_FRAMES_IN_FLIGHT);
 	}
 
 	void VulkanRenderer::createSyncObjects()
