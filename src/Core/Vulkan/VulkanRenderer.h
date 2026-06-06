@@ -3,6 +3,7 @@
 #include "CommandBufferManager.h"
 #include "GraphicsPipeline.h"
 #include "IRenderer.h"
+#include "Texture.h"
 #include "Window.h"
 #include "Vertex.h"
 #include "VMAAllocator.h"
@@ -27,8 +28,8 @@ constexpr bool enableValidationLayers = true;
 
 namespace Core::VK
 {
-	constexpr int MAX_FRAMES_IN_FLIGHT = 2;
-	constexpr int TEXTURE_ARRAY_SIZE = 7;
+	constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+	constexpr uint32_t TEXTURE_ARRAY_SIZE = 7;
 
 	struct UniformBufferObject
 	{
@@ -157,10 +158,7 @@ namespace Core::VK
 			vk::raii::DescriptorPool descriptorPool = nullptr;
 			std::vector<vk::raii::DescriptorSet> descriptorSets;
 
-			uint32_t mipLevel;
-			VMA::VMAImage textureImage = nullptr;
-			vk::raii::ImageView textureImageView = nullptr;
-			vk::raii::Sampler textureSampler = nullptr;
+			MAT::Texture texture = nullptr;
 
 			VMA::VMAImage depthImage = nullptr;
 			vk::raii::ImageView depthImageView = nullptr;
@@ -199,12 +197,7 @@ namespace Core::VK
 			vk::raii::ImageView createImageView(VMA::VMAImage& image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels, uint32_t layerCount, vk::ImageViewType imageFormat);
 			
 			void createTextureImage();
-			void generateMipmaps(VMA::VMAImage& image, vk::Format imageFormat, int32_t width, int32_t height, uint32_t mipLevels, uint32_t layerCount);
 			void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory);
-			void transitionImageLayout(const VMA::VMAImage& image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount);
-
-			void createTextureImageView();
-			void createTextureSampler();
 
 			void createVertexBuffer();
 			void createIndexBuffer(const std::vector<uint32_t>& indicies);

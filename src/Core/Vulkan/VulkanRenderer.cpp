@@ -49,8 +49,6 @@ namespace Core::VK
 		createDepthResources();
 
 		createTextureImage();
-		createTextureImageView();
-		createTextureSampler();
 
 		createVertexBuffer();
 
@@ -857,132 +855,29 @@ namespace Core::VK
 			{ "Textures/GrassTop.png" },
 			{ "Textures/Stone.png" },
 			{ "Textures/Bedrock.png" },
-			{ "Textures/Sand.png"},
-			{ "Textures/Water.png"}
+			{ "Textures/Sand.png" },
+			{ "Textures/Water.png" }
 		};
 
-		mipLevel = images[0].getMipLevels();
-		uint32_t width = images[0].Width();
-		uint32_t height = images[0].Height();
+		auto format = vk::Format::eR8G8B8A8Srgb;
+		auto usage = vk::ImageUsageFlagBits::eTransferSrc |
+					 vk::ImageUsageFlagBits::eTransferDst |
+					 vk::ImageUsageFlagBits::eSampled;
 
-		vk::DeviceSize totalSize = static_cast<vk::DeviceSize>(width) * height * 4 * TEXTURE_ARRAY_SIZE;
-		vk::DeviceSize imageSize = static_cast<vk::DeviceSize>(width) * height * 4;
-
-		auto tempStagingBuffer = VMA::VMABuffer
+		texture = MAT::Texture
 		{
+			device,
 			allocator.Allocator(),
-			totalSize,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-			VMA_MEMORY_USAGE_CPU_ONLY
-		};
-
-		auto data = images | std::views::transform([](const Image& d) { return d.Data(); });
-
-		tempStagingBuffer.CopyData(data, imageSize);
-
-		textureImage = VMA::VMAImage
-		{
-			allocator.Allocator(),
-			width,
-			height,
-			mipLevel,
+			transientCommandBufferManager,
+			images,
 			TEXTURE_ARRAY_SIZE,
-			vk::Format::eR8G8B8A8Srgb,
-			vk::ImageUsageFlagBits::eTransferSrc |
-			vk::ImageUsageFlagBits::eTransferDst |
-			vk::ImageUsageFlagBits::eSampled,
-			vk::MemoryPropertyFlagBits::eDeviceLocal
+			format,
+			usage,
+			vk::MemoryPropertyFlagBits::eDeviceLocal,
+			physicalDevice.getFormatProperties(format),
+			vk::ImageViewType::e2DArray,
+			physicalDevice.getProperties().limits.maxSamplerAnisotropy
 		};
-
-		transitionImageLayout(textureImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, mipLevel, TEXTURE_ARRAY_SIZE);
-		transientCommandBufferManager.CopyBufferToImage(std::move(tempStagingBuffer), textureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height), TEXTURE_ARRAY_SIZE);
-		generateMipmaps(textureImage, vk::Format::eR8G8B8A8Srgb, width, height, mipLevel, TEXTURE_ARRAY_SIZE);
-	}
-
-	void VulkanRenderer::generateMipmaps(VMA::VMAImage& image, vk::Format imageFormat, int32_t width, int32_t height, uint32_t mipLevels, uint32_t layerCount)
-	{
-		vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(imageFormat);
-
-		if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear))
-		{
-			throw std::runtime_error("Texture image format does not support linear blitting!");
-		}
-
-		const auto& commandBuffer = transientCommandBufferManager.CommandBuffer();
-
-		vk::ImageMemoryBarrier barrier
-		{
-			.srcAccessMask = vk::AccessFlagBits::eTransferWrite,
-			.dstAccessMask = vk::AccessFlagBits::eTransferRead,
-			.oldLayout = vk::ImageLayout::eTransferDstOptimal,
-			.newLayout = vk::ImageLayout::eTransferSrcOptimal,
-			.srcQueueFamilyIndex = vk::QueueFamilyIgnored,
-			.dstQueueFamilyIndex = vk::QueueFamilyIgnored,
-			.image = image.Image()
-		};
-
-		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = layerCount;
-		barrier.subresourceRange.levelCount = 1;
-
-		int32_t mipWidth = width;
-		int32_t mipHeight = height;
-
-		for (uint32_t i = 1; i < mipLevels; i++)
-		{
-			barrier.subresourceRange.baseMipLevel = i - 1;
-			barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
-			barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
-			barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-			barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
-
-			commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, barrier);
-
-			vk::ArrayWrapper1D<vk::Offset3D, 2> offsets, dstOffsets;
-			offsets[0] = vk::Offset3D(0, 0, 0);
-			offsets[1] = vk::Offset3D(mipWidth, mipHeight, 1);
-			dstOffsets[0] = vk::Offset3D(0, 0, 0);
-			dstOffsets[1] = vk::Offset3D(mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1);
-			
-			vk::ImageBlit blit
-			{
-				.srcSubresource = {},
-				.srcOffsets = offsets,
-				.dstSubresource = {},
-				.dstOffsets = dstOffsets
-			};
-			blit.srcSubresource = vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, i - 1, 0, layerCount);
-			blit.dstSubresource = vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, i, 0, layerCount);
-
-			commandBuffer.blitImage(image.Image(), vk::ImageLayout::eTransferSrcOptimal, image.Image(), vk::ImageLayout::eTransferDstOptimal, {blit}, vk::Filter::eLinear);
-
-			barrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
-			barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
-			barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-
-			commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {}, barrier);
-
-			if (mipWidth > 1)
-			{
-				mipWidth /= 2;
-			}
-				
-			if (mipHeight > 1)
-			{
-				mipHeight /= 2;
-			}
-		}
-
-		barrier.subresourceRange.baseMipLevel = mipLevels - 1;
-		barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
-		barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-
-		commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {}, barrier);
 	}
 
 	void VulkanRenderer::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory)
@@ -1009,74 +904,6 @@ namespace Core::VK
 		buffer.bindMemory(*bufferMemory, 0);
 	}
 
-	void VulkanRenderer::transitionImageLayout(const VMA::VMAImage& image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount)
-	{
-		const auto& commandBuffer = transientCommandBufferManager.CommandBuffer();
-
-		vk::ImageMemoryBarrier barrier
-		{
-			.oldLayout = oldLayout,
-			.newLayout = newLayout,
-			.image = image.Image(),
-			.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, layerCount }
-		};
-
-		vk::PipelineStageFlags sourceStage;
-		vk::PipelineStageFlags destinationStage;
-
-		if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eTransferDstOptimal)
-		{
-			barrier.srcAccessMask = {};
-			barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
-
-			sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
-			destinationStage = vk::PipelineStageFlagBits::eTransfer;
-		}
-		else if (oldLayout == vk::ImageLayout::eTransferDstOptimal && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
-		{
-			barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-			barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-
-			sourceStage = vk::PipelineStageFlagBits::eTransfer;
-			destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
-		}
-		else
-		{
-			throw std::invalid_argument("Unsupported layout transitions!");
-		}
-
-		commandBuffer.pipelineBarrier(sourceStage, destinationStage, {}, {}, nullptr, barrier);
-	}
-
-	void VulkanRenderer::createTextureImageView()
-	{
-		textureImageView = createImageView(textureImage, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor, mipLevel, TEXTURE_ARRAY_SIZE, vk::ImageViewType::e2DArray);
-	}
-
-	void VulkanRenderer::createTextureSampler()
-	{
-		vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
-
-		vk::SamplerCreateInfo samplerInfo
-		{
-			.magFilter = vk::Filter::eNearest,
-			.minFilter = vk::Filter::eNearest,
-			.mipmapMode = vk::SamplerMipmapMode::eLinear,
-			.addressModeU = vk::SamplerAddressMode::eClampToEdge,
-			.addressModeV = vk::SamplerAddressMode::eClampToEdge,
-			.addressModeW = vk::SamplerAddressMode::eClampToEdge,
-			.mipLodBias = 0.0f,
-			.anisotropyEnable = vk::True,
-			.maxAnisotropy = properties.limits.maxSamplerAnisotropy,
-			.compareEnable = vk::False,
-			.compareOp = vk::CompareOp::eAlways,
-			.minLod = 0.0f,
-			.maxLod = vk::LodClampNone
-		};
-
-		textureSampler = vk::raii::Sampler(device, samplerInfo);
-	}
-
 	void VulkanRenderer::SendIndexData(const std::vector<uint32_t>& indicies)
 	{
 		createIndexBuffer(indicies);
@@ -1096,6 +923,7 @@ namespace Core::VK
 			bufferSize, 
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | 
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+
 			0,
 			VMA_MEMORY_USAGE_GPU_ONLY);
 
@@ -1236,8 +1064,8 @@ namespace Core::VK
 			
 			vk::DescriptorImageInfo imageInfo
 			{
-				.sampler = textureSampler,
-				.imageView = textureImageView,
+				.sampler = texture.Sampler(),
+				.imageView = texture.ImageView(),
 				.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
 			};
 
