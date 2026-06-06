@@ -5,6 +5,7 @@
 
 #include <Vulkan/vulkan_raii.hpp>
 
+#include <cstddef>
 #include <vector>
 
 namespace Core::VK::MAT
@@ -12,8 +13,9 @@ namespace Core::VK::MAT
 	class Texture
 	{
 		public:
-			Texture();
-			Texture(const vk::raii::Device& device,
+			Texture(std::nullptr_t);
+			Texture(VmaAllocator allocator,
+					const vk::raii::Device& device,
 					const vk::raii::CommandBuffer& commandBuffer,
 					const Image& image,
 					vk::Format format,
@@ -21,7 +23,8 @@ namespace Core::VK::MAT
 					vk::MemoryPropertyFlags properties,
 					float maxSamplerAnisotropy);
 
-			Texture(const vk::raii::Device& device,
+			Texture(VmaAllocator allocator,
+					const vk::raii::Device& device,
 					const vk::raii::CommandBuffer& commandBuffer,
 					const std::vector<Image>& images,
 					uint32_t layerCount,
@@ -36,7 +39,7 @@ namespace Core::VK::MAT
 			~Texture();
 		
 		private:
-			VMA::VMAImage vmaImage;
+			VMA::VMAImage vmaImage = nullptr;
 			vk::raii::ImageView textureImageView = nullptr;
 			vk::raii::Sampler textureSampler = nullptr;
 	};

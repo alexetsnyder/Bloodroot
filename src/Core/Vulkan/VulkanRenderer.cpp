@@ -1,6 +1,5 @@
 #include "VulkanRenderer.h"
 
-#define STB_IMAGE_IMPLEMENTATION
 #include "FileIO.h"
 #include "Image.h"
 
@@ -215,7 +214,7 @@ namespace Core::VK
 		);
 
 		transitionImageLayout(
-			*depthImage,
+			depthImage.Image(),
 			vk::ImageLayout::eUndefined,
 			vk::ImageLayout::eDepthAttachmentOptimal,
 			vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
@@ -807,61 +806,19 @@ namespace Core::VK
 	{
 		vk::Format depthFormat = findDepthFormat();
 
-		createImage(
+		depthImage = Core::VK::VMA::VMAImage
+		{
+			allocator.Allocator(),
 			swapChainExtent.width,
 			swapChainExtent.height,
 			1,
 			1,
 			depthFormat,
-			vk::ImageTiling::eOptimal,
 			vk::ImageUsageFlagBits::eDepthStencilAttachment,
-			vk::MemoryPropertyFlagBits::eDeviceLocal,
-			depthImage,
-			depthImageMemory,
-			vk::ImageType::e2D
-		);
+			vk::MemoryPropertyFlagBits::eDeviceLocal
+		};
 
 		depthImageView = createImageView(depthImage, depthFormat, vk::ImageAspectFlagBits::eDepth, 1, 1, vk::ImageViewType::e2D);
-	}
-
-	void VulkanRenderer::createImage(
-		uint32_t width,
-		uint32_t height,
-		uint32_t mipLevels,
-		uint32_t layerCount,
-		vk::Format format,
-		vk::ImageTiling tiling,
-		vk::ImageUsageFlags usage,
-		vk::MemoryPropertyFlags properties,
-		vk::raii::Image& image,
-		vk::raii::DeviceMemory& imageMemory,
-		vk::ImageType imageType
-	)
-	{
-		vk::ImageCreateInfo imageInfo
-		{
-			.imageType = imageType ,
-			.format = format,
-			.extent = { width, height, 1 },
-			.mipLevels = mipLevels,
-			.arrayLayers = layerCount,
-			.samples = vk::SampleCountFlagBits::e1,
-			.tiling = tiling,
-			.usage = usage,
-			.sharingMode = vk::SharingMode::eExclusive
-		};
-
-		image = vk::raii::Image(device, imageInfo);
-
-		vk::MemoryRequirements memRequirements = image.getMemoryRequirements();
-		vk::MemoryAllocateInfo allocInfo
-		{
-			.allocationSize = memRequirements.size,
-			.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties)
-		};
-
-		imageMemory = vk::raii::DeviceMemory(device, allocInfo);
-		image.bindMemory(imageMemory, 0);
 	}
 
 	uint32_t VulkanRenderer::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
@@ -879,11 +836,11 @@ namespace Core::VK
 		throw std::runtime_error("Failed to find suitable memory type!");
 	}
 
-	vk::raii::ImageView VulkanRenderer::createImageView(vk::raii::Image& image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels, uint32_t layerCount, vk::ImageViewType imageFormat)
+	vk::raii::ImageView VulkanRenderer::createImageView(Core::VK::VMA::VMAImage& image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels, uint32_t layerCount, vk::ImageViewType imageFormat)
 	{
 		vk::ImageViewCreateInfo imageViewCreateInfo
 		{
-			.image = image,
+			.image = image.Image(),
 			.viewType = imageFormat,
 			.format = format,
 			.subresourceRange = { aspectFlags, 0, mipLevels, 0, layerCount },
@@ -906,8 +863,8 @@ namespace Core::VK
 		};
 
 		mipLevel = images[0].getMipLevels();
-		int width = images[0].Width();
-		int height = images[0].Height();
+		uint32_t width = images[0].Width();
+		uint32_t height = images[0].Height();
 
 		vk::DeviceSize totalSize = static_cast<vk::DeviceSize>(width) * height * 4 * TEXTURE_ARRAY_SIZE;
 		vk::DeviceSize imageSize = static_cast<vk::DeviceSize>(width) * height * 4;
@@ -941,28 +898,26 @@ namespace Core::VK
 
 		stagingBufferMemory.unmapMemory();
 
-		createImage(
+		textureImage = Core::VK::VMA::VMAImage
+		{
+			allocator.Allocator(),
 			width,
 			height,
 			mipLevel,
 			TEXTURE_ARRAY_SIZE,
 			vk::Format::eR8G8B8A8Srgb,
-			vk::ImageTiling::eOptimal,
 			vk::ImageUsageFlagBits::eTransferSrc |
 			vk::ImageUsageFlagBits::eTransferDst |
 			vk::ImageUsageFlagBits::eSampled,
-			vk::MemoryPropertyFlagBits::eDeviceLocal,
-			textureImage,
-			textureImageMemory,
-			vk::ImageType::e2D
-		);
+			vk::MemoryPropertyFlagBits::eDeviceLocal
+		};
 
 		transitionImageLayout(textureImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, mipLevel, TEXTURE_ARRAY_SIZE);
 		copyBufferToImage(stagingBuffers.back(), textureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height), TEXTURE_ARRAY_SIZE);
 		generateMipmaps(textureImage, vk::Format::eR8G8B8A8Srgb, width, height, mipLevel, TEXTURE_ARRAY_SIZE);
 	}
 
-	void VulkanRenderer::generateMipmaps(vk::raii::Image& image, vk::Format imageFormat, int32_t width, int32_t height, uint32_t mipLevels, uint32_t layerCount)
+	void VulkanRenderer::generateMipmaps(Core::VK::VMA::VMAImage& image, vk::Format imageFormat, int32_t width, int32_t height, uint32_t mipLevels, uint32_t layerCount)
 	{
 		vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(imageFormat);
 
@@ -981,7 +936,7 @@ namespace Core::VK
 			.newLayout = vk::ImageLayout::eTransferSrcOptimal,
 			.srcQueueFamilyIndex = vk::QueueFamilyIgnored,
 			.dstQueueFamilyIndex = vk::QueueFamilyIgnored,
-			.image = image
+			.image = image.Image()
 		};
 
 		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
@@ -1018,7 +973,7 @@ namespace Core::VK
 			blit.srcSubresource = vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, i - 1, 0, layerCount);
 			blit.dstSubresource = vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, i, 0, layerCount);
 
-			commandBuffer.blitImage(image, vk::ImageLayout::eTransferSrcOptimal, image, vk::ImageLayout::eTransferDstOptimal, { blit }, vk::Filter::eLinear);
+			commandBuffer.blitImage(image.Image(), vk::ImageLayout::eTransferSrcOptimal, image.Image(), vk::ImageLayout::eTransferDstOptimal, {blit}, vk::Filter::eLinear);
 
 			barrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
 			barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -1071,7 +1026,7 @@ namespace Core::VK
 		buffer.bindMemory(*bufferMemory, 0);
 	}
 
-	void VulkanRenderer::transitionImageLayout(const vk::raii::Image& image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount)
+	void VulkanRenderer::transitionImageLayout(const Core::VK::VMA::VMAImage& image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount)
 	{
 		const auto& commandBuffer = transientCommandBufferManager.CommandBuffer();
 
@@ -1079,7 +1034,7 @@ namespace Core::VK
 		{
 			.oldLayout = oldLayout,
 			.newLayout = newLayout,
-			.image = image,
+			.image = image.Image(),
 			.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, layerCount }
 		};
 
@@ -1110,7 +1065,7 @@ namespace Core::VK
 		commandBuffer.pipelineBarrier(sourceStage, destinationStage, {}, {}, nullptr, barrier);
 	}
 
-	void VulkanRenderer::copyBufferToImage(const vk::raii::Buffer& buffer, vk::raii::Image& image, uint32_t width, uint32_t height, uint32_t layerCount)
+	void VulkanRenderer::copyBufferToImage(const vk::raii::Buffer& buffer, Core::VK::VMA::VMAImage& image, uint32_t width, uint32_t height, uint32_t layerCount)
 	{
 		const auto& commandBuffer = transientCommandBufferManager.CommandBuffer();
 
@@ -1124,7 +1079,7 @@ namespace Core::VK
 			.imageExtent = { width, height, 1 }
 		};
 
-		commandBuffer.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, { region });
+		commandBuffer.copyBufferToImage(buffer, image.Image(), vk::ImageLayout::eTransferDstOptimal, {region});
 	}
 
 	void VulkanRenderer::createTextureImageView()

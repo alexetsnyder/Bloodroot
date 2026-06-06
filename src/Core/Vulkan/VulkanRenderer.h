@@ -7,6 +7,7 @@
 #include "Vertex.h"
 #include "VMAAllocator.h"
 #include "VMABuffer.h"
+#include "VMAImage.h"
 #include "VMAVirtualBlock.h"
 #include "VMAVirtualAllocation.h"
 
@@ -160,13 +161,11 @@ namespace Core::VK
 			std::vector<vk::raii::DescriptorSet> descriptorSets;
 
 			uint32_t mipLevel;
-			vk::raii::Image textureImage = nullptr;
-			vk::raii::DeviceMemory textureImageMemory = nullptr;
+			Core::VK::VMA::VMAImage textureImage = nullptr;
 			vk::raii::ImageView textureImageView = nullptr;
 			vk::raii::Sampler textureSampler = nullptr;
 
-			vk::raii::Image depthImage = nullptr;
-			vk::raii::DeviceMemory depthImageMemory = nullptr;
+			Core::VK::VMA::VMAImage depthImage = nullptr;
 			vk::raii::ImageView depthImageView = nullptr;
 
 			std::vector<const char*> requiredDeviceExtension = { vk::KHRSwapchainExtensionName };
@@ -198,27 +197,15 @@ namespace Core::VK
 			
 			void createCommandBufferManagers();
 			void createDepthResources();
-			void createImage(
-				uint32_t width,
-				uint32_t height,
-				uint32_t mipLevels,
-				uint32_t layerCount,
-				vk::Format format,
-				vk::ImageTiling tiling,
-				vk::ImageUsageFlags usage,
-				vk::MemoryPropertyFlags properties,
-				vk::raii::Image& image,
-				vk::raii::DeviceMemory& imageMemory,
-				vk::ImageType imageType
-			);
+
 			uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
-			vk::raii::ImageView createImageView(vk::raii::Image& image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels, uint32_t layerCount, vk::ImageViewType imageFormat);
+			vk::raii::ImageView createImageView(Core::VK::VMA::VMAImage& image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels, uint32_t layerCount, vk::ImageViewType imageFormat);
 			
 			void createTextureImage();
-			void generateMipmaps(vk::raii::Image& image, vk::Format imageFormat, int32_t width, int32_t height, uint32_t mipLevels, uint32_t layerCount);
+			void generateMipmaps(Core::VK::VMA::VMAImage& image, vk::Format imageFormat, int32_t width, int32_t height, uint32_t mipLevels, uint32_t layerCount);
 			void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory);
-			void transitionImageLayout(const vk::raii::Image& image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount);
-			void copyBufferToImage(const vk::raii::Buffer& buffer, vk::raii::Image& image, uint32_t width, uint32_t height, uint32_t layerCount);
+			void transitionImageLayout(const Core::VK::VMA::VMAImage& image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount);
+			void copyBufferToImage(const vk::raii::Buffer& buffer, Core::VK::VMA::VMAImage& image, uint32_t width, uint32_t height, uint32_t layerCount);
 
 			void createTextureImageView();
 			void createTextureSampler();

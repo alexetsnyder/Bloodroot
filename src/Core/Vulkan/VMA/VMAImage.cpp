@@ -8,12 +8,13 @@
 
 namespace Core::VK::VMA
 {
-	VMAImage::VMAImage()
+	VMAImage::VMAImage(std::nullptr_t)
 	{
 
 	}
 
-	VMAImage::VMAImage(uint32_t width,
+	VMAImage::VMAImage(VmaAllocator allocator,
+					   uint32_t width,
 					   uint32_t height,
 					   uint32_t mipLevels,
 					   uint32_t layerCount,
@@ -33,6 +34,8 @@ namespace Core::VK::VMA
 		};
 
 		stagingBuffer.CopyData(image.Data());*/
+
+		this->allocator = allocator;
 
 		vk::ImageCreateInfo imageInfo
 		{

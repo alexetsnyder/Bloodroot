@@ -4,18 +4,19 @@
 
 namespace Core::VK::MAT
 {
-	Texture::Texture()
+	Texture::Texture(std::nullptr_t)
 	{
 
 	}
 
-	Texture::Texture(const vk::raii::Device& device,
+	Texture::Texture(VmaAllocator allocator,
+					 const vk::raii::Device& device,
 					 const vk::raii::CommandBuffer& commandBuffer,
 					 const Image& image, vk::Format format,
 					 vk::ImageUsageFlags usage,
 					 vk::MemoryPropertyFlags properties,
 					 float maxSamplerAnisotropy)
-		: vmaImage{ image.Width(), image.Height(), image.getMipLevels(), 1, format, usage, properties }
+		: vmaImage{ allocator, image.Width(), image.Height(), image.getMipLevels(), 1, format, usage, properties }
 	{
 		auto width = image.Width();
 		auto height = image.Height();
@@ -36,7 +37,8 @@ namespace Core::VK::MAT
 
 	}
 
-	Texture::Texture(const vk::raii::Device & device,
+	Texture::Texture(VmaAllocator allocator,
+					 const vk::raii::Device & device,
 					 const vk::raii::CommandBuffer & commandBuffer,
 					 const std::vector<Image>&images,
 					 uint32_t layerCount,
@@ -44,7 +46,7 @@ namespace Core::VK::MAT
 					 vk::ImageUsageFlags usage, 
 					 vk::MemoryPropertyFlags properties,
 					 float maxSamplerAnisotropy)
-		: vmaImage{ images[0].Width(), images[0].Height(), images[0].getMipLevels(), 1, format, usage, properties}
+		: vmaImage{ allocator, images[0].Width(), images[0].Height(), images[0].getMipLevels(), 1, format, usage, properties}
 	{
 
 	}

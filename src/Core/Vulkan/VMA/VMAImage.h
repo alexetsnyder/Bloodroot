@@ -5,6 +5,7 @@
 #include <vulkan/vulkan_raii.hpp>
 #include <VMA/vk_mem_alloc.h>
 
+#include <cstddef>
 #include <vector>
 
 namespace Core::VK::VMA
@@ -12,8 +13,9 @@ namespace Core::VK::VMA
 	class VMAImage
 	{
 		public:
-			VMAImage();
-			VMAImage(uint32_t width,
+			VMAImage(std::nullptr_t);
+			VMAImage(VmaAllocator allocator,
+					 uint32_t width,
 					 uint32_t height,
 					 uint32_t mipLevels,  
 					 uint32_t layerCount,
@@ -29,6 +31,7 @@ namespace Core::VK::VMA
 
 			~VMAImage();
 
+			const vk::Image& Image() const { return vkImage; }
 			VmaAllocation& Allocation() { return allocation; }
 
 		private:
