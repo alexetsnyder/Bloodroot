@@ -62,7 +62,6 @@ namespace Core::VK
 		createSyncObjects();
 
 		FlushCommandBuffer();
-		vmaStagingBuffers.clear();
 	}
 
 	VulkanRenderer::~VulkanRenderer()
@@ -878,13 +877,9 @@ namespace Core::VK
 			VMA_MEMORY_USAGE_CPU_ONLY
 		};
 
-		vmaStagingBuffers.emplace_back(std::move(tempStagingBuffer));
-
-		auto& stagingBuffer = vmaStagingBuffers.back();
-
 		auto data = images | std::views::transform([](const Image& d) { return d.Data(); });
 
-		stagingBuffer.CopyData(data, imageSize);
+		tempStagingBuffer.CopyData(data, imageSize);
 
 		textureImage = VMA::VMAImage
 		{
@@ -901,7 +896,7 @@ namespace Core::VK
 		};
 
 		transitionImageLayout(textureImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, mipLevel, TEXTURE_ARRAY_SIZE);
-		copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height), TEXTURE_ARRAY_SIZE);
+		transientCommandBufferManager.CopyBufferToImage(std::move(tempStagingBuffer), textureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height), TEXTURE_ARRAY_SIZE);
 		generateMipmaps(textureImage, vk::Format::eR8G8B8A8Srgb, width, height, mipLevel, TEXTURE_ARRAY_SIZE);
 	}
 
@@ -1053,23 +1048,6 @@ namespace Core::VK
 		commandBuffer.pipelineBarrier(sourceStage, destinationStage, {}, {}, nullptr, barrier);
 	}
 
-	void VulkanRenderer::copyBufferToImage(const VMA::VMABuffer& buffer, VMA::VMAImage& image, uint32_t width, uint32_t height, uint32_t layerCount)
-	{
-		const auto& commandBuffer = transientCommandBufferManager.CommandBuffer();
-
-		vk::BufferImageCopy region
-		{
-			.bufferOffset = 0,
-			.bufferRowLength = 0,
-			.bufferImageHeight = 0,
-			.imageSubresource = { vk::ImageAspectFlagBits::eColor, 0, 0, layerCount },
-			.imageOffset = { 0, 0, 0 },
-			.imageExtent = { width, height, 1 }
-		};
-
-		commandBuffer.copyBufferToImage(buffer.Buffer(), image.Image(), vk::ImageLayout::eTransferDstOptimal, {region});
-	}
-
 	void VulkanRenderer::createTextureImageView()
 	{
 		textureImageView = createImageView(textureImage, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor, mipLevel, TEXTURE_ARRAY_SIZE, vk::ImageViewType::e2DArray);
@@ -1150,7 +1128,7 @@ namespace Core::VK
 			0,
 			VMA_MEMORY_USAGE_GPU_ONLY);
 
-		copyBuffer(stagingBuffer, indexBuffer, vk::BufferCopy(0, 0, bufferSize));
+		transientCommandBufferManager.CopyBuffer(std::move(stagingBuffer), indexBuffer, vk::BufferCopy(0, 0, bufferSize));
 	}
 
 	void VulkanRenderer::AllocateToVertexBuffer(const glm::i32vec3& chunkId,
@@ -1184,16 +1162,9 @@ namespace Core::VK
 			},
 		};
 
-		copyBuffer(stagingBuffer, vertexBuffer, vk::BufferCopy(0, drawable.allocation.Offset(), bufferSize));
+		transientCommandBufferManager.CopyBuffer(std::move(stagingBuffer), vertexBuffer, vk::BufferCopy(0, drawable.allocation.Offset(), bufferSize));
 
 		drawables.emplace_back(std::move(drawable));
-	}
-
-	void VulkanRenderer::copyBuffer(VMA::VMABuffer& srcBuffer, VMA::VMABuffer& dstBuffer, vk::BufferCopy bufferCopy)
-	{
-		const auto& commandCopyBuffer = transientCommandBufferManager.CommandBuffer();
-		commandCopyBuffer.copyBuffer(srcBuffer.Buffer(), dstBuffer.Buffer(), bufferCopy);
-		FlushCommandBuffer();
 	}
 
 	void VulkanRenderer::createUniformBuffers()

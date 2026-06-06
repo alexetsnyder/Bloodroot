@@ -46,7 +46,7 @@ namespace Core::VK::MAT
 					 vk::ImageUsageFlags usage, 
 					 vk::MemoryPropertyFlags properties,
 					 float maxSamplerAnisotropy)
-		: vmaImage{ allocator, images[0].Width(), images[0].Height(), images[0].getMipLevels(), 1, format, usage, properties}
+		: vmaImage{ allocator, images[0].Width(), images[0].Height(), images[0].getMipLevels(), 1, format, usage, properties }
 	{
 
 	}

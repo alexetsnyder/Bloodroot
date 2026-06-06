@@ -50,7 +50,7 @@ BloodrootApp::BloodrootApp()
 		}
 	}
 
-	//renderer.FlushCommandBuffer();
+	renderer.FlushCommandBuffer();
 
 	std::cout << "Finished Allocating Meshes!\n";
 }

@@ -132,9 +132,8 @@ namespace Core::VK
 			GraphicsPipeline opaqueGraphicsPipeline;
 			GraphicsPipeline tGraphicsPipeline;
 
-			CMD::CommandBufferManager commandBufferManager;
-			CMD::CommandBufferManager transientCommandBufferManager;
-			std::vector<VMA::VMABuffer> vmaStagingBuffers;
+			CMD::CommandBufferManager commandBufferManager = nullptr;
+			CMD::CommandBufferManager transientCommandBufferManager = nullptr;
 
 			uint32_t frameIndex = 0;
 			std::vector<vk::raii::Semaphore> presentCompleteSemaphores;
@@ -203,7 +202,6 @@ namespace Core::VK
 			void generateMipmaps(VMA::VMAImage& image, vk::Format imageFormat, int32_t width, int32_t height, uint32_t mipLevels, uint32_t layerCount);
 			void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory);
 			void transitionImageLayout(const VMA::VMAImage& image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount);
-			void copyBufferToImage(const VMA::VMABuffer& buffer, VMA::VMAImage& image, uint32_t width, uint32_t height, uint32_t layerCount);
 
 			void createTextureImageView();
 			void createTextureSampler();
@@ -216,8 +214,6 @@ namespace Core::VK
 										const glm::vec3& position,
 										const std::vector<Vertex>& verticies,
 										std::vector<Drawable>& drawables);
-
-			void copyBuffer(VMA::VMABuffer& srcBuffer, VMA::VMABuffer& dstBuffer, vk::BufferCopy bufferCopy);
 
 			void createUniformBuffers();
 			void createDescriptorPool();
