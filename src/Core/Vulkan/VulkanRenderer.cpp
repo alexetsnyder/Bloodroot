@@ -9,6 +9,7 @@
 #include <iostream>
 #include <math.h>
 #include <map>
+#include <ranges>
 
 namespace Core::VK
 {
@@ -61,8 +62,7 @@ namespace Core::VK
 		createSyncObjects();
 
 		FlushCommandBuffer();
-		stagingBuffers.clear();
-		stagingBuffersMemory.clear();
+		vmaStagingBuffers.clear();
 	}
 
 	VulkanRenderer::~VulkanRenderer()
@@ -806,7 +806,7 @@ namespace Core::VK
 	{
 		vk::Format depthFormat = findDepthFormat();
 
-		depthImage = Core::VK::VMA::VMAImage
+		depthImage = VMA::VMAImage
 		{
 			allocator.Allocator(),
 			swapChainExtent.width,
@@ -836,7 +836,7 @@ namespace Core::VK
 		throw std::runtime_error("Failed to find suitable memory type!");
 	}
 
-	vk::raii::ImageView VulkanRenderer::createImageView(Core::VK::VMA::VMAImage& image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels, uint32_t layerCount, vk::ImageViewType imageFormat)
+	vk::raii::ImageView VulkanRenderer::createImageView(VMA::VMAImage& image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels, uint32_t layerCount, vk::ImageViewType imageFormat)
 	{
 		vk::ImageViewCreateInfo imageViewCreateInfo
 		{
@@ -869,36 +869,24 @@ namespace Core::VK
 		vk::DeviceSize totalSize = static_cast<vk::DeviceSize>(width) * height * 4 * TEXTURE_ARRAY_SIZE;
 		vk::DeviceSize imageSize = static_cast<vk::DeviceSize>(width) * height * 4;
 
-		vk::raii::Buffer stagingBuffer({});
-		vk::raii::DeviceMemory tempStagingBufferMemory({});
-
-		createBuffer(
-			totalSize,
-			vk::BufferUsageFlagBits::eTransferSrc,
-			vk::MemoryPropertyFlagBits::eHostVisible |
-			vk::MemoryPropertyFlagBits::eHostCoherent,
-			stagingBuffer,
-			tempStagingBufferMemory
-		);
-
-		stagingBuffers.emplace_back(std::move(stagingBuffer));
-		stagingBuffersMemory.emplace_back(std::move(tempStagingBufferMemory));
-
-		auto& stagingBufferMemory = stagingBuffersMemory.back();
-
-		vk::DeviceSize offset = 0;
-
-		void* data = stagingBufferMemory.mapMemory(0, totalSize);
-
-		for (auto& image : images)
+		auto tempStagingBuffer = VMA::VMABuffer
 		{
-			memcpy((char*)data + offset, image.Data(), imageSize);
-			offset += imageSize;
-		}
+			allocator.Allocator(),
+			totalSize,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+			VMA_MEMORY_USAGE_CPU_ONLY
+		};
 
-		stagingBufferMemory.unmapMemory();
+		vmaStagingBuffers.emplace_back(std::move(tempStagingBuffer));
 
-		textureImage = Core::VK::VMA::VMAImage
+		auto& stagingBuffer = vmaStagingBuffers.back();
+
+		auto data = images | std::views::transform([](const Image& d) { return d.Data(); });
+
+		stagingBuffer.CopyData(data, imageSize);
+
+		textureImage = VMA::VMAImage
 		{
 			allocator.Allocator(),
 			width,
@@ -913,11 +901,11 @@ namespace Core::VK
 		};
 
 		transitionImageLayout(textureImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, mipLevel, TEXTURE_ARRAY_SIZE);
-		copyBufferToImage(stagingBuffers.back(), textureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height), TEXTURE_ARRAY_SIZE);
+		copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height), TEXTURE_ARRAY_SIZE);
 		generateMipmaps(textureImage, vk::Format::eR8G8B8A8Srgb, width, height, mipLevel, TEXTURE_ARRAY_SIZE);
 	}
 
-	void VulkanRenderer::generateMipmaps(Core::VK::VMA::VMAImage& image, vk::Format imageFormat, int32_t width, int32_t height, uint32_t mipLevels, uint32_t layerCount)
+	void VulkanRenderer::generateMipmaps(VMA::VMAImage& image, vk::Format imageFormat, int32_t width, int32_t height, uint32_t mipLevels, uint32_t layerCount)
 	{
 		vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(imageFormat);
 
@@ -1026,7 +1014,7 @@ namespace Core::VK
 		buffer.bindMemory(*bufferMemory, 0);
 	}
 
-	void VulkanRenderer::transitionImageLayout(const Core::VK::VMA::VMAImage& image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount)
+	void VulkanRenderer::transitionImageLayout(const VMA::VMAImage& image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount)
 	{
 		const auto& commandBuffer = transientCommandBufferManager.CommandBuffer();
 
@@ -1065,7 +1053,7 @@ namespace Core::VK
 		commandBuffer.pipelineBarrier(sourceStage, destinationStage, {}, {}, nullptr, barrier);
 	}
 
-	void VulkanRenderer::copyBufferToImage(const vk::raii::Buffer& buffer, Core::VK::VMA::VMAImage& image, uint32_t width, uint32_t height, uint32_t layerCount)
+	void VulkanRenderer::copyBufferToImage(const VMA::VMABuffer& buffer, VMA::VMAImage& image, uint32_t width, uint32_t height, uint32_t layerCount)
 	{
 		const auto& commandBuffer = transientCommandBufferManager.CommandBuffer();
 
@@ -1079,7 +1067,7 @@ namespace Core::VK
 			.imageExtent = { width, height, 1 }
 		};
 
-		commandBuffer.copyBufferToImage(buffer, image.Image(), vk::ImageLayout::eTransferDstOptimal, {region});
+		commandBuffer.copyBufferToImage(buffer.Buffer(), image.Image(), vk::ImageLayout::eTransferDstOptimal, {region});
 	}
 
 	void VulkanRenderer::createTextureImageView()

@@ -85,7 +85,7 @@ namespace Core::VK::VMA
 			}
 
 			template <typename T>
-			void CopyData(T inData)
+			void CopyData(const T& inData)
 			{
 				void* data;
 
@@ -97,14 +97,14 @@ namespace Core::VK::VMA
 			}
 
 			template <typename T>
-			void CopyData(T inData, size_t elementSize)
+			void CopyData(const T& inData, size_t elementSize)
 			{
 				void* data;
 
 				vmaMapMemory(allocator, allocation, &data);
 
 				vk::DeviceSize offset = 0;
-				for (auto& d : inData)
+				for (const auto& d : inData)
 				{
 					memcpy((char*)data + offset, d, elementSize);
 					offset += elementSize;
