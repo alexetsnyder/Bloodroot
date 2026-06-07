@@ -18,7 +18,7 @@ namespace Core::VK
 									   const vk::PipelineColorBlendAttachmentState& colorBlendAttachment,
 									   const vk::PipelineDepthStencilStateCreateInfo& depthStateCreateInfo)
 	{
-		vk::raii::ShaderModule shaderModule = createShaderModule(device, FileIO::readFile("Shaders/slang.spv"));
+		vk::raii::ShaderModule shaderModule = createShaderModule(device, FileIO::readFile("Shaders/shader.spv"));
 
 		vk::PipelineShaderStageCreateInfo vertShaderStageInfo{ .stage = vk::ShaderStageFlagBits::eVertex, .module = shaderModule, .pName = "vertMain" };
 		vk::PipelineShaderStageCreateInfo fragShaderStageInfo{ .stage = vk::ShaderStageFlagBits::eFragment, .module = shaderModule, .pName = "fragMain" };

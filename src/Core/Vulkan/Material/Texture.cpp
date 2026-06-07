@@ -75,7 +75,7 @@ namespace Core::VK::MAT
 		);
 
 		createImageView(format, vk::ImageAspectFlagBits::eColor, mipLevel, layerCount, imageViewType);
-		createSampler(); // device, physicalDevice.getProperties().limits.maxSamplerAnisotropy);
+		createSampler();
 	}
 
 	Texture::Texture(Texture&& other) noexcept

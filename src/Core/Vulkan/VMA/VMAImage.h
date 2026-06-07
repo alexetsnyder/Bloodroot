@@ -30,7 +30,7 @@ namespace Core::VK::VMA
 
 			~VMAImage();
 
-			const vk::Image& Get() const { return vkImage; }
+			const VkImage& Get() const { return vkImage; }
 			VmaAllocation& Allocation() { return allocation; }
 
 		private:

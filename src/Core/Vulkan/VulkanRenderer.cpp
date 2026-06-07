@@ -35,8 +35,6 @@ namespace Core::VK
 		pickPhysicalDevice();
 		createLogicalDevice();
 
-		//createAllocator();
-
 		int width, height;
 		window.getSize(width, height);
 
@@ -594,11 +592,6 @@ namespace Core::VK
 		device = vk::raii::Device(physicalDevice, deviceCreateInfo);
 		graphicsQueue = vk::raii::Queue(device, queueIndex, 0);
 	}
-
-	/*void VulkanRenderer::createAllocator()
-	{
-		allocator = VMA::VMAAllocator(physicalDevice, device, instance);
-	}*/
 
 	void VulkanRenderer::createSwapChain(int windowWidth, int windowHeight)
 	{

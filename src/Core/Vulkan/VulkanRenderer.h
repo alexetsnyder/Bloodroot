@@ -111,14 +111,9 @@ namespace Core::VK
 
 		private:
 			bool framebufferResized = false;
-			/*vk::raii::Context context;
-			vk::raii::Instance instance = nullptr;*/
 			vk::raii::DebugUtilsMessengerEXT debugMessenger = nullptr;
 
 			vk::raii::SurfaceKHR surface = nullptr;
-
-			/*vk::raii::PhysicalDevice physicalDevice = nullptr;
-			vk::raii::Device device = nullptr;*/
 
 			uint32_t queueIndex = ~0;
 			vk::raii::Queue graphicsQueue = nullptr;
@@ -140,8 +135,6 @@ namespace Core::VK
 			std::vector<vk::raii::Semaphore> presentCompleteSemaphores;
 			std::vector<vk::raii::Semaphore> renderFinishedSemaphores;
 			std::vector<vk::raii::Fence> inFlightFences;
-
-			//VMA::VMAAllocator allocator;
 
 			VMA::VMABuffer vertexBuffer;
 			VMA::VMAVirtualBlock vertexBufferBlock;
@@ -175,8 +168,6 @@ namespace Core::VK
 			void pickPhysicalDevice();
 			bool isDeviceSuitable(vk::raii::PhysicalDevice const& physicalDevice);
 			void createLogicalDevice();
-
-			//void createAllocator();
 
 			void createSwapChain(int windowWidth, int windowHeight);
 			vk::Extent2D chooseSwapChainExtent(vk::SurfaceCapabilitiesKHR const& capabilities, int windowWidth, int windowHeight);
