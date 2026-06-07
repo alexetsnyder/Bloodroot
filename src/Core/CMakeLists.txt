@@ -36,6 +36,7 @@ target_sources(
 		Extensions/GLMExtensions.h
 		"Math/RLEncoding/RLEncoding.h"
 		Vulkan/Pipeline/GraphicsPipeline.h
+		Vulkan/Pipeline/ShaderModule.h
 		Vulkan/Material/Texture.h
 		Vulkan/CommandBuffer/CommandBufferManager.h
 )

@@ -1,7 +1,7 @@
 #include "GraphicsPipeline.h"
 
-#include "FileIO.h"
 #include "Vertex.h"
+#include "VulkanHandles.h"
 
 namespace Core::VK
 {
@@ -11,18 +11,16 @@ namespace Core::VK
 
 	}
 
-	GraphicsPipeline::GraphicsPipeline(const vk::raii::Device& device,
+	GraphicsPipeline::GraphicsPipeline(const ShaderModule& shaderModule,
 									   const vk::Format& colorAttatchmentFormat,
 									   const vk::Format& depthFormat,
 									   const vk::raii::DescriptorSetLayout& descriptorSetLayout,
 									   const vk::PipelineColorBlendAttachmentState& colorBlendAttachment,
 									   const vk::PipelineDepthStencilStateCreateInfo& depthStateCreateInfo)
 	{
-		vk::raii::ShaderModule shaderModule = createShaderModule(device, FileIO::readFile("Shaders/shader.spv"));
+		auto shaderStages = shaderModule.GetShaderStages();
 
-		vk::PipelineShaderStageCreateInfo vertShaderStageInfo{ .stage = vk::ShaderStageFlagBits::eVertex, .module = shaderModule, .pName = "vertMain" };
-		vk::PipelineShaderStageCreateInfo fragShaderStageInfo{ .stage = vk::ShaderStageFlagBits::eFragment, .module = shaderModule, .pName = "fragMain" };
-		vk::PipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+		const auto& device = VulkanHandles::Instance().Device();
 
 		auto bindingDescription = Vertex::getBindingDescription();
 		auto attibuteDescriptions = Vertex::getAttibuteDescriptions();
@@ -81,7 +79,7 @@ namespace Core::VK
 		{
 			{
 				.stageCount = 2,
-				.pStages = shaderStages,
+				.pStages = shaderStages.data(),
 				.pVertexInputState = &vertexInputInfo,
 				.pInputAssemblyState = &inputAssembly,
 				.pViewportState = &viewPortState,
@@ -129,18 +127,5 @@ namespace Core::VK
 	GraphicsPipeline::~GraphicsPipeline()
 	{
 
-	}
-
-	vk::raii::ShaderModule GraphicsPipeline::createShaderModule(const vk::raii::Device& device, const std::vector<char>& code) const
-	{
-		vk::ShaderModuleCreateInfo createInfo
-		{ 
-			.codeSize = code.size() * sizeof(char),
-			.pCode = reinterpret_cast<const uint32_t*>(code.data()) 
-		};
-
-		vk::raii::ShaderModule shaderModule{ device, createInfo };
-
-		return shaderModule;
 	}
 }

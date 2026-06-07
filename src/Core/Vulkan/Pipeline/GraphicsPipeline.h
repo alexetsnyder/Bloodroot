@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ShaderModule.h"
+
 #include <glm/glm.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
@@ -14,7 +16,7 @@ namespace Core::VK
 	{
 		public:
 			GraphicsPipeline();
-			GraphicsPipeline(const vk::raii::Device& device, 
+			GraphicsPipeline(const ShaderModule& shaderModule, 
 							 const vk::Format& colorAttatchmentFormat,
 							 const vk::Format& depthFormat,
 							 const vk::raii::DescriptorSetLayout& descriptorSetLayout,
@@ -34,7 +36,5 @@ namespace Core::VK
 		private:
 			vk::raii::PipelineLayout pipelineLayout = nullptr;
 			vk::raii::Pipeline graphicsPipeline = nullptr;
-
-			[[nodiscard]] vk::raii::ShaderModule createShaderModule(const vk::raii::Device& device, const std::vector<char>& code) const;
 	};
 }

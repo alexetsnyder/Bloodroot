@@ -1,8 +1,9 @@
 #include "VulkanRenderer.h"
 
-#include "FileIO.h"
 #include "Image.h"
 #include "VulkanHandles.h"
+
+#include "ShaderModule.h"
 
 #include <algorithm>
 #include <assert.h>
@@ -712,7 +713,7 @@ namespace Core::VK
 
 	void VulkanRenderer::createGraphicsPipelines()
 	{
-		auto& device = VulkanHandles::Instance().Device();
+		auto shaderModule = ShaderModule{ "Shaders/shader.spv" };
 
 		vk::PipelineColorBlendAttachmentState opaqueColorBlendAttachment
 		{
@@ -731,7 +732,7 @@ namespace Core::VK
 
 		opaqueGraphicsPipeline = GraphicsPipeline
 		{ 
-			device,
+			shaderModule,
 			swapChainSurfaceFormat.format,
 			findDepthFormat(),
 			descriptorSetLayout,
@@ -762,7 +763,7 @@ namespace Core::VK
 
 		tGraphicsPipeline = GraphicsPipeline
 		{
-			device,
+			shaderModule,
 			swapChainSurfaceFormat.format,
 			findDepthFormat(),
 			descriptorSetLayout,
