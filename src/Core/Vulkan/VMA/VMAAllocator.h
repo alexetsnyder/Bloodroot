@@ -35,8 +35,6 @@ namespace Core::VK::VMA
 			VmaAllocator allocator = VK_NULL_HANDLE;
 
 			VMAAllocator();
-			//VMAAllocator(const vk::raii::PhysicalDevice& physicalDevice, const vk::raii::Device& device, const vk::raii::Instance& instance);
-
 			~VMAAllocator();
 
 			void init();
