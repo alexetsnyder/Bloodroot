@@ -2,6 +2,7 @@
 
 #include "FileIO.h"
 #include "Image.h"
+#include "VulkanHandles.h"
 
 #include <algorithm>
 #include <assert.h>
@@ -34,7 +35,7 @@ namespace Core::VK
 		pickPhysicalDevice();
 		createLogicalDevice();
 
-		createAllocator();
+		//createAllocator();
 
 		int width, height;
 		window.getSize(width, height);
@@ -48,7 +49,7 @@ namespace Core::VK
 		createCommandBufferManagers();
 		createDepthResources();
 
-		createTextureImage();
+		createTexture();
 
 		createVertexBuffer();
 
@@ -80,6 +81,8 @@ namespace Core::VK
 
 	void VulkanRenderer::drawFrame(const Window& window, const glm::vec3& cameraPos, const glm::mat4& view)
 	{
+		auto& device = VulkanHandles::Instance().Device();
+
 		auto fenceResult = device.waitForFences(*inFlightFences[frameIndex], vk::True, UINT64_MAX);
 		if (fenceResult != vk::Result::eSuccess)
 		{
@@ -147,7 +150,7 @@ namespace Core::VK
 
 	void VulkanRenderer::waitIdle()
 	{
-		device.waitIdle();
+		VulkanHandles::Instance().Device().waitIdle();
 	}
 
 	void VulkanRenderer::onResize(int width, int height)
@@ -165,7 +168,7 @@ namespace Core::VK
 			glfwWaitEvents();
 		}
 
-		device.waitIdle();
+		waitIdle();
 
 		cleanUpSwapChain();
 
@@ -211,7 +214,7 @@ namespace Core::VK
 		);
 
 		transitionImageLayout(
-			depthImage.Image(),
+			depthImage.Get(),
 			vk::ImageLayout::eUndefined,
 			vk::ImageLayout::eDepthAttachmentOptimal,
 			vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
@@ -258,13 +261,13 @@ namespace Core::VK
 
 		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, opaqueGraphicsPipeline.PipelineLayout(), 0, *descriptorSets[frameIndex], nullptr);
 
-		commandBuffer.bindIndexBuffer(indexBuffer.Buffer(), 0, vk::IndexType::eUint32);
+		commandBuffer.bindIndexBuffer(indexBuffer.Get(), 0, vk::IndexType::eUint32);
 
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *opaqueGraphicsPipeline.Pipeline());
 
 		for (const auto& drawable : drawables)
 		{
-			commandBuffer.bindVertexBuffers(0, { vertexBuffer.Buffer() }, { drawable.allocation.Offset() });
+			commandBuffer.bindVertexBuffers(0, { vertexBuffer.Get() }, { drawable.allocation.Offset() });
 
 			PushConstants pushConstants
 			{
@@ -303,7 +306,7 @@ namespace Core::VK
 		{
 			const auto& drawable = tDrawables[index];
 
-			commandBuffer.bindVertexBuffers(0, { vertexBuffer.Buffer() }, { drawable.allocation.Offset() });
+			commandBuffer.bindVertexBuffers(0, { vertexBuffer.Get() }, { drawable.allocation.Offset() });
 
 			PushConstants pushConstants
 			{
@@ -378,6 +381,10 @@ namespace Core::VK
 
 	void VulkanRenderer::createInstance(const std::vector<const char*>& requiredExtensions)
 	{
+		auto& handles = VulkanHandles::Instance();
+		auto& context = handles.Context();
+		auto& instance = handles.VKInstance();
+
 		constexpr vk::ApplicationInfo appInfo
 		{
 			.pApplicationName = "Hello Triangle",
@@ -440,6 +447,8 @@ namespace Core::VK
 
 	void VulkanRenderer::setupDebugMessenger()
 	{
+		auto& instance = VulkanHandles::Instance().VKInstance();
+
 		if (!enableValidationLayers)
 		{
 			return;
@@ -479,6 +488,8 @@ namespace Core::VK
 
 	void VulkanRenderer::createSurface(const Window& window)
 	{
+		auto& instance = VulkanHandles::Instance().VKInstance();
+
 		VkSurfaceKHR _surface;
 		if (window.createWindowSurface(*instance, _surface) != 0)
 		{
@@ -490,6 +501,9 @@ namespace Core::VK
 
 	void VulkanRenderer::pickPhysicalDevice()
 	{
+		auto& instance = VulkanHandles::Instance().VKInstance();
+		auto& physicalDevice = VulkanHandles::Instance().PhysicalDevice();
+
 		auto physicalDevices = instance.enumeratePhysicalDevices();
 		auto const devIter = std::ranges::find_if(physicalDevices, [&](auto const& physicalDevice) { return isDeviceSuitable(physicalDevice); });
 
@@ -535,6 +549,9 @@ namespace Core::VK
 
 	void VulkanRenderer::createLogicalDevice()
 	{
+		auto& physicalDevice = VulkanHandles::Instance().PhysicalDevice();
+		auto& device = VulkanHandles::Instance().Device();
+
 		std::vector<vk::QueueFamilyProperties> queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
 
 		for (uint32_t qfpIndex = 0; qfpIndex < queueFamilyProperties.size(); qfpIndex++)
@@ -578,13 +595,16 @@ namespace Core::VK
 		graphicsQueue = vk::raii::Queue(device, queueIndex, 0);
 	}
 
-	void VulkanRenderer::createAllocator()
+	/*void VulkanRenderer::createAllocator()
 	{
 		allocator = VMA::VMAAllocator(physicalDevice, device, instance);
-	}
+	}*/
 
 	void VulkanRenderer::createSwapChain(int windowWidth, int windowHeight)
 	{
+		auto& physicalDevice = VulkanHandles::Instance().PhysicalDevice();
+		auto& device = VulkanHandles::Instance().Device();
+
 		vk::SurfaceCapabilitiesKHR surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(*surface);
 		swapChainExtent = chooseSwapChainExtent(surfaceCapabilities, windowWidth, windowHeight);
 		uint32_t minImageCount = chooseSwapChainMinImageCount(surfaceCapabilities);
@@ -667,6 +687,8 @@ namespace Core::VK
 	{
 		assert(swapChainImageViews.empty());
 
+		auto& device = VulkanHandles::Instance().Device();
+
 		vk::ImageViewCreateInfo imageViewCreateInfo
 		{
 			.viewType = vk::ImageViewType::e2D,
@@ -683,6 +705,8 @@ namespace Core::VK
 
 	void VulkanRenderer::createDescriptorSetLayout()
 	{
+		auto& device = VulkanHandles::Instance().Device();
+
 		std::array bindings
 		{
 			vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex, nullptr),
@@ -695,6 +719,8 @@ namespace Core::VK
 
 	void VulkanRenderer::createGraphicsPipelines()
 	{
+		auto& device = VulkanHandles::Instance().Device();
+
 		vk::PipelineColorBlendAttachmentState opaqueColorBlendAttachment
 		{
 			.blendEnable = vk::False,
@@ -763,6 +789,8 @@ namespace Core::VK
 
 	vk::Format VulkanRenderer::findSupportedFormat(const std::vector<vk::Format>& canidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features)
 	{
+		auto& physicalDevice = VulkanHandles::Instance().PhysicalDevice();
+
 		for (const auto& format : canidates)
 		{
 			vk::FormatProperties props = physicalDevice.getFormatProperties(format);
@@ -783,6 +811,8 @@ namespace Core::VK
 
 	void VulkanRenderer::createCommandBufferManagers()
 	{
+		auto& device = VulkanHandles::Instance().Device();
+
 		commandBufferManager = CMD::CommandBufferManager
 		{
 			device,
@@ -805,14 +835,12 @@ namespace Core::VK
 
 		depthImage = VMA::VMAImage
 		{
-			allocator.Allocator(),
 			swapChainExtent.width,
 			swapChainExtent.height,
 			1,
 			1,
 			depthFormat,
-			vk::ImageUsageFlagBits::eDepthStencilAttachment,
-			vk::MemoryPropertyFlagBits::eDeviceLocal
+			vk::ImageUsageFlagBits::eDepthStencilAttachment
 		};
 
 		depthImageView = createImageView(depthImage, depthFormat, vk::ImageAspectFlagBits::eDepth, 1, 1, vk::ImageViewType::e2D);
@@ -820,6 +848,8 @@ namespace Core::VK
 
 	uint32_t VulkanRenderer::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
 	{
+		auto& physicalDevice = VulkanHandles::Instance().PhysicalDevice();
+
 		vk::PhysicalDeviceMemoryProperties memProperties = physicalDevice.getMemoryProperties();
 
 		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
@@ -835,9 +865,11 @@ namespace Core::VK
 
 	vk::raii::ImageView VulkanRenderer::createImageView(VMA::VMAImage& image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels, uint32_t layerCount, vk::ImageViewType imageFormat)
 	{
+		auto& device = VulkanHandles::Instance().Device();
+
 		vk::ImageViewCreateInfo imageViewCreateInfo
 		{
-			.image = image.Image(),
+			.image = image.Get(),
 			.viewType = imageFormat,
 			.format = format,
 			.subresourceRange = { aspectFlags, 0, mipLevels, 0, layerCount },
@@ -846,8 +878,11 @@ namespace Core::VK
 		return vk::raii::ImageView(device, imageViewCreateInfo);
 	}
 
-	void VulkanRenderer::createTextureImage()
+	void VulkanRenderer::createTexture()
 	{
+		auto& physicalDevice = VulkanHandles::Instance().PhysicalDevice();
+		auto& device = VulkanHandles::Instance().Device();
+
 		Image images[TEXTURE_ARRAY_SIZE]
 		{
 			{ "Textures/Dirt.png" },
@@ -859,29 +894,20 @@ namespace Core::VK
 			{ "Textures/Water.png" }
 		};
 
-		auto format = vk::Format::eR8G8B8A8Srgb;
-		auto usage = vk::ImageUsageFlagBits::eTransferSrc |
-					 vk::ImageUsageFlagBits::eTransferDst |
-					 vk::ImageUsageFlagBits::eSampled;
-
 		texture = MAT::Texture
 		{
-			device,
-			allocator.Allocator(),
 			transientCommandBufferManager,
 			images,
 			TEXTURE_ARRAY_SIZE,
-			format,
-			usage,
-			vk::MemoryPropertyFlagBits::eDeviceLocal,
-			physicalDevice.getFormatProperties(format),
+			vk::Format::eR8G8B8A8Srgb,
 			vk::ImageViewType::e2DArray,
-			physicalDevice.getProperties().limits.maxSamplerAnisotropy
 		};
 	}
 
 	void VulkanRenderer::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory)
 	{
+		auto& device = VulkanHandles::Instance().Device();
+
 		vk::BufferCreateInfo bufferInfo
 		{
 			.size = size,
@@ -919,11 +945,9 @@ namespace Core::VK
 		vk::DeviceSize bufferSize = 400 * 1024 * 1024;
 
 		vertexBuffer = VMA::VMABuffer(
-			allocator.Allocator(), 
 			bufferSize, 
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | 
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-
 			0,
 			VMA_MEMORY_USAGE_GPU_ONLY);
 
@@ -939,7 +963,6 @@ namespace Core::VK
 
 		VMA::VMABuffer stagingBuffer
 		{
-			allocator.Allocator(),
 			bufferSize,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -949,7 +972,6 @@ namespace Core::VK
 		stagingBuffer.CopyData(indicies.data());
 
 		indexBuffer = VMA::VMABuffer(
-			allocator.Allocator(),
 			bufferSize,
 			VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -969,7 +991,6 @@ namespace Core::VK
 
 		VMA::VMABuffer stagingBuffer
 		{
-			allocator.Allocator(),
 			bufferSize,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -1024,6 +1045,8 @@ namespace Core::VK
 
 	void VulkanRenderer::createDescriptorPool()
 	{
+		auto& device = VulkanHandles::Instance().Device();
+
 		std::array poolSize
 		{
 			vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT),
@@ -1042,6 +1065,8 @@ namespace Core::VK
 
 	void VulkanRenderer::createDescriptorSets()
 	{
+		auto& device = VulkanHandles::Instance().Device();
+
 		std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
 		vk::DescriptorSetAllocateInfo allocInfo
 		{
@@ -1097,6 +1122,8 @@ namespace Core::VK
 
 	void VulkanRenderer::createSyncObjects()
 	{
+		auto& device = VulkanHandles::Instance().Device();
+
 		assert(presentCompleteSemaphores.empty() && renderFinishedSemaphores.empty() && inFlightFences.empty());
 
 		for (size_t i = 0; i < swapChainImages.size(); i++)

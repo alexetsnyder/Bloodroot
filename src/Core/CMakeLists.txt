@@ -19,7 +19,8 @@ target_sources(
 		Window/Window.h
 		Interfaces/IRenderer.h
 		Window/GLFWInstance.h 
-		Vulkan/VulkanRenderer.h  
+		Vulkan/VulkanRenderer.h
+		Vulkan/VulkanHandles.h
 		Vulkan/Geometry/Vertex.h 
 		Vulkan/Geometry/Cube.h 
 		Vulkan/Geometry/Mesh.h 

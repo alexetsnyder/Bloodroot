@@ -1,5 +1,7 @@
 #pragma once
 
+#include "VMAAllocator.h"
+
 #include <vulkan/vulkan_raii.hpp>
 #include <VMA/vk_mem_alloc.h>
 
@@ -16,9 +18,8 @@ namespace Core::VK::VMA
 
 			}
 
-			VMABuffer(VmaAllocator allocator, size_t size, VkBufferUsageFlags usage, VmaAllocationCreateFlags vmaFlags, VmaMemoryUsage memUsage)
+			VMABuffer(size_t size, VkBufferUsageFlags usage, VmaAllocationCreateFlags vmaFlags, VmaMemoryUsage memUsage)
 			{
-				this->allocator = allocator;
 				this->size = size;
 
 				VkBufferCreateInfo bufferInfo
@@ -32,10 +33,10 @@ namespace Core::VK::VMA
 				VmaAllocationCreateInfo allocInfo
 				{
 					.flags = vmaFlags,
-					.usage = memUsage, // VMA_MEMORY_USAGE_CPU_TO_GPU,
+					.usage = memUsage,
 				};
 
-				auto result = vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr);
+				auto result = vmaCreateBuffer(VMAAllocator::Instance().Get(), &bufferInfo, &allocInfo, &buffer, &allocation, nullptr);
 
 				if (result != VK_SUCCESS)
 				{
@@ -47,12 +48,10 @@ namespace Core::VK::VMA
 			{
 				buffer = other.buffer;
 				allocation = other.allocation;
-				allocator = other.allocator;
 				size = other.size;
 
 				other.buffer = VK_NULL_HANDLE;
 				other.allocation = VK_NULL_HANDLE;
-				other.allocator = VK_NULL_HANDLE;
 				other.size = 0;
 			}
 
@@ -64,12 +63,10 @@ namespace Core::VK::VMA
 
 					buffer = other.buffer;
 					allocation = other.allocation;
-					allocator = other.allocator;
 					size = other.size;
 
 					other.buffer = VK_NULL_HANDLE;
 					other.allocation = VK_NULL_HANDLE;
-					other.allocator = VK_NULL_HANDLE;
 					other.size = 0;
 				}
 
@@ -87,6 +84,8 @@ namespace Core::VK::VMA
 			template <typename T>
 			void CopyData(const T& inData)
 			{
+				auto allocator = VMAAllocator::Instance().Get();
+
 				void* data;
 
 				vmaMapMemory(allocator, allocation, &data);
@@ -99,6 +98,8 @@ namespace Core::VK::VMA
 			template <typename T>
 			void CopyData(const T& inData, size_t elementSize)
 			{
+				auto allocator = VMAAllocator::Instance().Get();
+
 				void* data;
 
 				vmaMapMemory(allocator, allocation, &data);
@@ -113,19 +114,18 @@ namespace Core::VK::VMA
 				vmaUnmapMemory(allocator, allocation);
 			}
 
-			VkBuffer Buffer() const { return buffer; }
+			VkBuffer Get() const { return buffer; }
 
 		private:
 			size_t size;
 			VkBuffer buffer = VK_NULL_HANDLE;
 			VmaAllocation allocation = VK_NULL_HANDLE;
-			VmaAllocator allocator = VK_NULL_HANDLE;
 
 			void free() const
 			{
 				if (buffer != VK_NULL_HANDLE)
 				{
-					vmaDestroyBuffer(allocator, buffer, allocation);
+					vmaDestroyBuffer(VMAAllocator::Instance().Get(), buffer, allocation);
 				}
 			}
 	};

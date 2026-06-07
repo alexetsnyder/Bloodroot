@@ -111,14 +111,14 @@ namespace Core::VK
 
 		private:
 			bool framebufferResized = false;
-			vk::raii::Context context;
-			vk::raii::Instance instance = nullptr;
+			/*vk::raii::Context context;
+			vk::raii::Instance instance = nullptr;*/
 			vk::raii::DebugUtilsMessengerEXT debugMessenger = nullptr;
 
 			vk::raii::SurfaceKHR surface = nullptr;
 
-			vk::raii::PhysicalDevice physicalDevice = nullptr;
-			vk::raii::Device device = nullptr;
+			/*vk::raii::PhysicalDevice physicalDevice = nullptr;
+			vk::raii::Device device = nullptr;*/
 
 			uint32_t queueIndex = ~0;
 			vk::raii::Queue graphicsQueue = nullptr;
@@ -141,7 +141,7 @@ namespace Core::VK
 			std::vector<vk::raii::Semaphore> renderFinishedSemaphores;
 			std::vector<vk::raii::Fence> inFlightFences;
 
-			VMA::VMAAllocator allocator;
+			//VMA::VMAAllocator allocator;
 
 			VMA::VMABuffer vertexBuffer;
 			VMA::VMAVirtualBlock vertexBufferBlock;
@@ -176,7 +176,7 @@ namespace Core::VK
 			bool isDeviceSuitable(vk::raii::PhysicalDevice const& physicalDevice);
 			void createLogicalDevice();
 
-			void createAllocator();
+			//void createAllocator();
 
 			void createSwapChain(int windowWidth, int windowHeight);
 			vk::Extent2D chooseSwapChainExtent(vk::SurfaceCapabilitiesKHR const& capabilities, int windowWidth, int windowHeight);
@@ -196,7 +196,7 @@ namespace Core::VK
 			uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
 			vk::raii::ImageView createImageView(VMA::VMAImage& image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels, uint32_t layerCount, vk::ImageViewType imageFormat);
 			
-			void createTextureImage();
+			void createTexture();
 			void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::raii::Buffer& buffer, vk::raii::DeviceMemory& bufferMemory);
 
 			void createVertexBuffer();

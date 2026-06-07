@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Image.h"
+#include "VMAAllocator.h"
 
 #include <vulkan/vulkan_raii.hpp>
 #include <VMA/vk_mem_alloc.h>
@@ -14,14 +15,12 @@ namespace Core::VK::VMA
 	{
 		public:
 			VMAImage(std::nullptr_t);
-			VMAImage(VmaAllocator allocator,
-					 uint32_t width,
+			VMAImage(uint32_t width,
 					 uint32_t height,
 					 uint32_t mipLevels,  
 					 uint32_t layerCount,
 					 vk::Format format,
-					 vk::ImageUsageFlags usage,
-					 vk::MemoryPropertyFlags properties);
+					 vk::ImageUsageFlags usage);
 
 			VMAImage(VMAImage&& other) noexcept;
 			VMAImage& operator=(VMAImage&& other) noexcept;
@@ -31,15 +30,12 @@ namespace Core::VK::VMA
 
 			~VMAImage();
 
-			const vk::Image& Image() const { return vkImage; }
+			const vk::Image& Get() const { return vkImage; }
 			VmaAllocation& Allocation() { return allocation; }
 
 		private:
 			VkImage vkImage = VK_NULL_HANDLE;
-			//vk::raii::ImageView vkImageView = VK_NULL_HANDLE;
-			//VkImageView vkImageView = VK_NULL_HANDLE;
 			VmaAllocation allocation = VK_NULL_HANDLE;
-			VmaAllocator allocator = VK_NULL_HANDLE;
 
 			void free() const;
 	};

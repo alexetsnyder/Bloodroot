@@ -1,5 +1,7 @@
 #include "VMAAllocator.h"
 
+#include "VulkanHandles.h"
+
 #include <iostream>
 
 namespace Core::VK::VMA
@@ -9,7 +11,7 @@ namespace Core::VK::VMA
 
 	}
 
-	VMAAllocator::VMAAllocator(const vk::raii::PhysicalDevice& physicalDevice, const vk::raii::Device& device, const vk::raii::Instance& instance)
+	/*VMAAllocator::VMAAllocator(const vk::raii::PhysicalDevice& physicalDevice, const vk::raii::Device& device, const vk::raii::Instance& instance)
 	{
 		VmaVulkanFunctions vulkanFunctions = {};
 		vulkanFunctions.vkGetPhysicalDeviceProperties = vkGetPhysicalDeviceProperties;
@@ -35,9 +37,9 @@ namespace Core::VK::VMA
 		}
 
 		std::cout << "Created VMA Allocator.\n";
-	}
+	}*/
 
-	VMAAllocator::VMAAllocator(VMAAllocator&& other) noexcept
+	/*VMAAllocator::VMAAllocator(VMAAllocator&& other) noexcept
 	{
 		allocator = other.allocator;
 
@@ -55,11 +57,44 @@ namespace Core::VK::VMA
 		}
 
 		return *this;
-	}
+	}*/
 
 	VMAAllocator::~VMAAllocator()
 	{
 		free();
+	}
+
+	void VMA::VMAAllocator::init()
+	{
+		auto& handles = VulkanHandles::Instance();
+		auto& physicalDevice = handles.PhysicalDevice();
+		auto& device = handles.Device();
+		auto& instance = handles.VKInstance();
+
+		VmaVulkanFunctions vulkanFunctions = {};
+		vulkanFunctions.vkGetPhysicalDeviceProperties = vkGetPhysicalDeviceProperties;
+		vulkanFunctions.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
+		vulkanFunctions.vkGetDeviceProcAddr = vkGetDeviceProcAddr;
+
+		VmaAllocatorCreateInfo allocatorCreateInfo
+		{
+			.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT,
+			.physicalDevice = *physicalDevice,
+			.device = *device,
+			.pVulkanFunctions = &vulkanFunctions,
+			.instance = *instance,
+			.vulkanApiVersion = VK_API_VERSION_1_0,
+
+		};
+
+		auto result = vmaCreateAllocator(&allocatorCreateInfo, &allocator);
+
+		if (result != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create Allocator!");
+		}
+
+		std::cout << "Created VMA Allocator.\n";
 	}
 
 	void VMAAllocator::free()

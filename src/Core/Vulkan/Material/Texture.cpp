@@ -1,6 +1,7 @@
 #include "Texture.h"
 
 #include "VMABuffer.h"
+#include "VulkanHandles.h"
 
 #include <ranges>
 
@@ -12,18 +13,14 @@ namespace Core::VK::MAT
 
 	}
 
-	Texture::Texture(const vk::raii::Device& device,
-					 VmaAllocator allocator,
-					 CMD::CommandBufferManager& commandBufferManager,
+	Texture::Texture(CMD::CommandBufferManager& commandBufferManager,
 					 std::span<const Image> images,
 					 uint32_t layerCount,
 					 vk::Format format,
-					 vk::ImageUsageFlags usage, 
-					 vk::MemoryPropertyFlags properties,
-					 vk::FormatProperties physicalDeviceProperties,
-					 vk::ImageViewType imageViewType,
-					 float maxSamplerAnisotropy)
+					 vk::ImageViewType imageViewType)
 	{
+		const auto& physicalDevice = VulkanHandles::Instance().PhysicalDevice();
+
 		mipLevel = images[0].getMipLevels();
 		uint32_t width = images[0].Width();
 		uint32_t height = images[0].Height();
@@ -33,7 +30,6 @@ namespace Core::VK::MAT
 
 		auto tempStagingBuffer = VMA::VMABuffer
 		{
-			allocator,
 			totalSize,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -46,14 +42,14 @@ namespace Core::VK::MAT
 
 		vmaImage = VMA::VMAImage
 		{
-			allocator,
 			width,
 			height,
 			mipLevel,
 			layerCount,
 			format,
-			usage,
-			properties
+			vk::ImageUsageFlagBits::eTransferSrc |
+			vk::ImageUsageFlagBits::eTransferDst |
+			vk::ImageUsageFlagBits::eSampled
 		};
 
 		transitionImageLayout(
@@ -75,11 +71,11 @@ namespace Core::VK::MAT
 			height,
 			mipLevel,
 			layerCount,
-			physicalDeviceProperties
+			physicalDevice.getFormatProperties(format)
 		);
 
-		createImageView(device, format, vk::ImageAspectFlagBits::eColor, mipLevel, layerCount, imageViewType);
-		createSampler(device, maxSamplerAnisotropy);
+		createImageView(format, vk::ImageAspectFlagBits::eColor, mipLevel, layerCount, imageViewType);
+		createSampler(); // device, physicalDevice.getProperties().limits.maxSamplerAnisotropy);
 	}
 
 	Texture::Texture(Texture&& other) noexcept
@@ -134,7 +130,7 @@ namespace Core::VK::MAT
 			.newLayout = vk::ImageLayout::eTransferSrcOptimal,
 			.srcQueueFamilyIndex = vk::QueueFamilyIgnored,
 			.dstQueueFamilyIndex = vk::QueueFamilyIgnored,
-			.image = image.Image()
+			.image = image.Get()
 		};
 
 		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
@@ -171,7 +167,7 @@ namespace Core::VK::MAT
 			blit.srcSubresource = vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, i - 1, 0, layerCount);
 			blit.dstSubresource = vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, i, 0, layerCount);
 
-			commandBuffer.blitImage(image.Image(), vk::ImageLayout::eTransferSrcOptimal, image.Image(), vk::ImageLayout::eTransferDstOptimal, { blit }, vk::Filter::eLinear);
+			commandBuffer.blitImage(image.Get(), vk::ImageLayout::eTransferSrcOptimal, image.Get(), vk::ImageLayout::eTransferDstOptimal, { blit }, vk::Filter::eLinear);
 
 			barrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
 			barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -211,7 +207,7 @@ namespace Core::VK::MAT
 		{
 			.oldLayout = oldLayout,
 			.newLayout = newLayout,
-			.image = image.Image(),
+			.image = image.Get(),
 			.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, layerCount }
 		};
 
@@ -242,16 +238,17 @@ namespace Core::VK::MAT
 		commandBuffer.pipelineBarrier(sourceStage, destinationStage, {}, {}, nullptr, barrier);
 	}
 
-	void Texture::createImageView(const vk::raii::Device& device,
-								  vk::Format format,
+	void Texture::createImageView(vk::Format format,
 								  vk::ImageAspectFlags aspectFlags,
 								  uint32_t mipLevels,
 								  uint32_t layerCount,
 								  vk::ImageViewType imageViewType)
 	{
+		const auto& device = VulkanHandles::Instance().Device();
+
 		vk::ImageViewCreateInfo imageViewCreateInfo
 		{
-			.image = vmaImage.Image(),
+			.image = vmaImage.Get(),
 			.viewType = imageViewType,
 			.format = format,
 			.subresourceRange = { aspectFlags, 0, mipLevels, 0, layerCount },
@@ -260,8 +257,11 @@ namespace Core::VK::MAT
 		imageView = vk::raii::ImageView(device, imageViewCreateInfo);
 	}
 
-	void Texture::createSampler(const vk::raii::Device& device, float maxSamplerAnisotropy)
+	void Texture::createSampler()
 	{
+		const auto& physicalDevice = VulkanHandles::Instance().PhysicalDevice();
+		const auto& device = VulkanHandles::Instance().Device();
+
 		vk::SamplerCreateInfo samplerInfo
 		{
 			.magFilter = vk::Filter::eNearest,
@@ -272,7 +272,7 @@ namespace Core::VK::MAT
 			.addressModeW = vk::SamplerAddressMode::eClampToEdge,
 			.mipLodBias = 0.0f,
 			.anisotropyEnable = vk::True,
-			.maxAnisotropy = maxSamplerAnisotropy,
+			.maxAnisotropy = physicalDevice.getProperties().limits.maxSamplerAnisotropy,
 			.compareEnable = vk::False,
 			.compareOp = vk::CompareOp::eAlways,
 			.minLod = 0.0f,

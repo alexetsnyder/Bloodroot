@@ -72,7 +72,7 @@ namespace Core::VK::CMD
 
 		const auto& stagingBuffer = stagingBuffers.back();
 
-		commandBuffers[0].copyBuffer(stagingBuffer.Buffer(), dstBuffer.Buffer(), bufferCopy);
+		commandBuffers[0].copyBuffer(stagingBuffer.Get(), dstBuffer.Get(), bufferCopy);
 	}
 
 	void CommandBufferManager::CopyBufferToImage(VMA::VMABuffer&& buffer, VMA::VMAImage& image, uint32_t width, uint32_t height, uint32_t layerCount)
@@ -95,7 +95,7 @@ namespace Core::VK::CMD
 
 		const auto& stagingBuffer = stagingBuffers.back();
 
-		commandBuffers[0].copyBufferToImage(stagingBuffer.Buffer(), image.Image(), vk::ImageLayout::eTransferDstOptimal, {region});
+		commandBuffers[0].copyBufferToImage(stagingBuffer.Get(), image.Get(), vk::ImageLayout::eTransferDstOptimal, {region});
 	}
 
 	void CommandBufferManager::FlushCommandBuffer(const vk::raii::Queue& graphicsQueue)

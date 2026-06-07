@@ -2,6 +2,7 @@
 
 #include "CommandBufferManager.h"
 #include "Image.h"
+#include "VMAAllocator.h"
 #include "VMAImage.h"
 
 #include <Vulkan/vulkan_raii.hpp>
@@ -16,17 +17,11 @@ namespace Core::VK::MAT
 		public:
 			Texture(std::nullptr_t);
 
-			Texture(const vk::raii::Device& device,
-					VmaAllocator allocator,
-					CMD::CommandBufferManager& commandBufferManager,
+			Texture(CMD::CommandBufferManager& commandBufferManager,
 					std::span<const Image> images,
 					uint32_t layerCount,
 					vk::Format format,
-					vk::ImageUsageFlags usage,
-					vk::MemoryPropertyFlags properties,
-					vk::FormatProperties physicalDeviceProperties,
-					vk::ImageViewType imageViewType,
-					float maxSamplerAnisotropy);
+					vk::ImageViewType imageViewType);
 
 			Texture(Texture&& other) noexcept;
 			Texture& operator=(Texture&& other) noexcept;
@@ -59,12 +54,11 @@ namespace Core::VK::MAT
 									   vk::ImageLayout newLayout,
 									   uint32_t mipLevels,
 									   uint32_t layerCount);
-			void createImageView(const vk::raii::Device& device,
-								 vk::Format format,
+			void createImageView(vk::Format format,
 								 vk::ImageAspectFlags aspectFlags,
 								 uint32_t mipLevels,
 								 uint32_t layerCount,
 								 vk::ImageViewType imageViewType);
-			void createSampler(const vk::raii::Device& device, float maxSamplerAnisotropy);
+			void createSampler();
 	};
 }

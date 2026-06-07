@@ -9,19 +9,37 @@ namespace Core::VK::VMA
 	class VMAAllocator
 	{
 		public:
-			VMAAllocator();
-			VMAAllocator(const vk::raii::PhysicalDevice& physicalDevice, const vk::raii::Device& device, const vk::raii::Instance& instance);
-			VMAAllocator(VMAAllocator&& other) noexcept;
-			VMAAllocator& operator=(VMAAllocator&& other) noexcept;
+			static VMAAllocator& Instance()
+			{
+				static VMAAllocator instance;
+
+				if (instance.isFirstAccess)
+				{
+					instance.isFirstAccess = false;
+					instance.init();
+				}
+
+				return instance;
+			}
+
+			VMAAllocator(VMAAllocator&& other) = delete;
+			VMAAllocator& operator=(VMAAllocator&& other) = delete;
+
 			VMAAllocator(const VMAAllocator&) = delete;
 			VMAAllocator& operator=(const VMAAllocator&) = delete;
-			~VMAAllocator();
 
-			VmaAllocator Allocator() const { return allocator; }
+			VmaAllocator Get() const { return allocator; }
 
 		private:
+			bool isFirstAccess = true;
 			VmaAllocator allocator = VK_NULL_HANDLE;
 
+			VMAAllocator();
+			//VMAAllocator(const vk::raii::PhysicalDevice& physicalDevice, const vk::raii::Device& device, const vk::raii::Instance& instance);
+
+			~VMAAllocator();
+
+			void init();
 			void free();
 	};
 }
