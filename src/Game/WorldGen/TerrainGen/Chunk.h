@@ -21,8 +21,8 @@ namespace Game
 		RIGHT,
 		TOP,
 		BOTTOM,
-		FRONT,
 		BACK,
+		FRONT,	
 	};
 
 	class Chunk

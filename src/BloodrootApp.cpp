@@ -2,6 +2,7 @@
 
 #include "ChunkIndicies.h"
 #include "GLMExtensions.h"
+#include "Quad.h"
 #include "RLEncoding.h"
 #include "WorldGen.h"
 
@@ -49,6 +50,9 @@ BloodrootApp::BloodrootApp()
 			renderer.AddTransparentMesh(chunkId, tMesh.ConstIndexCount(), chunks[chunkId].Position(), tMesh.Verticies());
 		}
 	}
+
+	auto mesh = Core::VK::Quad::GenerateMesh();
+	renderer.AddGuiMesh(mesh.IndexCount(), mesh.Verticies());
 
 	renderer.FlushCommandBuffer();
 

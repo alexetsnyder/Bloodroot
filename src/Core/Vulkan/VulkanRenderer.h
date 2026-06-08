@@ -99,6 +99,8 @@ namespace Core::VK
 								    const glm::vec3& position,
 								    const std::vector<Vertex>& verticies);
 
+			void AddGuiMesh(uint32_t indexCount, const std::vector<Vertex>& verticies);
+
 			void SendIndexData(const std::vector<uint32_t>& indicies);
 
 			void FlushCommandBuffer();
@@ -127,6 +129,7 @@ namespace Core::VK
 			vk::raii::DescriptorSetLayout descriptorSetLayout = nullptr;
 			GraphicsPipeline opaqueGraphicsPipeline;
 			GraphicsPipeline tGraphicsPipeline;
+			GraphicsPipeline guiGraphicsPipeline;
 
 			CMD::CommandBufferManager commandBufferManager = nullptr;
 			CMD::CommandBufferManager transientCommandBufferManager = nullptr;
@@ -143,6 +146,7 @@ namespace Core::VK
 
 			std::vector<Drawable> drawables;
 			std::vector<Drawable> tDrawables;
+			std::vector<Drawable> guiDrawable;
 
 			std::vector<vk::raii::Buffer> uniformBuffers;
 			std::vector<vk::raii::DeviceMemory> uniformBuffersMemory;
@@ -152,6 +156,7 @@ namespace Core::VK
 			std::vector<vk::raii::DescriptorSet> descriptorSets;
 
 			MAT::Texture texture = nullptr;
+			MAT::Texture crosshairTexture = nullptr;
 
 			VMA::VMAImage depthImage = nullptr;
 			vk::raii::ImageView depthImageView = nullptr;

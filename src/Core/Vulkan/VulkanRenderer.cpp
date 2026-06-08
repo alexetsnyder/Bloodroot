@@ -78,6 +78,11 @@ namespace Core::VK
 		AllocateToVertexBuffer(chunkId, indexCount, position, verticies, this->tDrawables);
 	}
 
+	void VulkanRenderer::AddGuiMesh(uint32_t indexCount, const std::vector<Vertex>& verticies)
+	{
+		AllocateToVertexBuffer({ 0, 0, 0 }, indexCount, { 0, 0, 0 }, verticies, this->guiDrawable);
+	}
+
 	void VulkanRenderer::drawFrame(const Window& window, const glm::vec3& cameraPos, const glm::mat4& view)
 	{
 		auto& device = VulkanHandles::Instance().Device();
@@ -318,6 +323,17 @@ namespace Core::VK
 				0,
 				pushConstants
 			);
+
+			commandBuffer.drawIndexed(drawable.indexCount, 1, 0, 0, 0);
+		}
+
+		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, guiGraphicsPipeline.PipelineLayout(), 0, *descriptorSets[frameIndex], nullptr);
+
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *guiGraphicsPipeline.Pipeline());
+
+		for (const auto& drawable : guiDrawable)
+		{
+			commandBuffer.bindVertexBuffers(0, { vertexBuffer.Get() }, { drawable.allocation.Offset() });
 
 			commandBuffer.drawIndexed(drawable.indexCount, 1, 0, 0, 0);
 		}
@@ -704,7 +720,8 @@ namespace Core::VK
 		std::array bindings
 		{
 			vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex, nullptr),
-			vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, nullptr)
+			vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, nullptr),
+			vk::DescriptorSetLayoutBinding(2, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, nullptr),
 		};
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{ .bindingCount = bindings.size(), .pBindings = bindings.data() };
@@ -769,6 +786,33 @@ namespace Core::VK
 			descriptorSetLayout,
 			tColorBlendAttachment,
 			tDepthStateCreateInfo
+		};
+
+		auto guiShader = ShaderModule{ "Shaders/guiShader.spv" };
+
+		vk::PipelineColorBlendAttachmentState guiColorBlendAttachment
+		{
+			.blendEnable = vk::False,
+			.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+		};
+
+		vk::PipelineDepthStencilStateCreateInfo guiDepthStateCreateInfo
+		{
+			.depthTestEnable = vk::False,
+			.depthWriteEnable = vk::False,
+			.depthCompareOp = vk::CompareOp::eLess,
+			.depthBoundsTestEnable = vk::False,
+			.stencilTestEnable = vk::False
+		};
+
+		guiGraphicsPipeline = GraphicsPipeline
+		{
+			guiShader,
+			swapChainSurfaceFormat.format,
+			findDepthFormat(),
+			descriptorSetLayout,
+			guiColorBlendAttachment,
+			guiDepthStateCreateInfo
 		};
 	}
 
@@ -895,6 +939,17 @@ namespace Core::VK
 			TEXTURE_ARRAY_SIZE,
 			vk::Format::eR8G8B8A8Srgb,
 			vk::ImageViewType::e2DArray,
+		};
+
+		Image image{ "Textures/Crosshair.png" };
+
+		crosshairTexture = MAT::Texture
+		{
+			transientCommandBufferManager,
+			{ &image, 1 },
+			1,
+			vk::Format::eR8G8B8A8Srgb,
+			vk::ImageViewType::e2D,
 		};
 	}
 
@@ -1044,6 +1099,7 @@ namespace Core::VK
 		std::array poolSize
 		{
 			vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, MAX_FRAMES_IN_FLIGHT),
+			vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT),
 			vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_FRAMES_IN_FLIGHT)
 		};
 
@@ -1088,6 +1144,13 @@ namespace Core::VK
 				.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
 			};
 
+			vk::DescriptorImageInfo guiImageInfo
+			{
+				.sampler = crosshairTexture.Sampler(),
+				.imageView = crosshairTexture.ImageView(),
+				.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+			};
+
 			std::array descriptorWrites
 			{
 				vk::WriteDescriptorSet
@@ -1107,6 +1170,15 @@ namespace Core::VK
 					.descriptorCount = 1,
 					.descriptorType = vk::DescriptorType::eCombinedImageSampler,
 					.pImageInfo = &imageInfo
+				},
+				vk::WriteDescriptorSet
+				{
+					.dstSet = descriptorSets[i],
+					.dstBinding = 2,
+					.dstArrayElement = 0,
+					.descriptorCount = 1,
+					.descriptorType = vk::DescriptorType::eCombinedImageSampler,
+					.pImageInfo = &guiImageInfo
 				}
 			};
 

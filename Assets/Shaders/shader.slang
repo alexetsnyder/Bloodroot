@@ -14,7 +14,7 @@ struct UniformBuffer
     float4x4 view;
     float4x4 projection;
 };
-ConstantBuffer<UniformBuffer> ubo;
+layout(set = 0, binding = 0) ConstantBuffer<UniformBuffer> ubo;
 
 struct PushConstants
 {
@@ -32,7 +32,7 @@ VSOutput vertMain(uniform PushConstants pc, VSInput input)
 	return output;
 }
 
-Sampler2DArray textures;
+layout(set = 0, binding = 1) Sampler2DArray textures;
 
 [shader("fragment")]
 float4 fragMain(VSOutput inVert) : SV_Target
