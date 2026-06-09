@@ -54,14 +54,25 @@ set(TEXTURE_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/Textures")
 file(MAKE_DIRECTORY ${TEXTURE_BUILD_DIR})
 file(GLOB TEXTURES "${TEXTURE_DIR}/*.png")
 
+set(TEXTURE_SOURCES "")
+
 foreach (TEXTURE ${TEXTURES})
 	cmake_path(GET TEXTURE FILENAME FILE_NAME)
+
+	set(OUTPUT_FILE "${TEXTURE_BUILD_DIR}/${FILE_NAME}")
+
 	add_custom_command(
-		TARGET Bloodroot POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy "${TEXTURE}" "${TEXTURE_BUILD_DIR}/${FILE_NAME}"
-		COMMENT "Copying Textures to Build Directory!"
+		OUTPUT ${OUTPUT_FILE}
+		COMMAND ${CMAKE_COMMAND} -E copy "${TEXTURE}" "${OUTPUT_FILE}"
+		DEPENDS ${TEXTURE}
+		COMMENT "Copying ${FILE_NAME} to ${OUTPUT_FILE}"
 		VERBATIM
 	)
+
+	list(APPEND TEXTURE_SOURCES ${OUTPUT_FILE})
 endforeach()
+
+add_custom_target(TEXTURE_TARGET DEPENDS ${TEXTURE_SOURCES})
+add_dependencies(Bloodroot TEXTURE_TARGET)
 
 add_subdirectory(src)

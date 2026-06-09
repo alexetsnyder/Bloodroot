@@ -10,6 +10,7 @@ namespace Core::VK
 	struct PushConstants
 	{
 		alignas(16) glm::mat4 model;
+		alignas(16) glm::mat4 projection;
 	};
 
 	class GraphicsPipeline

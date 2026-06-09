@@ -121,7 +121,7 @@ namespace Core::VK
 			.pWaitSemaphores = &*presentCompleteSemaphores[frameIndex],
 			.pWaitDstStageMask = &waitDestinationStageMask,
 			.commandBufferCount = 1,
-			.pCommandBuffers = &*commandBufferManager.CommandBuffer(frameIndex), // commandBuffers[frameIndex],
+			.pCommandBuffers = &*commandBufferManager.CommandBuffer(frameIndex),
 			.signalSemaphoreCount = 1,
 			.pSignalSemaphores = &*renderFinishedSemaphores[imageIndex]
 		};
@@ -196,7 +196,6 @@ namespace Core::VK
 		//GLM designed for OpenGl where y coordinate is inverted.
 		ubo.projection[1][1] *= -1;
 
-		//Look at push constants
 		memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 	}
 
@@ -334,6 +333,22 @@ namespace Core::VK
 		for (const auto& drawable : guiDrawable)
 		{
 			commandBuffer.bindVertexBuffers(0, { vertexBuffer.Get() }, { drawable.allocation.Offset() });
+
+			float width = static_cast<float>(swapChainExtent.width);
+			float height = static_cast<float>(swapChainExtent.height);
+
+			PushConstants pushConstants
+			{
+				glm::scale(glm::translate(glm::mat4(1.0f), { width / 2.0f, height / 2.0f, 0.0f }), { 20.0f, 20.0f, 1.0f}),
+				glm::ortho(0.0f, width, 0.0f, height, -1.0f, 1.0f)
+			};
+
+			commandBuffer.pushConstants<PushConstants>(
+				guiGraphicsPipeline.PipelineLayout(),
+				vk::ShaderStageFlagBits::eVertex,
+				0,
+				pushConstants
+			);
 
 			commandBuffer.drawIndexed(drawable.indexCount, 1, 0, 0, 0);
 		}

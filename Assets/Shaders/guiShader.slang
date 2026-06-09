@@ -12,6 +12,7 @@ struct VSOutput {
 struct PushConstants
 {
     float4x4 model;
+    float4x4 projection;
 };
 
 [shader("vertex")]
@@ -19,7 +20,7 @@ VSOutput vertMain(uniform PushConstants pc, VSInput input)
 {
 	VSOutput output;
 
-	output.sv_position = float4(input.inPosition, 1.0);
+    output.sv_position = mul(pc.projection, mul(pc.model, float4(input.inPosition.xy, 0.0, 1.0)));
     output.fragTexCoord = input.inTexCoord;
 
 	return output;
