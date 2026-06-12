@@ -1,8 +1,6 @@
 target_sources(
 	BloodrootApp
 	PRIVATE 
-		Window/Window.cpp
-		Window/GLFWInstance.cpp
 		Vulkan/VulkanRenderer.cpp
 		Image/Image.cpp
 		"Math/Noise/SimplexNoise.cpp"
@@ -16,9 +14,7 @@ target_sources(
 	PUBLIC
 	FILE_SET HEADERS
 	FILES
-		Window/Window.h
 		Interfaces/IRenderer.h
-		Window/GLFWInstance.h 
 		Vulkan/VulkanRenderer.h
 		Vulkan/VulkanHandles.h
 		Vulkan/Geometry/Vertex.h 
@@ -39,12 +35,13 @@ target_sources(
 		Vulkan/Pipeline/ShaderModule.h
 		Vulkan/Material/Texture.h
 		Vulkan/CommandBuffer/CommandBufferManager.h
+		SDL3/SDL3Instance.h
+		SDL3/Window/Window.h
 )
 
 target_include_directories(
 	BloodrootApp
 	PUBLIC
-		Window
 		Interfaces
 		Vulkan
 		Vulkan/Geometry
@@ -58,6 +55,8 @@ target_include_directories(
 		Vulkan/Pipeline
 		Extensions
 		Vulkan/CommandBuffer
+		SDL3
+		SDL3/Window
 )
 
 add_subdirectory(FileIO)

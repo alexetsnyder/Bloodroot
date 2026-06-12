@@ -1,8 +1,13 @@
 {
   "dependencies": [
-    "glfw3",
     "glm",
     "stb",
+    {
+      "name": "sdl3",
+      "features": [ "vulkan" ]
+    },
+    "sdl3-image",
+    "sdl3-ttf",
     "vulkan",
     "vulkan-memory-allocator"
   ]

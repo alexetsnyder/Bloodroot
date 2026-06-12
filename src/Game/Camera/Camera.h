@@ -19,7 +19,7 @@ namespace Game
 			const float DEFAULT_YAW = -90.0f;
 			const float DEFAULT_PITCH = 0.0f;
 			const float DEFAULT_SPEED = 10.0f;
-			const float DEFAULT_SENSITIVITY = 0.1f;
+			const float DEFAULT_SENSITIVITY = 0.05f;
 			const float DEFAULT_ZOOM = 45.0f;
 
 			Camera(glm::vec3 position, glm::vec3 worldUp);

@@ -86,7 +86,7 @@ namespace Core::VK
 	class VulkanRenderer : public IRenderer
 	{
 		public:
-			VulkanRenderer(const Window& window, std::vector<const char*>&& requiredExtensions);
+			VulkanRenderer(const SDL::Window& window, std::vector<const char*>&& requiredExtensions);
 			~VulkanRenderer();
 
 			void AddOpaqueMesh(const glm::i32vec3& chunkId,
@@ -105,7 +105,7 @@ namespace Core::VK
 
 			void FlushCommandBuffer();
 			
-			void drawFrame(const Window& window, const glm::vec3& cameraPos, const glm::mat4& view);
+			void drawFrame(const SDL::Window& window, const glm::vec3& cameraPos, const glm::mat4& view);
 
 			void waitIdle();
 
@@ -169,7 +169,7 @@ namespace Core::VK
 																  vk::DebugUtilsMessageTypeFlagsEXT type,
 																  const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData,
 																  void* pUserData);
-			void createSurface(const Window& window);
+			void createSurface(const SDL::Window& window);
 			void pickPhysicalDevice();
 			bool isDeviceSuitable(vk::raii::PhysicalDevice const& physicalDevice);
 			void createLogicalDevice();
@@ -210,7 +210,7 @@ namespace Core::VK
 
 			void createSyncObjects();
 
-			void recreateSwapChain(const Window& window);
+			void recreateSwapChain(const SDL::Window& window);
 			void cleanUpSwapChain();
 			void updateUniformBuffer(uint32_t currentImage, const glm::mat4& view);
 			void recordCommandBuffer(uint32_t imageIndex, const glm::vec3& cameraPos);

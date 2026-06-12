@@ -3,8 +3,8 @@
 #include "AppData.h"
 #include "Camera.h"
 #include "Chunk.h"
-#include "GLFWInstance.h"
 #include "GLMExtensions.h"
+#include "SDL3Instance.h"
 #include "Window.h"
 #include "VulkanRenderer.h"
 
@@ -24,12 +24,14 @@ class BloodrootApp
 
 	private:
 		AppData appData;
-		Core::GLFWInstance glfwInstance;
-		Core::Window window;
+		Core::SDL::SDL3Instance sdl3Instance;
+		bool isTabPressed = false;
+		Core::SDL::Window window;
 		Core::VK::VulkanRenderer renderer;
 		Game::Camera camera;
 		std::unordered_map<glm::i32vec3, Game::Chunk> chunks;
 
 		void mainLoop();
-		void processInput(float deltaTime);	
+		void handleEvents(const SDL_Event& event);
+		void processInput(float deltaTime);
 };

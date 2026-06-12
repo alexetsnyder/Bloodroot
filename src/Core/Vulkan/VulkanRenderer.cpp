@@ -20,7 +20,7 @@ namespace Core::VK
 		"VK_LAYER_KHRONOS_validation"
 	};
 
-	VulkanRenderer::VulkanRenderer(const Window& window, std::vector<const char*>&& requiredExtensions)
+	VulkanRenderer::VulkanRenderer(const SDL::Window& window, std::vector<const char*>&& requiredExtensions)
 	{
 		std::cout << "Renderer created!\n";
 
@@ -37,7 +37,7 @@ namespace Core::VK
 		createLogicalDevice();
 
 		int width, height;
-		window.getSize(width, height);
+		window.GetSize(width, height);
 
 		createSwapChain(width, height);
 		createImageViews();
@@ -83,7 +83,7 @@ namespace Core::VK
 		AllocateToVertexBuffer({ 0, 0, 0 }, indexCount, { 0, 0, 0 }, verticies, this->guiDrawable);
 	}
 
-	void VulkanRenderer::drawFrame(const Window& window, const glm::vec3& cameraPos, const glm::mat4& view)
+	void VulkanRenderer::drawFrame(const SDL::Window& window, const glm::vec3& cameraPos, const glm::mat4& view)
 	{
 		auto& device = VulkanHandles::Instance().Device();
 
@@ -162,19 +162,14 @@ namespace Core::VK
 		framebufferResized = true;
 	}
 
-	void VulkanRenderer::recreateSwapChain(const Window& window)
+	void VulkanRenderer::recreateSwapChain(const SDL::Window& window)
 	{
-		int width = 0, height = 0;
-		window.getSize(width, height);
-		while (width == 0 || height == 0)
-		{
-			window.getSize(width, height);
-			glfwWaitEvents();
-		}
-
 		waitIdle();
 
 		cleanUpSwapChain();
+
+		int width, height;
+		window.GetSize(width, height);
 
 		createSwapChain(width, height);
 		createImageViews();
@@ -516,13 +511,14 @@ namespace Core::VK
 		return vk::False;
 	}
 
-	void VulkanRenderer::createSurface(const Window& window)
+	void VulkanRenderer::createSurface(const SDL::Window& window)
 	{
 		auto& instance = VulkanHandles::Instance().VKInstance();
 
 		VkSurfaceKHR _surface;
-		if (window.createWindowSurface(*instance, _surface) != 0)
+		if (window.createWindowSurface(*instance, _surface) == false)
 		{
+			vkDestroySurfaceKHR(*instance, _surface, nullptr);
 			throw std::runtime_error("Failed to create window surface!");
 		}
 
