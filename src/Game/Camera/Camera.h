@@ -24,8 +24,9 @@ namespace Game
 
 			Camera(glm::vec3 position, glm::vec3 worldUp);
 
-			glm::mat4 getViewMatrix() { return glm::lookAt(position, position + front, up); }
-			glm::vec3 Position() { return position; }
+			glm::mat4 getViewMatrix() const { return glm::lookAt(position, position + front, up); }
+			glm::vec3 Position() const { return position; }
+			glm::vec3 Front() const { return front; }
 
 			void processKeyboard(CameraMovement direction, float deltaTime);
 			void processMouseMovement(float xOffset, float yOffset);

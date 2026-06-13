@@ -103,7 +103,10 @@ void BloodrootApp::handleEvents(const SDL_Event& event)
 			camera.processMouseMovement(event.motion.xrel, -event.motion.yrel);
 			break;
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
-			std::cout << "Mouse Button Clicked!\n";
+			if (event.button.button == SDL_BUTTON_LEFT)
+			{
+				handleMouseClick();
+			}
 			break;
 		case SDL_EVENT_MOUSE_WHEEL:
 			camera.processMouseScroll(event.wheel.y);
@@ -161,4 +164,115 @@ void BloodrootApp::processInput(float deltaTime)
 	{
 		camera.processKeyboard(Game::CameraMovement::RIGHT, deltaTime);
 	}
+}
+
+void BloodrootApp::handleMouseClick()
+{
+	Game::VoxelType voxelType;
+	if (raycast(camera.Position(), camera.Front(), voxelType))
+	{
+		std::cout << "Solid Voxel Selected: " << voxelType << std::endl;
+	}
+}
+
+/// <summary>
+/// Raycast Algorith based on: 
+/// http://www.cse.yorku.ca/~amana/research/grid.pdf and
+/// https://gist.github.com/dogfuntom/cc881c8fc86ad43d55d8
+/// </summary>
+/// <param name="origin"></param>
+/// <param name="direction"></param>
+/// <param name="outVoxel"> First Solid Voxel it intersects </param>
+/// <returns></returns>
+bool BloodrootApp::raycast(const glm::vec3& origin, const glm::vec3& direction, Game::VoxelType& outVoxel)
+{
+	float radius = 3.0f;
+	auto normDir = glm::normalize(direction);
+
+	auto x = static_cast<int32_t>(std::floorf(origin.x));
+	auto y = static_cast<int32_t>(std::floorf(origin.y));
+	auto z = static_cast<int32_t>(std::floorf(origin.z));
+
+	auto dx = normDir.x;
+	auto dy = normDir.y;
+	auto dz = normDir.z;
+
+	auto stepX = signum(dx);
+	auto stepY = signum(dy);
+	auto stepZ = signum(dz);
+
+	auto tMaxX = intbound(origin.x, dx);
+	auto tMaxY = intbound(origin.y, dy);
+	auto tMaxZ = intbound(origin.z, dz);
+
+	auto tDeltaX = stepX / dx;
+	auto tDeltaY = stepY / dy;
+	auto tDeltaZ = stepZ / dz;
+
+	radius /= std::sqrtf(dx * dx + dy * dy + dz * dz);
+
+	while (tMaxX <= radius || tMaxY <= radius || tMaxZ <= radius)
+	{
+		if (tMaxX < tMaxY)
+		{
+			if (tMaxX < tMaxZ)
+			{
+				x += stepX;
+				tMaxX += tDeltaX;
+			}
+			else
+			{
+				z += stepZ;
+				tMaxZ += tDeltaZ;
+			}
+		}
+		else
+		{
+			if (tMaxY < tMaxZ)
+			{
+				y += stepY;
+				tMaxY += tDeltaY;
+			}
+			else
+			{
+				z += stepZ;
+				tMaxZ += tDeltaZ;
+			}
+		}
+
+		auto chunkId = Game::Chunk::MapToChunkId({ x, y, z });
+
+		if (chunks.contains(chunkId))
+		{
+			auto voxelType = chunks[chunkId].GetVoxelType({ x, y, z });
+
+			if (voxelType != Game::VoxelType::AIR && voxelType != Game::VoxelType::WATER)
+			{
+				outVoxel = voxelType;
+				return true;
+			}
+		}	
+	}
+	
+	return false;
+}
+
+float BloodrootApp::intbound(float s, float ds)
+{
+	if (ds < 0 && std::roundf(s) == s)
+	{
+		return 0.0f;
+	}
+
+	return (ds > 0 ? ceil(s) - s : s - std::floorf(s)) / std::abs(ds);
+}
+
+int32_t BloodrootApp::signum(float x)
+{
+	return (x > 0 ? 1 : x < 1 ? -1 : 0);
+}
+
+float BloodrootApp::ceil(float s)
+{
+	return (s == 0.0f ? 1.0f : std::ceilf(s));
 }
