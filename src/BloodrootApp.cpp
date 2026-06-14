@@ -168,10 +168,10 @@ void BloodrootApp::processInput(float deltaTime)
 
 void BloodrootApp::handleMouseClick()
 {
-	Game::VoxelType voxelType;
-	if (raycast(camera.Position(), camera.Front(), voxelType))
+	Game::PHYS::VoxelCollision collision;
+	if (raycast(camera.Position(), camera.Front(), collision))
 	{
-		std::cout << "Solid Voxel Selected: " << voxelType << std::endl;
+		std::cout << "Solid Voxel Selected: " << collision << std::endl;
 	}
 }
 
@@ -184,7 +184,7 @@ void BloodrootApp::handleMouseClick()
 /// <param name="direction"></param>
 /// <param name="outVoxel"> First Solid Voxel it intersects </param>
 /// <returns></returns>
-bool BloodrootApp::raycast(const glm::vec3& origin, const glm::vec3& direction, Game::VoxelType& outVoxel)
+bool BloodrootApp::raycast(const glm::vec3& origin, const glm::vec3& direction, Game::PHYS::VoxelCollision& collision)
 {
 	float radius = 3.0f;
 	auto normDir = glm::normalize(direction);
@@ -213,17 +213,23 @@ bool BloodrootApp::raycast(const glm::vec3& origin, const glm::vec3& direction, 
 
 	while (tMaxX <= radius || tMaxY <= radius || tMaxZ <= radius)
 	{
+		glm::i32vec3 normal(0.0f);
+
 		if (tMaxX < tMaxY)
 		{
 			if (tMaxX < tMaxZ)
 			{
 				x += stepX;
 				tMaxX += tDeltaX;
+
+				normal.x = -stepX;
 			}
 			else
 			{
 				z += stepZ;
 				tMaxZ += tDeltaZ;
+
+				normal.z = -stepZ;
 			}
 		}
 		else
@@ -232,11 +238,15 @@ bool BloodrootApp::raycast(const glm::vec3& origin, const glm::vec3& direction, 
 			{
 				y += stepY;
 				tMaxY += tDeltaY;
+
+				normal.y = -stepY;
 			}
 			else
 			{
 				z += stepZ;
 				tMaxZ += tDeltaZ;
+
+				normal.z = -stepZ;
 			}
 		}
 
@@ -248,7 +258,7 @@ bool BloodrootApp::raycast(const glm::vec3& origin, const glm::vec3& direction, 
 
 			if (voxelType != Game::VoxelType::AIR && voxelType != Game::VoxelType::WATER)
 			{
-				outVoxel = voxelType;
+				collision = Game::PHYS::VoxelCollision(voxelType, { x, y, z }, normal);
 				return true;
 			}
 		}	

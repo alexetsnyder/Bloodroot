@@ -3,10 +3,10 @@
 #include "AppData.h"
 #include "Camera.h"
 #include "Chunk.h"
+#include "VoxelCollision.h"
 #include "GLMExtensions.h"
 #include "SDL3Instance.h"
 #include "Window.h"
-#include "Voxel.h"
 #include "VulkanRenderer.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -37,7 +37,7 @@ class BloodrootApp
 		void processInput(float deltaTime);
 		void handleMouseClick();
 
-		bool raycast(const glm::vec3& origin, const glm::vec3& direction, Game::VoxelType& outVoxel);
+		bool raycast(const glm::vec3& origin, const glm::vec3& direction, Game::PHYS::VoxelCollision& collision);
 		float intbound(float s, float ds);
 		int32_t signum(float x);
 		float ceil(float s);

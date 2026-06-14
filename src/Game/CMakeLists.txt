@@ -15,6 +15,7 @@ target_sources(
 		WorldGen/ChunkIndicies.h
 		WorldGen/WorldGen.h
 		WorldGen/TerrainGen/TerrainGen.h
+		Physics/Collision/VoxelCollision.h
 		
 )
 
@@ -25,4 +26,5 @@ target_include_directories(
 		GUI
 		WorldGen
 		WorldGen/TerrainGen
+		Physics/Collision
 )
