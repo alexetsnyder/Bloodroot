@@ -19,21 +19,18 @@ namespace Game
 			static const uint32_t SAND_HEIGHT = 32;
 			static const uint32_t DIRT_HEIGHT = 34;
 
-			TerrainGen();
-			TerrainGen(const glm::i32vec3& worldCenter, const glm::u32vec3& worldSize);
+			TerrainGen(uint32_t seed = 42);
 			~TerrainGen();
 
 			Voxel GetVoxel(VoxelType voxelType);
-			Voxel GetVoxel(const glm::vec3& position);
-			VoxelType GetVoxelType(const glm::vec3& position);
-			std::vector<VoxelType> GetVoxelTypeColumn(int32_t xPos, int32_t zPos);
+			Voxel GetVoxel(int32_t yStart, const glm::vec3& position);
+			VoxelType GetVoxelType(int32_t yStart, const glm::vec3& position);
+			std::vector<VoxelType> GetVoxelTypeColumn(int32_t yStart, int32_t yEnd, int32_t xPos, int32_t zPos);
 
 		private:
-			glm::u32vec3 worldSize;
-			glm::i32vec3 worldCenter;
 			Core::Math::SimplexNoise noise;
 
 			uint32_t getHeight(int32_t xPos, int32_t zPos);
-			VoxelType getVoxelType(uint32_t yPos, uint32_t height) const;
+			VoxelType getVoxelType(int32_t yStart, uint32_t yPos, uint32_t height) const;
 	};
 }

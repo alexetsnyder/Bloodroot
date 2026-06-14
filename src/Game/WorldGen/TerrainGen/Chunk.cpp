@@ -111,6 +111,19 @@ namespace Game
 		Core::Math::RLEncoding::Encode<VoxelType>(voxelTypes, voxels[index]);
 	}
 
+	void Chunk::SetVoxel(const glm::i32vec3& position, VoxelType voxelType)
+	{
+		auto localPos = mapToLocal(position);
+
+		int32_t index = (localPos.x * CHUNK_WIDTH) + localPos.z;
+
+		auto decodedColumn = Core::Math::RLEncoding::Decode<VoxelType>(voxels[index]);
+
+		decodedColumn[position.y] = voxelType;
+
+		Core::Math::RLEncoding::Encode<VoxelType>(decodedColumn, voxels[index]);
+	}
+
 	void Chunk::createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::VK::Mesh& mesh) const
 	{
 		int32_t x = cubePos.x;

@@ -15,14 +15,8 @@ namespace Game
 		{ VoxelType::SAND, { VoxelType::SAND, 5, 5, 5, 5, 5, 5 }}
 	};
 
-	TerrainGen::TerrainGen()
-		: worldCenter{ { 0 } }, worldSize{ { 0 } }, noise{ 42 }
-	{
-
-	}
-
-	TerrainGen::TerrainGen(const glm::i32vec3 & worldCenter, const glm::u32vec3 & worldSize)
-		: worldCenter{ worldCenter }, worldSize{ worldSize }, noise{ 42 }
+	TerrainGen::TerrainGen(uint32_t seed)
+		: noise{ seed }
 	{
 
 	}
@@ -37,29 +31,29 @@ namespace Game
 		return VoxelMap[voxelType];
 	}
 
-	Voxel TerrainGen::GetVoxel(const glm::vec3& position)
+	Voxel TerrainGen::GetVoxel(int32_t yStart, const glm::vec3& position)
 	{
-		return GetVoxel(GetVoxelType(position));
+		return GetVoxel(GetVoxelType(yStart, position));
 	}
 
-	VoxelType TerrainGen::GetVoxelType(const glm::vec3& position)
+	VoxelType TerrainGen::GetVoxelType(int32_t yStart, const glm::vec3& position)
 	{
 		int32_t y = static_cast<int32_t>(std::floorf(position.y));
 
 		uint32_t height = getHeight(position.x, position.z);
 
-		return getVoxelType(y, height);
+		return getVoxelType(yStart, y, height);
 	}
 
-	std::vector<VoxelType> TerrainGen::GetVoxelTypeColumn(int32_t xPos, int32_t zPos)
+	std::vector<VoxelType> TerrainGen::GetVoxelTypeColumn(int32_t yStart, int32_t yEnd, int32_t xPos, int32_t zPos)
 	{
 		auto voxelTypes = std::vector<VoxelType>{};
 
 		auto height = getHeight(xPos, zPos);
 
-		for (uint32_t y = worldCenter.y; y < worldCenter.y + worldSize.y; y++)
+		for (uint32_t y = yStart; y < yEnd; y++)
 		{
-			voxelTypes.push_back(getVoxelType(y, height));
+			voxelTypes.push_back(getVoxelType(yStart, y, height));
 		}
 
 		return voxelTypes;
@@ -72,9 +66,9 @@ namespace Game
 		return static_cast<uint32_t>(std::floorf(noiseValue * VARY_HEIGHT + MIN_HEIGHT));
 	}
 
-	VoxelType TerrainGen::getVoxelType(uint32_t yPos, uint32_t height) const
+	VoxelType TerrainGen::getVoxelType(int32_t yStart, uint32_t yPos, uint32_t height) const
 	{
-		if (yPos <= worldCenter.y)
+		if (yPos <= yStart)
 		{
 			return VoxelType::BEDROCK;
 		}

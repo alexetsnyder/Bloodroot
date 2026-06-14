@@ -23,15 +23,24 @@ BloodrootApp::BloodrootApp()
 	renderer.SendIndexData(chunkIndicies.Indicies());
 
 	//{ 320, Game::CHUNK_HEIGHT, 320 }
-	auto worldGen = Game::WorldGen{ { 0, 0, 0 }, { 64, Game::CHUNK_HEIGHT, 64 } };
+	auto worldGen = Game::WorldGen{ { 0, 0, 0 } };
 
-	worldGen.GenerateChunks(chunks);
+	auto worldSize = glm::i32vec3{ 64, Game::CHUNK_HEIGHT, 64 };
+
+	auto buildInfo = Game::BuildInfo
+	{
+		.startPos = { -worldSize.x / 2, 0, -worldSize.z / 2 },
+		.endPos = { worldSize.x / 2, worldSize.y, worldSize.z / 2 },
+		.size = worldSize
+	};
+
+	worldGen.GenerateChunks(buildInfo, chunks);
 
 	std::cout << "Finished Generating Chunks!\n";
 
 	std::unordered_map<glm::i32vec3, Core::VK::Mesh> meshes;
 	std::unordered_map<glm::i32vec3, Core::VK::Mesh> tMeshes;
-	worldGen.GenerateMeshes(chunks, meshes, tMeshes);
+	worldGen.GenerateMeshes(buildInfo, chunks, meshes, tMeshes);
 
 	std::cout << "Finished Generating Meshes!\n";
 
@@ -186,7 +195,7 @@ void BloodrootApp::handleMouseClick()
 /// <returns></returns>
 bool BloodrootApp::raycast(const glm::vec3& origin, const glm::vec3& direction, Game::PHYS::VoxelCollision& collision)
 {
-	float radius = 3.0f;
+	float radius = 6.0f;
 	auto normDir = glm::normalize(direction);
 
 	auto x = static_cast<int32_t>(std::floorf(origin.x));

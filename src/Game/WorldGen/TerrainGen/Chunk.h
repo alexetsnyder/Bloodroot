@@ -46,6 +46,7 @@ namespace Game
 			bool IsInBounds(const glm::vec3& position) const;
 			void CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel, Core::VK::Mesh& mesh) const;
 			void AddVoxelColumn(int32_t xPos, int32_t yPos, int32_t zPos, const std::vector<VoxelType>& voxelTypes);
+			void SetVoxel(const glm::i32vec3& position, VoxelType voxelType);
 
 		private:
 			glm::vec3 position;
