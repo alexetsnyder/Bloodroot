@@ -66,7 +66,7 @@ namespace Game
 		return static_cast<uint32_t>(std::floorf(noiseValue * VARY_HEIGHT + MIN_HEIGHT));
 	}
 
-	VoxelType TerrainGen::getVoxelType(int32_t yStart, uint32_t yPos, uint32_t height) const
+	VoxelType TerrainGen::getVoxelType(int32_t yStart, int32_t yPos, uint32_t height) const
 	{
 		if (yPos <= yStart)
 		{

@@ -31,6 +31,6 @@ namespace Game
 			Core::Math::SimplexNoise noise;
 
 			uint32_t getHeight(int32_t xPos, int32_t zPos);
-			VoxelType getVoxelType(int32_t yStart, uint32_t yPos, uint32_t height) const;
+			VoxelType getVoxelType(int32_t yStart, int32_t yPos, uint32_t height) const;
 	};
 }

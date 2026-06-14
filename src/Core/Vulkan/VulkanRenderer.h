@@ -69,7 +69,7 @@ namespace Core::VK
 				chunkId = other.chunkId;
 				indexCount = other.indexCount;
 				position = other.position;
-				allocation = std::move(allocation);
+				allocation = std::move(other.allocation);
 
 				other.chunkId = glm::i32vec3{ 0 };
 				other.indexCount = 0;

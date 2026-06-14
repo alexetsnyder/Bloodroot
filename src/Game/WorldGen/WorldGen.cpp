@@ -56,8 +56,8 @@ namespace Game
 		auto isInVisited = [&startPos, &endPos](const glm::i32vec3& cubePos)
 			{
 				return ((cubePos.x >= startPos.x && cubePos.x <= endPos.x) &&
-					(cubePos.y >= startPos.y && cubePos.y <= endPos.y) &&
-					(cubePos.z >= startPos.z && cubePos.z <= endPos.z)
+						(cubePos.y >= startPos.y && cubePos.y <= endPos.y) &&
+						(cubePos.z >= startPos.z && cubePos.z <= endPos.z)
 					);
 			};
 
@@ -142,6 +142,95 @@ namespace Game
 					const auto& chunk = chunks.at(chunkId);
 					auto& mesh = meshes[chunkId];
 
+					for (int i = 0; i < 6; i++)
+					{
+						auto adjVoxel = getVoxel(buildInfo, chunks, adjCubes[i]);
+
+						if (adjVoxel.Type == VoxelType::AIR || adjVoxel.Type == VoxelType::WATER)
+						{
+							chunk.CreateFace(static_cast<CubeFace>(i), cubePos, currentVoxel, mesh);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	void WorldGen::GenerateMesh(const std::unordered_map<glm::i32vec3, Chunk>& chunks,
+								const Chunk& chunk,
+								Core::VK::Mesh& mesh,
+								Core::VK::Mesh& tMesh)
+	{
+		auto chunkPos = chunk.Position();
+
+		auto startPos = glm::i32vec3{ chunkPos.x, chunkPos.y, chunkPos.z };
+		auto endPos = glm::i32vec3{ chunkPos.x + CHUNK_WIDTH, chunkPos.y + CHUNK_HEIGHT, chunkPos.z + CHUNK_DEPTH };
+		auto size = glm::i32vec3{ CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH };
+
+		auto buildInfo = BuildInfo
+		{
+			.startPos = startPos,
+			.endPos = endPos,
+			.size = size,
+		};
+
+		std::vector<bool> visited((size.x + 2) * (size.y + 2) * (size.z + 2), false);
+
+		auto isInVisited = [&startPos, &endPos](const glm::i32vec3& cubePos)
+			{
+				return ((cubePos.x >= startPos.x && cubePos.x <= endPos.x) &&
+						(cubePos.y >= startPos.y && cubePos.y <= endPos.y) &&
+						(cubePos.z >= startPos.z && cubePos.z <= endPos.z)
+					);
+			};
+
+		std::stack<glm::i32vec3> cubes;
+		cubes.push(startPos);
+		visited[getIndex(buildInfo, startPos)] = true;
+
+		glm::i32vec3 adjCubes[6];
+
+		while (!cubes.empty())
+		{
+			auto cubePos = cubes.top();
+			cubes.pop();
+
+			getAdjCubes(cubePos, adjCubes);
+
+			//Grab cube and add all neighbors to stack if not visited
+			for (auto adjCubePos : adjCubes)
+			{
+				if (isInVisited(adjCubePos))
+				{
+					auto index = getIndex(buildInfo, adjCubePos);
+					if (!visited[index])
+					{
+						visited[index] = true;
+						cubes.push(adjCubePos);
+					}
+				}
+			}
+
+			//Check all cube sides
+			if (IsInBounds(buildInfo, cubePos))
+			{
+				const auto chunkId = Chunk::MapToChunkId(cubePos);
+				auto currentVoxel = getVoxel(buildInfo, chunks, cubePos);
+
+				if (currentVoxel.Type == VoxelType::WATER)
+				{
+					for (int i = 0; i < 6; i++)
+					{
+						auto adjVoxel = getVoxel(buildInfo, chunks, adjCubes[i]);
+
+						if (adjVoxel.Type == VoxelType::AIR)
+						{
+							chunk.CreateFace(static_cast<CubeFace>(i), cubePos, currentVoxel, tMesh);
+						}
+					}
+				}
+				else if (currentVoxel.Type != VoxelType::AIR)
+				{
 					for (int i = 0; i < 6; i++)
 					{
 						auto adjVoxel = getVoxel(buildInfo, chunks, adjCubes[i]);

@@ -4,7 +4,6 @@
 #include "GLMExtensions.h"
 #include "Quad.h"
 #include "RLEncoding.h"
-#include "WorldGen.h"
 
 #include <chrono>
 #include <iostream>
@@ -14,7 +13,8 @@ BloodrootApp::BloodrootApp()
 	: window(&appData, WINDOW_WIDTH, WINDOW_HEIGHT, "Bloodroot App!"),
 	  renderer(window, sdl3Instance.GetRequiredInstanceExtensions()),
 	  camera(glm::vec3(8.0f, 68.0f, 8.0f), glm::vec3(0.0f, 1.0f, 0.0f)),
-	  appData{ .renderer = &renderer, .camera = &camera }
+	  appData{ .renderer = &renderer, .camera = &camera },
+	  worldGen{ { 0, 0, 0 }}
 {
 	window.SetRelativeMouse(true);
 
@@ -23,8 +23,6 @@ BloodrootApp::BloodrootApp()
 	renderer.SendIndexData(chunkIndicies.Indicies());
 
 	//{ 320, Game::CHUNK_HEIGHT, 320 }
-	auto worldGen = Game::WorldGen{ { 0, 0, 0 } };
-
 	auto worldSize = glm::i32vec3{ 64, Game::CHUNK_HEIGHT, 64 };
 
 	auto buildInfo = Game::BuildInfo
@@ -181,6 +179,27 @@ void BloodrootApp::handleMouseClick()
 	if (raycast(camera.Position(), camera.Front(), collision))
 	{
 		std::cout << "Solid Voxel Selected: " << collision << std::endl;
+
+		auto chunkId = Game::Chunk::MapToChunkId(collision.Position());
+
+		chunks[chunkId].SetVoxel(collision.Position(), Game::VoxelType::AIR);
+
+		//Check for chunk edges
+		auto mesh = Core::VK::Mesh{};
+		auto tMesh = Core::VK::Mesh{};
+		worldGen.GenerateMesh(chunks, chunks[chunkId], mesh, tMesh);
+
+		if (!mesh.IsEmpty())
+		{
+			renderer.AddOpaqueMesh(chunkId, mesh.IndexCount(), chunks[chunkId].Position(), mesh.Verticies());
+		}
+
+		if (!tMesh.IsEmpty())
+		{
+			renderer.AddTransparentMesh(chunkId, tMesh.IndexCount(), chunks[chunkId].Position(), tMesh.Verticies());
+		}
+
+		renderer.FlushCommandBuffer();
 	}
 }
 

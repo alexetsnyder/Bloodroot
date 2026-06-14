@@ -1073,7 +1073,16 @@ namespace Core::VK
 
 		transientCommandBufferManager.CopyBuffer(std::move(stagingBuffer), vertexBuffer, vk::BufferCopy(0, drawable.allocation.Offset(), bufferSize));
 
-		drawables.emplace_back(std::move(drawable));
+		auto drawIt = std::ranges::find_if(drawables, [&drawable](const auto& d) { return drawable.chunkId == d.chunkId; });
+
+		if (drawIt != drawables.end())
+		{
+			*drawIt = std::move(drawable);
+		}
+		else
+		{
+			drawables.emplace_back(std::move(drawable));
+		}
 	}
 
 	void VulkanRenderer::createUniformBuffers()

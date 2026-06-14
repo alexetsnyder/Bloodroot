@@ -51,7 +51,7 @@ namespace Core::VK::VMA
 					free();
 
 					block = other.block;
-					allocation = other.allocation;
+					allocation = std::move(other.allocation);
 					offset = other.offset;
 					size = other.size;
 

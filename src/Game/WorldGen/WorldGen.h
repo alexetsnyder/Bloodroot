@@ -33,6 +33,10 @@ namespace Game
 								const std::unordered_map<glm::i32vec3, Chunk>& chunks,
 								std::unordered_map<glm::i32vec3, Core::VK::Mesh>& meshes,
 								std::unordered_map<glm::i32vec3, Core::VK::Mesh>& tMeshes);
+			void GenerateMesh(const std::unordered_map<glm::i32vec3, Chunk>& chunks,
+							  const Chunk& chunk,
+							  Core::VK::Mesh& mesh,
+							  Core::VK::Mesh& tMesh);
 
 			bool IsInBounds(const BuildInfo& buildInfo, const glm::vec3& position) const;
 

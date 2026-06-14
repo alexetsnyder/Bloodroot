@@ -121,6 +121,8 @@ namespace Game
 
 		decodedColumn[position.y] = voxelType;
 
+		voxels[index].clear();
+
 		Core::Math::RLEncoding::Encode<VoxelType>(decodedColumn, voxels[index]);
 	}
 
