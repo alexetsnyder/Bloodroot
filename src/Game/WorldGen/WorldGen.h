@@ -40,6 +40,8 @@ namespace Game
 
 			bool IsInBounds(const BuildInfo& buildInfo, const glm::vec3& position) const;
 
+			bool GetAdjChunks(const glm::vec3& position, std::vector<glm::i32vec3>& adjChunks);
+
 		private:
 			glm::vec3 worldCenter;
 			TerrainGen terrainGen;
@@ -50,8 +52,7 @@ namespace Game
 
 			void getAdjCubes(const glm::i32vec3& cubePos, glm::i32vec3 adjCubes[]);
 			Voxel getVoxel(const BuildInfo& buildInfo,
-						   const std::unordered_map<glm::i32vec3,
-						   Chunk>& chunks,
+						   const std::unordered_map<glm::i32vec3, Chunk>& chunks,
 						   const glm::i32vec3& cubePos);
 	};
 }

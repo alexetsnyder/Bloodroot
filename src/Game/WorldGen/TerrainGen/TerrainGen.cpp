@@ -68,6 +68,11 @@ namespace Game
 
 	VoxelType TerrainGen::getVoxelType(int32_t yStart, int32_t yPos, uint32_t height) const
 	{
+		if (yPos < yStart)
+		{
+			return VoxelType::AIR;
+		}
+
 		if (yPos <= yStart)
 		{
 			return VoxelType::BEDROCK;

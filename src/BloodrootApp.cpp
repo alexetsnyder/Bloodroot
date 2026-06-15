@@ -184,21 +184,34 @@ void BloodrootApp::handleMouseClick()
 
 		chunks[chunkId].SetVoxel(collision.Position(), Game::VoxelType::AIR);
 
-		//Check for chunk edges
-		auto mesh = Core::VK::Mesh{};
-		auto tMesh = Core::VK::Mesh{};
-		worldGen.GenerateMesh(chunks, chunks[chunkId], mesh, tMesh);
+		std::vector<glm::i32vec3> chunksToUpdate;
 
-		if (!mesh.IsEmpty())
+		chunksToUpdate.push_back(chunkId);
+
+		worldGen.GetAdjChunks(collision.Position(), chunksToUpdate);
+
+		for (const auto& cId : chunksToUpdate)
 		{
-			renderer.AddOpaqueMesh(chunkId, mesh.IndexCount(), chunks[chunkId].Position(), mesh.Verticies());
-		}
+			if (!chunks.contains(cId))
+			{
+				continue;
+			}
 
-		if (!tMesh.IsEmpty())
-		{
-			renderer.AddTransparentMesh(chunkId, tMesh.IndexCount(), chunks[chunkId].Position(), tMesh.Verticies());
-		}
+			auto mesh = Core::VK::Mesh{};
+			auto tMesh = Core::VK::Mesh{};
+			worldGen.GenerateMesh(chunks, chunks[cId], mesh, tMesh);
 
+			if (!mesh.IsEmpty())
+			{
+				renderer.AddOpaqueMesh(cId, mesh.IndexCount(), chunks[cId].Position(), mesh.Verticies());
+			}
+
+			if (!tMesh.IsEmpty())
+			{
+				renderer.AddTransparentMesh(cId, tMesh.IndexCount(), chunks[cId].Position(), tMesh.Verticies());
+			}
+		}
+		
 		renderer.FlushCommandBuffer();
 	}
 }

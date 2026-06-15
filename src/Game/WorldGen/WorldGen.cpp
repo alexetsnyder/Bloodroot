@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <iostream>
+#include <ranges>
 #include <stack>
 
 namespace Game
@@ -45,19 +46,19 @@ namespace Game
 								  std::unordered_map<glm::i32vec3, Core::VK::Mesh>& meshes,
 								  std::unordered_map<glm::i32vec3, Core::VK::Mesh>& tMeshes)
 	{
-		auto startPos = buildInfo.startPos - 1;
+		auto startPos = buildInfo.startPos;
 		auto endPos = buildInfo.endPos;
 		auto size = buildInfo.size;
 
-		std::vector<bool> visited((size.x + 2) * (size.y + 2) * (size.z + 2), false);
+		std::vector<bool> visited(size.x * size.y * size.z, false);
 
 		std::cout << "Created Visited map!\n";
 
 		auto isInVisited = [&startPos, &endPos](const glm::i32vec3& cubePos)
 			{
-				return ((cubePos.x >= startPos.x && cubePos.x <= endPos.x) &&
-						(cubePos.y >= startPos.y && cubePos.y <= endPos.y) &&
-						(cubePos.z >= startPos.z && cubePos.z <= endPos.z)
+				return ((cubePos.x >= startPos.x && cubePos.x < endPos.x) &&
+						(cubePos.y >= startPos.y && cubePos.y < endPos.y) &&
+						(cubePos.z >= startPos.z && cubePos.z < endPos.z)
 					);
 			};
 
@@ -163,24 +164,24 @@ namespace Game
 	{
 		auto chunkPos = chunk.Position();
 
-		auto startPos = glm::i32vec3{ chunkPos.x, chunkPos.y, chunkPos.z };
-		auto endPos = glm::i32vec3{ chunkPos.x + CHUNK_WIDTH, chunkPos.y + CHUNK_HEIGHT, chunkPos.z + CHUNK_DEPTH };
-		auto size = glm::i32vec3{ CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH };
-
 		auto buildInfo = BuildInfo
 		{
-			.startPos = startPos,
-			.endPos = endPos,
-			.size = size,
+			.startPos = { chunkPos.x, chunkPos.y, chunkPos.z },
+			.endPos = { chunkPos.x + CHUNK_WIDTH, chunkPos.y + CHUNK_HEIGHT, chunkPos.z + CHUNK_DEPTH },
+			.size = { CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH },
 		};
 
-		std::vector<bool> visited((size.x + 2) * (size.y + 2) * (size.z + 2), false);
+		auto startPos = buildInfo.startPos;
+		auto endPos = buildInfo.endPos;
+		auto size = buildInfo.size;
+
+		std::vector<bool> visited(size.x * size.y * size.z, false);
 
 		auto isInVisited = [&startPos, &endPos](const glm::i32vec3& cubePos)
 			{
-				return ((cubePos.x >= startPos.x && cubePos.x <= endPos.x) &&
-						(cubePos.y >= startPos.y && cubePos.y <= endPos.y) &&
-						(cubePos.z >= startPos.z && cubePos.z <= endPos.z)
+				return ((cubePos.x >= startPos.x && cubePos.x < endPos.x) &&
+						(cubePos.y >= startPos.y && cubePos.y < endPos.y) &&
+						(cubePos.z >= startPos.z && cubePos.z < endPos.z)
 					);
 			};
 
@@ -212,9 +213,8 @@ namespace Game
 			}
 
 			//Check all cube sides
-			if (IsInBounds(buildInfo, cubePos))
+			if (chunk.IsInBounds(cubePos))
 			{
-				const auto chunkId = Chunk::MapToChunkId(cubePos);
 				auto currentVoxel = getVoxel(buildInfo, chunks, cubePos);
 
 				if (currentVoxel.Type == VoxelType::WATER)
@@ -261,17 +261,49 @@ namespace Game
 		return false;
 	}
 
+	bool WorldGen::GetAdjChunks(const glm::vec3& position, std::vector<glm::i32vec3>& adjChunks)
+	{
+		bool success = false;
+
+		auto currentChunkId = Chunk::MapToChunkId(position);
+
+		auto x = static_cast<int32_t>(std::floorf(position.x));
+		auto y = static_cast<int32_t>(std::floorf(position.y));
+		auto z = static_cast<int32_t>(std::floorf(position.z));
+		
+		glm::i32vec3 adjCubes[6];
+
+		getAdjCubes({ x, y, z }, adjCubes);
+
+		for (const auto& adjCube : adjCubes)
+		{
+			auto adjChunkId = Chunk::MapToChunkId(adjCube);
+
+			if (adjChunkId != currentChunkId && std::ranges::find_if(adjChunks, [&adjChunkId](const auto& cId) { return cId == adjChunkId; }) == adjChunks.end())
+			{
+				adjChunks.push_back(adjChunkId);
+				success = true;
+			}
+		}
+
+		return success;
+	}
+
 	size_t WorldGen::getIndex(const BuildInfo& buildInfo, const glm::i32vec3& cubePos) const
 	{
 		auto startPos = buildInfo.startPos;
 
-		size_t xPos = cubePos.x - startPos.x + 1.0f;
-		size_t yPos = cubePos.y - startPos.y + 1.0f;
-		size_t zPos = cubePos.z - startPos.z + 1.0f;
+		int32_t xPos = cubePos.x - startPos.x;
+		int32_t yPos = cubePos.y - startPos.y;
+		int32_t zPos = cubePos.z - startPos.z;
 
 		auto size = buildInfo.size;
 
-		return xPos + yPos * size.x + zPos * size.x * size.y;
+		size_t xPrime = static_cast<size_t>(xPos);
+		size_t yPrime = static_cast<size_t>(yPos);
+		size_t zPrime = static_cast<size_t>(zPos);
+
+		return xPrime + size.x * (yPrime + size.y * zPrime);
 	}
 
 	void WorldGen::generateChunk(const glm::i32vec3& position, std::unordered_map<glm::i32vec3, Chunk>& chunks)
@@ -313,12 +345,13 @@ namespace Game
 
 	Voxel WorldGen::getVoxel(const BuildInfo& buildInfo, const std::unordered_map<glm::i32vec3, Chunk>& chunks, const glm::i32vec3& cubePos)
 	{
-		if (!IsInBounds(buildInfo, cubePos))
+		auto chunkId = Chunk::MapToChunkId(cubePos);
+
+		if (!IsInBounds(buildInfo, cubePos) && !chunks.contains(chunkId))
 		{
 			return terrainGen.GetVoxel(0, cubePos);
 		}
-
-		auto chunkId = Chunk::MapToChunkId(cubePos);
+	
 		auto voxelType = chunks.at(chunkId).GetVoxelType(cubePos);
 		return terrainGen.GetVoxel(voxelType);
 	}
