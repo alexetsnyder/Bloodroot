@@ -1,7 +1,6 @@
 #include "Image.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#include <SDL3_image/SDL_image.h>
 
 #include <cmath>
 #include <stdexcept>
@@ -10,27 +9,31 @@ namespace Core
 {
 	Image::Image(const std::string& filePath)
 	{
-		pixels = stbi_load(filePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+		SDL_Surface* loadedSurface = IMG_Load(filePath.c_str());
 
-		if (!pixels)
+		if (!loadedSurface)
 		{
+			SDL_Log("Failed to load image: %s", SDL_GetError());
 			throw std::runtime_error("Failed to load texture image!");
 		}
+
+		imageSurface = SDL_ConvertSurface(loadedSurface, SDL_PIXELFORMAT_ABGR8888);
+		SDL_DestroySurface(loadedSurface);
 	}
 
 	Image::~Image()
 	{
-		if (pixels)
+		if (imageSurface)
 		{
-			stbi_image_free(pixels);
+			SDL_DestroySurface(imageSurface);
 		}
 	}
 
 	uint32_t Image::getMipLevels() const
 	{
-		if (pixels)
+		if (imageSurface)
 		{
-			return static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
+			return static_cast<uint32_t>(std::floor(std::log2(std::max(Width(), Height())))) + 1;
 		}
 
 		return 0;
