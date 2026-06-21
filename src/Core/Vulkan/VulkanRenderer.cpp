@@ -1,5 +1,6 @@
 #include "VulkanRenderer.h"
 
+#include "Cube.h"
 #include "Image.h"
 #include "VulkanHandles.h"
 
@@ -51,6 +52,7 @@ namespace Core::VK
 		createTexture();
 
 		createVertexBuffer();
+		allocateSkybox();
 
 		createUniformBuffers();
 
@@ -258,6 +260,14 @@ namespace Core::VK
 		commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapChainExtent));
 
 		commandBuffer.bindIndexBuffer(indexBuffer.Get(), 0, vk::IndexType::eUint32);
+
+		skyboxGraphicsPipeline.BindDescriptorSets(commandBuffer, descriptorSets[frameIndex]);
+
+		skyboxGraphicsPipeline.BindPipeline(commandBuffer);
+
+		commandBuffer.bindVertexBuffers(0, { vertexBuffer.Get() }, { skyBox.allocation.Offset() });
+
+		commandBuffer.drawIndexed(skyBox.indexCount, 1, 0, 0, 0);
 
 		opaqueGraphicsPipeline.BindDescriptorSets(commandBuffer, descriptorSets[frameIndex]);
 
@@ -765,6 +775,20 @@ namespace Core::VK
 			vk::False,
 			vk::CullModeFlagBits::eBack
 		};
+
+		auto skyboxShader = ShaderModule{ "Shaders/skybox.spv" };
+
+		skyboxGraphicsPipeline = GraphicsPipeline
+		{
+			skyboxShader,
+			swapChainSurfaceFormat.format,
+			findDepthFormat(),
+			descriptorSetLayout,
+			vk::True,
+			vk::False,
+			vk::False,
+			vk::CullModeFlagBits::eFront
+		};
 	}
 
 	vk::Format VulkanRenderer::findDepthFormat()
@@ -1023,6 +1047,37 @@ namespace Core::VK
 		{
 			drawables.emplace_back(std::move(drawable));
 		}
+	}
+
+	void VulkanRenderer::allocateSkybox()
+	{
+		auto verticies = Cube::vertices;
+
+		vk::DeviceSize bufferSize = sizeof(verticies[0]) * verticies.size();
+
+		VMA::VMABuffer stagingBuffer
+		{
+			bufferSize,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+			VMA_MEMORY_USAGE_CPU_ONLY
+		};
+
+		stagingBuffer.CopyData(verticies.data());
+
+		skyBox = Drawable
+		{
+			{},
+			36,
+			{},
+			VMA::VMAVirtualAllocation
+			{
+				vertexBufferBlock.Block(),
+				bufferSize,
+			},
+		};
+
+		transientCommandBufferManager.CopyBuffer(std::move(stagingBuffer), vertexBuffer, vk::BufferCopy(0, skyBox.allocation.Offset(), bufferSize));
 	}
 
 	void VulkanRenderer::createUniformBuffers()

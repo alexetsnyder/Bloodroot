@@ -44,6 +44,8 @@ namespace Core::VK
 		glm::vec3 position;
 		VMA::VMAVirtualAllocation allocation;
 
+		Drawable() {}
+
 		Drawable(const glm::i32vec3& chunkId, uint32_t indexCount, glm::vec3 position, VMA::VMAVirtualAllocation allocation)
 			: chunkId{ chunkId }, indexCount{ indexCount }, position{ position }, allocation{ std::move(allocation) }
 		{
@@ -130,6 +132,7 @@ namespace Core::VK
 			GraphicsPipeline opaqueGraphicsPipeline;
 			GraphicsPipeline tGraphicsPipeline;
 			GraphicsPipeline guiGraphicsPipeline;
+			GraphicsPipeline skyboxGraphicsPipeline;
 
 			CMD::CommandBufferManager commandBufferManager = nullptr;
 			CMD::CommandBufferManager transientCommandBufferManager = nullptr;
@@ -147,6 +150,7 @@ namespace Core::VK
 			std::vector<Drawable> drawables;
 			std::vector<Drawable> tDrawables;
 			std::vector<Drawable> guiDrawable;
+			Drawable skyBox;
 
 			std::vector<vk::raii::Buffer> uniformBuffers;
 			std::vector<vk::raii::DeviceMemory> uniformBuffersMemory;
@@ -203,6 +207,8 @@ namespace Core::VK
 										const glm::vec3& position,
 										const std::vector<Vertex>& verticies,
 										std::vector<Drawable>& drawables);
+
+			void allocateSkybox();
 
 			void createUniformBuffers();
 			void createDescriptorPool();

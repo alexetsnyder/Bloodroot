@@ -12,10 +12,6 @@ namespace Core::VK
 			static const inline std::vector<Vertex> vertices
 			{
 				//Front Face
-				// 1, 1,  0
-				// 0, 1,  1
-				// 1, 0,  2	
-				// 0, 0   3
 			    {{  0.5f,  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f }},
 				{{ -0.5f,  0.5f,  0.5f }, { 1.0f, 0.0f, 1.0f }},
 				{{  0.5f, -0.5f,  0.5f }, { 0.0f, 1.0f, 1.0f }},
