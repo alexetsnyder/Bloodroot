@@ -257,11 +257,11 @@ namespace Core::VK
 		commandBuffer.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height), 0.0f, 1.0f));
 		commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapChainExtent));
 
-		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, opaqueGraphicsPipeline.PipelineLayout(), 0, *descriptorSets[frameIndex], nullptr);
-
 		commandBuffer.bindIndexBuffer(indexBuffer.Get(), 0, vk::IndexType::eUint32);
 
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *opaqueGraphicsPipeline.Pipeline());
+		opaqueGraphicsPipeline.BindDescriptorSets(commandBuffer, descriptorSets[frameIndex]);
+
+		opaqueGraphicsPipeline.BindPipeline(commandBuffer);
 
 		for (const auto& drawable : drawables)
 		{
@@ -272,19 +272,14 @@ namespace Core::VK
 				glm::translate(glm::mat4(1.0f), drawable.position)
 			};
 
-			commandBuffer.pushConstants<PushConstants>(
-				opaqueGraphicsPipeline.PipelineLayout(),
-				vk::ShaderStageFlagBits::eVertex,
-				0,
-				pushConstants
-			);
+			opaqueGraphicsPipeline.SendPushConstants(commandBuffer, pushConstants);
 
 			commandBuffer.drawIndexed(drawable.indexCount, 1, 0, 0, 0);
 		}
 
-		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, tGraphicsPipeline.PipelineLayout(), 0, *descriptorSets[frameIndex], nullptr);
+		tGraphicsPipeline.BindDescriptorSets(commandBuffer, descriptorSets[frameIndex]);
 
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *tGraphicsPipeline.Pipeline());
+		tGraphicsPipeline.BindPipeline(commandBuffer);
 
 		std::map<uint32_t, float> distances;
 		std::vector<uint32_t> indicies(tDrawables.size());
@@ -311,19 +306,14 @@ namespace Core::VK
 				glm::translate(glm::mat4(1.0f), drawable.position)
 			};
 
-			commandBuffer.pushConstants<PushConstants>(
-				tGraphicsPipeline.PipelineLayout(),
-				vk::ShaderStageFlagBits::eVertex,
-				0,
-				pushConstants
-			);
+			tGraphicsPipeline.SendPushConstants(commandBuffer, pushConstants);
 
 			commandBuffer.drawIndexed(drawable.indexCount, 1, 0, 0, 0);
 		}
 
-		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, guiGraphicsPipeline.PipelineLayout(), 0, *descriptorSets[frameIndex], nullptr);
+		guiGraphicsPipeline.BindDescriptorSets(commandBuffer, descriptorSets[frameIndex]);
 
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *guiGraphicsPipeline.Pipeline());
+		guiGraphicsPipeline.BindPipeline(commandBuffer);
 
 		for (const auto& drawable : guiDrawable)
 		{
@@ -338,12 +328,7 @@ namespace Core::VK
 				glm::ortho(0.0f, width, 0.0f, height, -1.0f, 1.0f)
 			};
 
-			commandBuffer.pushConstants<PushConstants>(
-				guiGraphicsPipeline.PipelineLayout(),
-				vk::ShaderStageFlagBits::eVertex,
-				0,
-				pushConstants
-			);
+			guiGraphicsPipeline.SendPushConstants(commandBuffer, pushConstants);
 
 			commandBuffer.drawIndexed(drawable.indexCount, 1, 0, 0, 0);
 		}
@@ -743,50 +728,16 @@ namespace Core::VK
 	{
 		auto shaderModule = ShaderModule{ "Shaders/shader.spv" };
 
-		vk::PipelineColorBlendAttachmentState opaqueColorBlendAttachment
-		{
-			.blendEnable = vk::False,
-			.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
-		};
-
-		vk::PipelineDepthStencilStateCreateInfo opaqueDepthStateCreateInfo
-		{
-			.depthTestEnable = vk::True,
-			.depthWriteEnable = vk::True,
-			.depthCompareOp = vk::CompareOp::eLess,
-			.depthBoundsTestEnable = vk::False,
-			.stencilTestEnable = vk::False
-		};
-
 		opaqueGraphicsPipeline = GraphicsPipeline
 		{ 
 			shaderModule,
 			swapChainSurfaceFormat.format,
 			findDepthFormat(),
 			descriptorSetLayout,
-			opaqueColorBlendAttachment,
-			opaqueDepthStateCreateInfo
-		};
-
-		vk::PipelineColorBlendAttachmentState tColorBlendAttachment
-		{
-			.blendEnable = vk::True,
-			.srcColorBlendFactor = vk::BlendFactor::eSrcAlpha,
-			.dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
-			.colorBlendOp = vk::BlendOp::eAdd,
-			.srcAlphaBlendFactor = vk::BlendFactor::eOne,
-			.dstAlphaBlendFactor = vk::BlendFactor::eZero,
-			.alphaBlendOp = vk::BlendOp::eAdd,
-			.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
-		};
-
-		vk::PipelineDepthStencilStateCreateInfo tDepthStateCreateInfo
-		{
-			.depthTestEnable = vk::True,
-			.depthWriteEnable = vk::False,
-			.depthCompareOp = vk::CompareOp::eLess,
-			.depthBoundsTestEnable = vk::False,
-			.stencilTestEnable = vk::False
+			vk::True,
+			vk::True,
+			vk::False,
+			vk::CullModeFlagBits::eBack
 		};
 
 		tGraphicsPipeline = GraphicsPipeline
@@ -795,26 +746,13 @@ namespace Core::VK
 			swapChainSurfaceFormat.format,
 			findDepthFormat(),
 			descriptorSetLayout,
-			tColorBlendAttachment,
-			tDepthStateCreateInfo
+			vk::True,
+			vk::False,
+			vk::True,
+			vk::CullModeFlagBits::eBack
 		};
 
 		auto guiShader = ShaderModule{ "Shaders/guiShader.spv" };
-
-		vk::PipelineColorBlendAttachmentState guiColorBlendAttachment
-		{
-			.blendEnable = vk::False,
-			.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
-		};
-
-		vk::PipelineDepthStencilStateCreateInfo guiDepthStateCreateInfo
-		{
-			.depthTestEnable = vk::False,
-			.depthWriteEnable = vk::False,
-			.depthCompareOp = vk::CompareOp::eLess,
-			.depthBoundsTestEnable = vk::False,
-			.stencilTestEnable = vk::False
-		};
 
 		guiGraphicsPipeline = GraphicsPipeline
 		{
@@ -822,8 +760,10 @@ namespace Core::VK
 			swapChainSurfaceFormat.format,
 			findDepthFormat(),
 			descriptorSetLayout,
-			guiColorBlendAttachment,
-			guiDepthStateCreateInfo
+			vk::False,
+			vk::False,
+			vk::False,
+			vk::CullModeFlagBits::eBack
 		};
 	}
 
