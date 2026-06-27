@@ -9,6 +9,10 @@
 #include <iostream>
 #include <vector>
 
+constexpr uint32_t WORLD_WIDTH = 64; //64; 320;
+constexpr uint32_t WORLD_DEPTH = 64; //64; 320;
+constexpr uint32_t WORLD_HEIGHT = Game::CHUNK_HEIGHT;
+
 BloodrootApp::BloodrootApp()
 	: window(&appData, WINDOW_WIDTH, WINDOW_HEIGHT, "Bloodroot App!"),
 	  renderer(window, sdl3Instance.GetRequiredInstanceExtensions()),
@@ -22,8 +26,7 @@ BloodrootApp::BloodrootApp()
 
 	renderer.SendIndexData(chunkIndicies.Indicies());
 
-	//{ 320, Game::CHUNK_HEIGHT, 320 }
-	auto worldSize = glm::i32vec3{ 64, Game::CHUNK_HEIGHT, 64 };
+	auto worldSize = glm::i32vec3{ WORLD_WIDTH, WORLD_HEIGHT, WORLD_DEPTH };
 
 	auto buildInfo = Game::BuildInfo
 	{
