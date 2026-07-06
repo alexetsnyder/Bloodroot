@@ -25,6 +25,12 @@ namespace Game
 		FRONT,	
 	};
 
+	struct VoxelPos
+	{
+		int32_t yPos;
+		VoxelType voxelType;
+	};
+
 	class Chunk
 	{
 		public:
@@ -47,6 +53,7 @@ namespace Game
 			void CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel, Core::VK::Mesh& mesh) const;
 			void AddVoxelColumn(int32_t xPos, int32_t yPos, int32_t zPos, const std::vector<VoxelType>& voxelTypes);
 			void SetVoxel(const glm::i32vec3& position, VoxelType voxelType);
+			void SetVoxels(int32_t xPos, int32_t zPos, const std::vector<VoxelPos>& voxelPositions);
 
 		private:
 			glm::vec3 position;

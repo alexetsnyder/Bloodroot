@@ -3,8 +3,10 @@
 #include "ChunkIndicies.h"
 #include "GLMExtensions.h"
 #include "Quad.h"
+#include "Random.h"
 #include "RLEncoding.h"
 
+#include <array>
 #include <chrono>
 #include <iostream>
 #include <vector>
@@ -21,6 +23,11 @@ BloodrootApp::BloodrootApp()
 	  worldGen{ { 0, 0, 0 }}
 {
 	window.SetRelativeMouse(true);
+
+	for (int i = 0; i < 5; i++)
+	{
+		randomTest();
+	}
 
 	auto chunkIndicies = Game::ChunkIndicies{ { Game::CHUNK_WIDTH, Game::CHUNK_HEIGHT, Game::CHUNK_DEPTH } };
 
@@ -329,4 +336,28 @@ int32_t BloodrootApp::signum(float x)
 float BloodrootApp::ceil(float s)
 {
 	return (s == 0.0f ? 1.0f : std::ceilf(s));
+}
+
+void BloodrootApp::randomTest()
+{
+	std::array<uint32_t, 6> distribution{};
+
+	for (int i = 0; i < 400; i++)
+	{
+		auto randInt = Core::Math::Random::Instance().RandomInt(1, 6);
+		int index = randInt - 1;
+
+		distribution[index]++;
+	}
+
+	std::cout << "Random Histogram:\n";
+	for (int i = 0; i < 6; i++)
+	{
+		std::cout << i + 1 << ") ";
+		for (int j = 0; j < distribution[i]; j++)
+		{
+			std::cout << "*";
+		}
+		std::cout << std::endl;
+	}
 }

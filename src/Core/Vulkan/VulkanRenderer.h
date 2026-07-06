@@ -44,7 +44,9 @@ namespace Core::VK
 		glm::vec3 position;
 		VMA::VMAVirtualAllocation allocation;
 
-		Drawable() {}
+		Drawable()
+			: chunkId{}, indexCount{}, position{}
+		{}
 
 		Drawable(const glm::i32vec3& chunkId, uint32_t indexCount, glm::vec3 position, VMA::VMAVirtualAllocation allocation)
 			: chunkId{ chunkId }, indexCount{ indexCount }, position{ position }, allocation{ std::move(allocation) }

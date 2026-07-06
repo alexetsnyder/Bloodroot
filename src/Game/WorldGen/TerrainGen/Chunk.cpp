@@ -126,6 +126,26 @@ namespace Game
 		Core::Math::RLEncoding::Encode<VoxelType>(decodedColumn, voxels[index]);
 	}
 
+	void Chunk::SetVoxels(int32_t xPos, int32_t zPos, const std::vector<VoxelPos>& voxelPositions)
+	{
+		auto localPos = mapToLocal({ xPos, voxelPositions[0].yPos, zPos});
+
+		int32_t index = (localPos.x * CHUNK_WIDTH) + localPos.z;
+
+		auto decodedColumn = Core::Math::RLEncoding::Decode<VoxelType>(voxels[index]);
+
+		voxels[index].clear();
+
+		for (const auto& voxelPos : voxelPositions)
+		{
+			int32_t yPos = static_cast<int32_t>(std::floorf(voxelPos.yPos - this->position.y));
+
+			decodedColumn[yPos] = voxelPos.voxelType;
+		}
+
+		Core::Math::RLEncoding::Encode<VoxelType>(decodedColumn, voxels[index]);
+	}
+
 	void Chunk::createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::VK::Mesh& mesh) const
 	{
 		int32_t x = cubePos.x;

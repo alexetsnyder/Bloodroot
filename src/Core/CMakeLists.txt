@@ -37,6 +37,7 @@ target_sources(
 		Vulkan/CommandBuffer/CommandBufferManager.h
 		SDL3/SDL3Instance.h
 		SDL3/Window/Window.h
+		"Math/Random/Random.h"
 )
 
 target_include_directories(
@@ -50,6 +51,7 @@ target_include_directories(
 		"Math"
 		"Math/Noise"
 		"Math/RLEncoding"
+		"Math/Random"
 		Data
 		Vulkan/VMA
 		Vulkan/Pipeline

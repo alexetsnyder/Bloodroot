@@ -3,7 +3,6 @@
 #include "Cube.h"
 #include "Image.h"
 #include "VulkanHandles.h"
-
 #include "ShaderModule.h"
 
 #include <algorithm>

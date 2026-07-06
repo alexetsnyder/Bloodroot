@@ -43,4 +43,6 @@ class BloodrootApp
 		float intbound(float s, float ds);
 		int32_t signum(float x);
 		float ceil(float s);
+
+		void randomTest();
 };
