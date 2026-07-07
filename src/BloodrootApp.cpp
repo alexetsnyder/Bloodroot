@@ -240,9 +240,9 @@ bool BloodrootApp::raycast(const glm::vec3& origin, const glm::vec3& direction, 
 	float radius = 6.0f;
 	auto normDir = glm::normalize(direction);
 
-	auto x = static_cast<int32_t>(std::floorf(origin.x));
-	auto y = static_cast<int32_t>(std::floorf(origin.y));
-	auto z = static_cast<int32_t>(std::floorf(origin.z));
+	auto x = static_cast<int32_t>(std::floor(origin.x));
+	auto y = static_cast<int32_t>(std::floor(origin.y));
+	auto z = static_cast<int32_t>(std::floor(origin.z));
 
 	auto dx = normDir.x;
 	auto dy = normDir.y;
@@ -260,7 +260,7 @@ bool BloodrootApp::raycast(const glm::vec3& origin, const glm::vec3& direction, 
 	auto tDeltaY = stepY / dy;
 	auto tDeltaZ = stepZ / dz;
 
-	radius /= std::sqrtf(dx * dx + dy * dy + dz * dz);
+	radius /= std::sqrt(dx * dx + dy * dy + dz * dz);
 
 	while (tMaxX <= radius || tMaxY <= radius || tMaxZ <= radius)
 	{
@@ -320,12 +320,12 @@ bool BloodrootApp::raycast(const glm::vec3& origin, const glm::vec3& direction, 
 
 float BloodrootApp::intbound(float s, float ds)
 {
-	if (ds < 0 && std::roundf(s) == s)
+	if (ds < 0 && std::round(s) == s)
 	{
 		return 0.0f;
 	}
 
-	return (ds > 0 ? ceil(s) - s : s - std::floorf(s)) / std::abs(ds);
+	return (ds > 0 ? ceil(s) - s : s - std::floor(s)) / std::abs(ds);
 }
 
 int32_t BloodrootApp::signum(float x)
@@ -335,7 +335,7 @@ int32_t BloodrootApp::signum(float x)
 
 float BloodrootApp::ceil(float s)
 {
-	return (s == 0.0f ? 1.0f : std::ceilf(s));
+	return (s == 0.0f ? 1.0f : std::ceil(s));
 }
 
 void BloodrootApp::randomTest()

@@ -61,9 +61,9 @@ namespace Game
 
 	glm::i32vec3 Chunk::MapToChunkId(const glm::vec3& voxelPos)
 	{
-		auto x = static_cast<int32_t>(std::floorf(voxelPos.x / CHUNK_WIDTH));
-		auto y = static_cast<int32_t>(std::floorf(voxelPos.y / CHUNK_HEIGHT));
-		auto z = static_cast<int32_t>(std::floorf(voxelPos.z / CHUNK_DEPTH));
+		auto x = static_cast<int32_t>(std::floor(voxelPos.x / CHUNK_WIDTH));
+		auto y = static_cast<int32_t>(std::floor(voxelPos.y / CHUNK_HEIGHT));
+		auto z = static_cast<int32_t>(std::floor(voxelPos.z / CHUNK_DEPTH));
 
 		return { x, y, z };
 	}
@@ -138,7 +138,7 @@ namespace Game
 
 		for (const auto& voxelPos : voxelPositions)
 		{
-			int32_t yPos = static_cast<int32_t>(std::floorf(voxelPos.yPos - this->position.y));
+			int32_t yPos = static_cast<int32_t>(std::floor(voxelPos.yPos - this->position.y));
 
 			decodedColumn[yPos] = voxelPos.voxelType;
 		}
@@ -197,9 +197,9 @@ namespace Game
 
 	glm::i32vec3 Chunk::mapToLocal(const glm::vec3& position) const
 	{
-		int32_t x = static_cast<int32_t>(std::floorf(position.x - this->position.x));
-		int32_t y = static_cast<int32_t>(std::floorf(position.y - this->position.y));
-		int32_t z = static_cast<int32_t>(std::floorf(position.z - this->position.z));
+		int32_t x = static_cast<int32_t>(std::floor(position.x - this->position.x));
+		int32_t y = static_cast<int32_t>(std::floor(position.y - this->position.y));
+		int32_t z = static_cast<int32_t>(std::floor(position.z - this->position.z));
 
 		return glm::i32vec3(x, y, z);
 	}

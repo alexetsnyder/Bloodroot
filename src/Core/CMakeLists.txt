@@ -38,6 +38,7 @@ target_sources(
 		SDL3/SDL3Instance.h
 		SDL3/Window/Window.h
 		"Math/Random/Random.h"
+		"Math/Geometry.h"
 )
 
 target_include_directories(
