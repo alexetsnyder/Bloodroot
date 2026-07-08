@@ -10,6 +10,7 @@ target_sources(
 		Vulkan/Pipeline/GraphicsPipeline.cpp
 		Vulkan/Material/Texture.cpp
 		Vulkan/CommandBuffer/CommandBufferManager.cpp
+		"Math/Common.cpp"
 
 	PUBLIC
 	FILE_SET HEADERS
@@ -38,7 +39,8 @@ target_sources(
 		SDL3/SDL3Instance.h
 		SDL3/Window/Window.h
 		"Math/Random/Random.h"
-		"Math/Geometry.h"
+		"Math/Common.h"
+		
 )
 
 target_include_directories(

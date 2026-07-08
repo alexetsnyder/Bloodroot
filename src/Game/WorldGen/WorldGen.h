@@ -29,6 +29,7 @@ namespace Game
 			~WorldGen();
 
 			void GenerateChunks(const BuildInfo& buildInfo, std::unordered_map<glm::i32vec3, Chunk>& chunks);
+			void GenerateTrees(const glm::vec2& treePoints, std::unordered_map<glm::i32vec3, Chunk>& chunks);
 			void GenerateMeshes(const BuildInfo& buildInfo,
 								const std::unordered_map<glm::i32vec3, Chunk>& chunks,
 								std::unordered_map<glm::i32vec3, Core::VK::Mesh>& meshes,

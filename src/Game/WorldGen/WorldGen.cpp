@@ -1,5 +1,7 @@
 #include "WorldGen.h"
 
+#include "Common.h"
+
 #include <chrono>
 #include <iostream>
 #include <ranges>
@@ -39,6 +41,11 @@ namespace Game
 				}
 			}
 		}
+	}
+
+	void WorldGen::GenerateTrees(const glm::vec2& treePoints, std::unordered_map<glm::i32vec3, Chunk>& chunks)
+	{
+
 	}
 
 	void WorldGen::GenerateMeshes(const BuildInfo& buildInfo,
@@ -292,16 +299,11 @@ namespace Game
 	size_t WorldGen::getIndex(const BuildInfo& buildInfo, const glm::i32vec3& cubePos) const
 	{
 		auto startPos = buildInfo.startPos;
-
-		int32_t xPos = cubePos.x - startPos.x;
-		int32_t yPos = cubePos.y - startPos.y;
-		int32_t zPos = cubePos.z - startPos.z;
-
 		auto size = buildInfo.size;
 
-		size_t xPrime = static_cast<size_t>(xPos);
-		size_t yPrime = static_cast<size_t>(yPos);
-		size_t zPrime = static_cast<size_t>(zPos);
+		size_t xPrime = static_cast<size_t>(Core::Math::MapToPositiveRange(cubePos.x, startPos.x));
+		size_t yPrime = static_cast<size_t>(Core::Math::MapToPositiveRange(cubePos.y, startPos.y));
+		size_t zPrime = static_cast<size_t>(Core::Math::MapToPositiveRange(cubePos.z, startPos.z));
 
 		return xPrime + size.x * (yPrime + size.y * zPrime);
 	}
