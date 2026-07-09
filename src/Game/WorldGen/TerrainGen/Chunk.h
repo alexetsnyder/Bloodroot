@@ -7,6 +7,7 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 namespace Game
@@ -48,6 +49,8 @@ namespace Game
 			const glm::vec3& Position() const { return position; }
 			glm::i32vec3 ChunkId() const;
 			const VoxelType GetVoxelType(const glm::i32vec3& position) const;
+			bool IsGround(const glm::vec3& position) const;
+			std::optional<uint16_t> GroundHeight(const glm::vec3& position) const;
 
 			bool IsInBounds(const glm::vec3& position) const;
 			void CreateFace(CubeFace face, const glm::vec3& position, const Voxel& voxel, Core::VK::Mesh& mesh) const;
@@ -62,6 +65,7 @@ namespace Game
 			void createFace(CubeFace face, const glm::i32vec3& cubePos, const Voxel& voxel, Core::VK::Mesh& mesh) const;
 
 			glm::i32vec3 mapToLocal(const glm::vec3& position) const;
+			uint32_t getIndex(const glm::vec3& position) const;
 			void generateVoxel(const glm::vec3& voxelPos, const Voxel& voxel, Core::VK::Mesh& mesh);
 	};
 }

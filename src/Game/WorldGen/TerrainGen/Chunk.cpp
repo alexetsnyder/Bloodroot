@@ -77,8 +77,63 @@ namespace Game
 	{
 		auto localPos = mapToLocal(position);
 
-		int32_t index = (localPos.x * CHUNK_WIDTH) + localPos.z;
+		auto index = getIndex(position);
+
 		return Core::Math::RLEncoding::GetData<VoxelType>(voxels[index], localPos.y);
+	}
+
+	bool Chunk::IsGround(const glm::vec3& position) const
+	{
+		auto index = getIndex(position);
+
+		for (int i = voxels[index].size() - 1; i >= 0; i--)
+		{
+			auto [run, voxelType] = Core::Math::RLEncoding::Decode<VoxelType>(voxels[index][i]);
+
+			if (voxelType == VoxelType::GRASS ||
+				voxelType == VoxelType::DIRT)
+			{
+				return true;
+			}
+			else if (voxelType == VoxelType::WATER ||
+					 voxelType == VoxelType::STONE ||
+					 voxelType == VoxelType::SAND)
+			{
+				return false;
+			}
+		}
+
+		return false;
+	}
+
+	std::optional<uint16_t> Chunk::GroundHeight(const glm::vec3& position) const
+	{
+		auto index = getIndex(position);
+
+		for (int i = voxels[index].size() - 1; i >= 0; i--)
+		{
+			auto [run, voxelType] = Core::Math::RLEncoding::Decode<VoxelType>(voxels[index][i]);
+
+			if (voxelType == VoxelType::GRASS ||
+				voxelType == VoxelType::DIRT)
+			{
+				uint16_t height{ 0 };
+
+				for (int j = 0; j < i; j++)
+				{
+					auto [r, _] = Core::Math::RLEncoding::Decode<VoxelType>(voxels[index][j]);
+					height += r;
+				}
+
+				return height;
+			}
+			else if (voxelType != VoxelType::AIR)
+			{
+				return {};
+			}
+		}
+
+		return {};
 	}
 
 	bool Chunk::IsInBounds(const glm::vec3& position) const
@@ -104,18 +159,14 @@ namespace Game
 
 	void Chunk::AddVoxelColumn(int32_t xPos, int32_t yPos, int32_t zPos, const std::vector<VoxelType>& voxelTypes)
 	{
-		auto localPos = mapToLocal({ xPos, yPos, zPos });
-
-		int32_t index = (localPos.x * CHUNK_WIDTH) + localPos.z;
+		auto index = getIndex({ xPos, yPos, zPos });
 
 		Core::Math::RLEncoding::Encode<VoxelType>(voxelTypes, voxels[index]);
 	}
 
 	void Chunk::SetVoxel(const glm::i32vec3& position, VoxelType voxelType)
 	{
-		auto localPos = mapToLocal(position);
-
-		int32_t index = (localPos.x * CHUNK_WIDTH) + localPos.z;
+		auto index = getIndex(position);
 
 		auto decodedColumn = Core::Math::RLEncoding::Decode<VoxelType>(voxels[index]);
 
@@ -128,12 +179,10 @@ namespace Game
 
 	void Chunk::SetVoxels(int32_t xPos, int32_t zPos, const std::vector<VoxelPos>& voxelPositions)
 	{
-		auto localPos = mapToLocal({ xPos, voxelPositions[0].yPos, zPos});
-
-		int32_t index = (localPos.x * CHUNK_WIDTH) + localPos.z;
+		auto index = getIndex({ xPos, voxelPositions[0].yPos, zPos });
 
 		auto decodedColumn = Core::Math::RLEncoding::Decode<VoxelType>(voxels[index]);
-
+		
 		voxels[index].clear();
 
 		for (const auto& voxelPos : voxelPositions)
@@ -202,6 +251,13 @@ namespace Game
 		int32_t z = static_cast<int32_t>(std::floor(position.z - this->position.z));
 
 		return glm::i32vec3(x, y, z);
+	}
+
+	uint32_t Chunk::getIndex(const glm::vec3& position) const
+	{
+		auto localPos = mapToLocal(position);
+
+		return (localPos.x * CHUNK_WIDTH) + localPos.z;
 	}
 
 	void Chunk::generateVoxel(const glm::vec3& voxelPos, const Voxel& voxel, Core::VK::Mesh& mesh)

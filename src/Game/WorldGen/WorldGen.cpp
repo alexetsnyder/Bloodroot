@@ -1,6 +1,7 @@
 #include "WorldGen.h"
 
 #include "Common.h"
+#include "Random.h"
 
 #include <chrono>
 #include <iostream>
@@ -43,9 +44,52 @@ namespace Game
 		}
 	}
 
-	void WorldGen::GenerateTrees(const glm::vec2& treePoints, std::unordered_map<glm::i32vec3, Chunk>& chunks)
+	void WorldGen::GenerateTrees(const BuildInfo& buildInfo, std::unordered_map<glm::i32vec3, Chunk>& chunks) const
 	{
+		auto startPos = buildInfo.startPos;
+		auto endPos = buildInfo.endPos;
+		auto size = buildInfo.size;
 
+		auto poissonStartInfo = Core::Math::PoissonStartInfo
+		{
+			.startPos = { startPos.x, startPos.z },
+			.radius = 10.0f,
+			.k = 30,
+			.width = static_cast<float>(size.x),
+			.height = static_cast<float>(size.z)
+		};
+
+		std::vector<glm::vec2> points{};
+		Core::Math::Random::Instance().PoissonDiskSampling(poissonStartInfo, points);
+
+		for (const auto& point : points)
+		{
+			auto colPos = glm::vec3{ point.x, 0.0f, point.y };
+
+			if (IsInBounds(buildInfo, colPos))
+			{
+				auto chunkId = Chunk::MapToChunkId(colPos);
+				auto& chunk = chunks[chunkId];
+
+				if (chunk.IsGround(colPos))
+				{
+					auto height = chunk.GroundHeight(colPos);
+
+					if (height.has_value())
+					{
+						auto voxelPos = std::vector<VoxelPos>
+						{
+							{ height.value() + 1, VoxelType::OAK_BARK },
+							{ height.value() + 2, VoxelType::OAK_BARK },
+							{ height.value() + 3, VoxelType::OAK_BARK },
+							{ height.value() + 4, VoxelType::OAK_LEAVES },
+						};
+
+						chunk.SetVoxels(std::floor(point.x), std::floor(point.y), voxelPos);
+					}
+				}
+			}
+		}
 	}
 
 	void WorldGen::GenerateMeshes(const BuildInfo& buildInfo,

@@ -8,6 +8,8 @@ namespace Game
 	{
 		AIR,
 		WATER,
+		OAK_BARK,
+		OAK_LEAVES,
 		GRASS,
 		DIRT,
 		SAND,
@@ -23,6 +25,10 @@ namespace Game
 				return os << "VoxelType::AIR";
 			case VoxelType::WATER:
 				return os << "VoxelType::WATER";
+			case VoxelType::OAK_BARK:
+				return os << "VoxelType::OAK_BARK";
+			case VoxelType::OAK_LEAVES:
+				return os << "VoxelType::OAK_LEAVES";
 			case VoxelType::GRASS:
 				return os << "VoxelType::GRASS";
 			case VoxelType::DIRT:

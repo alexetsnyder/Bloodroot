@@ -43,17 +43,11 @@ BloodrootApp::BloodrootApp()
 
 	std::cout << "Finished Generating Chunks!\n";
 
-	auto poissonStartInfo = Core::Math::PoissonStartInfo
-	{
-		.startPos = { -worldSize.x / 2, -worldSize.z / 2 },
-		.radius = 20.0f,
-		.k = 30,
-		.width = static_cast<float>(worldSize.x),
-		.height = static_cast<float>(worldSize.z)
-	};
+	std::cout << "Generating Trees...\n";
 
-	std::vector<glm::vec2> points{};
-	Core::Math::Random::Instance().PoissonDiskSampling(poissonStartInfo, points);
+	worldGen.GenerateTrees(buildInfo, chunks);
+
+	std::cout << "Finished Generating Trees!\n";
 
 	std::unordered_map<glm::i32vec3, Core::VK::Mesh> meshes;
 	std::unordered_map<glm::i32vec3, Core::VK::Mesh> tMeshes;

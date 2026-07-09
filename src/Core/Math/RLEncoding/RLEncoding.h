@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <tuple>
 #include <vector>
 
 namespace Core::Math
@@ -69,6 +70,14 @@ namespace Core::Math
 				}
 
 				encodeRun(currentRun, currentData, encodedData);
+			}
+
+			template <typename T>
+			static std::tuple<uint16_t, T> Decode(uint16_t encodedValue)
+			{
+				auto run = (encodedValue >> 8) & 0xFF;
+				auto dataType = static_cast<T>(encodedValue & 0xFF);
+				return { run, dataType };
 			}
 
 			template <typename T>

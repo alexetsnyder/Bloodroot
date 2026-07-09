@@ -903,7 +903,9 @@ namespace Core::VK
 			{ "Textures/Stone.png" },
 			{ "Textures/Bedrock.png" },
 			{ "Textures/Sand.png" },
-			{ "Textures/Water.png" }
+			{ "Textures/Water.png" },
+			{ "Textures/OakBark.png" },
+			{ "Textures/OakLeaves.png" },
 		};
 
 		texture = MAT::Texture

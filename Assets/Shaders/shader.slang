@@ -37,5 +37,11 @@ layout(set = 0, binding = 1) Sampler2DArray textures;
 [shader("fragment")]
 float4 fragMain(VSOutput inVert) : SV_Target
 {
-    return textures.Sample(inVert.fragTexCoord);
+    float4 color = textures.Sample(inVert.fragTexCoord);
+    if (color.a < 0.5)
+    {
+        discard;
+    }
+
+    return color;
 }

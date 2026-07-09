@@ -29,7 +29,7 @@ constexpr bool enableValidationLayers = true;
 namespace Core::VK
 {
 	constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
-	constexpr uint32_t TEXTURE_ARRAY_SIZE = 7;
+	constexpr uint32_t TEXTURE_ARRAY_SIZE = 9;
 
 	struct UniformBufferObject
 	{
