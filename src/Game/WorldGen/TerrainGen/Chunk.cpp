@@ -252,7 +252,7 @@ namespace Game
 
 		return glm::i32vec3(x, y, z);
 	}
-
+	 
 	uint32_t Chunk::getIndex(const glm::vec3& position) const
 	{
 		auto localPos = mapToLocal(position);

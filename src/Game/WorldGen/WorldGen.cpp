@@ -66,7 +66,10 @@ namespace Game
 		{
 			auto colPos = glm::vec3{ point.x, 0.0f, point.y };
 
-			if (IsInBounds(buildInfo, colPos))
+			if (IsInBounds(buildInfo, { point.x + 2, 0.0f, point.y }) &&
+				IsInBounds(buildInfo, { point.x - 2, 0.0f, point.y }) &&
+				IsInBounds(buildInfo, { point.x, 0.0f, point.y + 2 }) &&
+				IsInBounds(buildInfo, { point.x, 0.0f, point.y - 2 }))
 			{
 				auto chunkId = Chunk::MapToChunkId(colPos);
 				auto& chunk = chunks[chunkId];
@@ -77,15 +80,49 @@ namespace Game
 
 					if (height.has_value())
 					{
-						auto voxelPos = std::vector<VoxelPos>
+						auto x = std::floor(point.x);
+						auto z = std::floor(point.y);
+
+						auto mainTrunk = std::vector<VoxelPos>
 						{
 							{ height.value() + 1, VoxelType::OAK_BARK },
 							{ height.value() + 2, VoxelType::OAK_BARK },
 							{ height.value() + 3, VoxelType::OAK_BARK },
-							{ height.value() + 4, VoxelType::OAK_LEAVES },
+							{ height.value() + 4, VoxelType::OAK_BARK },
+							{ height.value() + 5, VoxelType::OAK_BARK },
+							{ height.value() + 6, VoxelType::OAK_BARK },
+							{ height.value() + 7, VoxelType::OAK_LEAVES },
 						};
 
-						chunk.SetVoxels(std::floor(point.x), std::floor(point.y), voxelPos);
+						chunk.SetVoxels(x, z, mainTrunk);
+
+						auto treeSides = std::vector<VoxelPos>
+						{
+							{ height.value() + 5, VoxelType::OAK_LEAVES },
+							{ height.value() + 6, VoxelType::OAK_LEAVES },
+							{ height.value() + 7, VoxelType::OAK_LEAVES },
+						};
+
+						setVoxels(x + 1, z, treeSides, chunks);
+						setVoxels(x - 1, z, treeSides, chunks);
+						setVoxels(x, z + 1, treeSides, chunks);
+						setVoxels(x, z - 1, treeSides, chunks);
+
+						auto shortTreeSides = std::vector<VoxelPos>
+						{
+							{ height.value() + 5, VoxelType::OAK_LEAVES },
+							{ height.value() + 6, VoxelType::OAK_LEAVES },
+						};
+
+						setVoxels(x + 1, z + 1, shortTreeSides, chunks);
+						setVoxels(x + 1, z - 1, shortTreeSides, chunks);
+						setVoxels(x - 1, z + 1, shortTreeSides, chunks);
+						setVoxels(x - 1, z - 1, shortTreeSides, chunks);
+						
+						setVoxels(x + 2, z, shortTreeSides, chunks);
+						setVoxels(x - 2, z, shortTreeSides, chunks);
+						setVoxels(x, z + 2, shortTreeSides, chunks);
+						setVoxels(x, z - 2, shortTreeSides, chunks);
 					}
 				}
 			}
@@ -198,7 +235,7 @@ namespace Game
 					{
 						auto adjVoxel = getVoxel(buildInfo, chunks, adjCubes[i]);
 
-						if (adjVoxel.Type == VoxelType::AIR || adjVoxel.Type == VoxelType::WATER)
+						if (adjVoxel.Type == VoxelType::AIR || adjVoxel.Type == VoxelType::WATER || adjVoxel.Type == VoxelType::OAK_LEAVES)
 						{
 							chunk.CreateFace(static_cast<CubeFace>(i), cubePos, currentVoxel, mesh);
 						}
@@ -286,7 +323,7 @@ namespace Game
 					{
 						auto adjVoxel = getVoxel(buildInfo, chunks, adjCubes[i]);
 
-						if (adjVoxel.Type == VoxelType::AIR || adjVoxel.Type == VoxelType::WATER)
+						if (adjVoxel.Type == VoxelType::AIR || adjVoxel.Type == VoxelType::WATER || adjVoxel.Type == VoxelType::OAK_LEAVES)
 						{
 							chunk.CreateFace(static_cast<CubeFace>(i), cubePos, currentVoxel, mesh);
 						}
@@ -400,5 +437,12 @@ namespace Game
 	
 		auto voxelType = chunks.at(chunkId).GetVoxelType(cubePos);
 		return terrainGen.GetVoxel(voxelType);
+	}
+
+	void WorldGen::setVoxels(int32_t xPos, int32_t zPos, const std::vector<VoxelPos>& voxelPos, std::unordered_map<glm::i32vec3, Chunk>& chunks) const
+	{
+		auto chunkId = Chunk::MapToChunkId({ xPos, 0, zPos });
+
+		chunks[chunkId].SetVoxels(xPos, zPos, voxelPos);
 	}
 }

@@ -55,5 +55,6 @@ namespace Game
 			Voxel getVoxel(const BuildInfo& buildInfo,
 						   const std::unordered_map<glm::i32vec3, Chunk>& chunks,
 						   const glm::i32vec3& cubePos);
+			void setVoxels(int32_t xPos, int32_t zPos, const std::vector<VoxelPos>& voxelPos, std::unordered_map<glm::i32vec3, Chunk>& chunks) const;
 	};
 }

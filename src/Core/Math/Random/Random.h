@@ -65,7 +65,7 @@ namespace Core::Math
 
 				auto active = std::vector<glm::vec2>{};
 
-				auto p0 = glm::vec2{ RandomFloat(startPos.x, width), RandomFloat(startPos.y, height) };
+				auto p0 = glm::vec2{ RandomFloat(startPos.x, startPos.x + width), RandomFloat(startPos.y, startPos.y + height) };
 
 				float cellSize = std::floor(radius / std::sqrt(static_cast<float>(N)));
 				auto nCellsWidth = static_cast<int32_t>(std::ceil(width / cellSize)) + 1;
