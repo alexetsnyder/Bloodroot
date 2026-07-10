@@ -37,7 +37,9 @@ class BloodrootApp
 		void mainLoop();
 		void handleEvents(const SDL_Event& event);
 		void processInput(float deltaTime);
-		void handleMouseClick();
+		void handleLeftMouseClick();
+		void handleRightMouseClick();
+		void updateChunks(const std::vector<glm::i32vec3>& chunksToUpdate);
 
 		bool raycast(const glm::vec3& origin, const glm::vec3& direction, Game::PHYS::VoxelCollision& collision);
 		float intbound(float s, float ds);

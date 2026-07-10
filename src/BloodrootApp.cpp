@@ -125,7 +125,11 @@ void BloodrootApp::handleEvents(const SDL_Event& event)
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
 			if (event.button.button == SDL_BUTTON_LEFT)
 			{
-				handleMouseClick();
+				handleLeftMouseClick();
+			}
+			else if (event.button.button == SDL_BUTTON_RIGHT)
+			{
+				handleRightMouseClick();
 			}
 			break;
 		case SDL_EVENT_MOUSE_WHEEL:
@@ -186,7 +190,7 @@ void BloodrootApp::processInput(float deltaTime)
 	}
 }
 
-void BloodrootApp::handleMouseClick()
+void BloodrootApp::handleLeftMouseClick()
 {
 	Game::PHYS::VoxelCollision collision;
 	if (raycast(camera.Position(), camera.Front(), collision))
@@ -203,30 +207,62 @@ void BloodrootApp::handleMouseClick()
 
 		worldGen.GetAdjChunks(collision.Position(), chunksToUpdate);
 
-		for (const auto& cId : chunksToUpdate)
-		{
-			if (!chunks.contains(cId))
-			{
-				continue;
-			}
-
-			auto mesh = Core::VK::Mesh{};
-			auto tMesh = Core::VK::Mesh{};
-			worldGen.GenerateMesh(chunks, chunks[cId], mesh, tMesh);
-
-			if (!mesh.IsEmpty())
-			{
-				renderer.AddOpaqueMesh(cId, mesh.IndexCount(), chunks[cId].Position(), mesh.Verticies());
-			}
-
-			if (!tMesh.IsEmpty())
-			{
-				renderer.AddTransparentMesh(cId, tMesh.IndexCount(), chunks[cId].Position(), tMesh.Verticies());
-			}
-		}
-		
-		renderer.FlushCommandBuffer();
+		updateChunks(chunksToUpdate);
 	}
+}
+
+void BloodrootApp::handleRightMouseClick()
+{
+	Game::PHYS::VoxelCollision collision;
+	if (raycast(camera.Position(), camera.Front(), collision))
+	{
+		std::cout << "Solid Voxel Selected: " << collision << std::endl;
+
+		auto chunkId = Game::Chunk::MapToChunkId(collision.Position());
+
+		auto blockPos = collision.Position() + collision.Normal();
+		auto voxelType = chunks[chunkId].GetVoxelType(blockPos);
+
+		if (voxelType == Game::VoxelType::AIR)
+		{
+			chunks[chunkId].SetVoxel(blockPos, Game::VoxelType::DIRT);
+		}
+
+		std::vector<glm::i32vec3> chunksToUpdate;
+
+		chunksToUpdate.push_back(chunkId);
+
+		worldGen.GetAdjChunks(collision.Position(), chunksToUpdate);
+
+		updateChunks(chunksToUpdate);
+	}
+}
+
+void BloodrootApp::updateChunks(const std::vector<glm::i32vec3>& chunksToUpdate)
+{
+	for (const auto& chunkId : chunksToUpdate)
+	{
+		if (!chunks.contains(chunkId))
+		{
+			continue;
+		}
+
+		auto mesh = Core::VK::Mesh{};
+		auto tMesh = Core::VK::Mesh{};
+		worldGen.GenerateMesh(chunks, chunks[chunkId], mesh, tMesh);
+
+		if (!mesh.IsEmpty())
+		{
+			renderer.AddOpaqueMesh(chunkId, mesh.IndexCount(), chunks[chunkId].Position(), mesh.Verticies());
+		}
+
+		if (!tMesh.IsEmpty())
+		{
+			renderer.AddTransparentMesh(chunkId, tMesh.IndexCount(), chunks[chunkId].Position(), tMesh.Verticies());
+		}
+	}
+
+	renderer.FlushCommandBuffer();
 }
 
 /// <summary>
