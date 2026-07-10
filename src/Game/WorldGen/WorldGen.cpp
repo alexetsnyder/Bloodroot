@@ -85,12 +85,12 @@ namespace Game
 
 						auto mainTrunk = std::vector<VoxelPos>
 						{
-							{ height.value() + 1, VoxelType::OAK_BARK },
-							{ height.value() + 2, VoxelType::OAK_BARK },
-							{ height.value() + 3, VoxelType::OAK_BARK },
-							{ height.value() + 4, VoxelType::OAK_BARK },
-							{ height.value() + 5, VoxelType::OAK_BARK },
-							{ height.value() + 6, VoxelType::OAK_BARK },
+							{ height.value() + 1, VoxelType::OAK_LOG },
+							{ height.value() + 2, VoxelType::OAK_LOG },
+							{ height.value() + 3, VoxelType::OAK_LOG },
+							{ height.value() + 4, VoxelType::OAK_LOG },
+							{ height.value() + 5, VoxelType::OAK_LOG },
+							{ height.value() + 6, VoxelType::OAK_LOG },
 							{ height.value() + 7, VoxelType::OAK_LEAVES },
 						};
 

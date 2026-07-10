@@ -13,8 +13,8 @@ namespace Game
 		{ VoxelType::STONE, { VoxelType::STONE, 3, 3, 3, 3, 3, 3 }},
 		{ VoxelType::BEDROCK, { VoxelType::BEDROCK, 4, 4, 4, 4, 4, 4 }},
 		{ VoxelType::SAND, { VoxelType::SAND, 5, 5, 5, 5, 5, 5 }},
-		{ VoxelType::OAK_BARK, { VoxelType::OAK_BARK, 7, 7, 7, 7, 7, 7 }},
-		{ VoxelType::OAK_LEAVES, { VoxelType::OAK_LEAVES, 8, 8, 8, 8, 8, 8 }},
+		{ VoxelType::OAK_LOG, { VoxelType::OAK_LOG, 7, 7, 8, 8, 7, 7 }},
+		{ VoxelType::OAK_LEAVES, { VoxelType::OAK_LEAVES, 9, 9, 9, 9, 9, 9 }},
 	};
 
 	TerrainGen::TerrainGen(uint32_t seed)

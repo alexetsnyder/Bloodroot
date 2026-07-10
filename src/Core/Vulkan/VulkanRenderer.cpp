@@ -904,7 +904,8 @@ namespace Core::VK
 			{ "Textures/Bedrock.png" },
 			{ "Textures/Sand.png" },
 			{ "Textures/Water.png" },
-			{ "Textures/OakBark.png" },
+			{ "Textures/OakLogSide.png" },
+			{ "Textures/OakLogTop.png" },
 			{ "Textures/OakLeaves.png" },
 		};
 
