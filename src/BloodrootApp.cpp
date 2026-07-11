@@ -218,28 +218,22 @@ void BloodrootApp::handleRightMouseClick()
 	{
 		std::cout << "Solid Voxel Selected: " << collision << std::endl;
 
-		auto chunkId = Game::Chunk::MapToChunkId(collision.Position());
-
 		auto blockPos = collision.Position() + collision.Normal();
 
-		auto newChunkId = glm::i32vec3{ chunkId };
-		if (!chunks[chunkId].IsInBounds(blockPos))
-		{
-			newChunkId = Game::Chunk::MapToChunkId(blockPos);
-		}
+		auto chunkId = Game::Chunk::MapToChunkId(blockPos);;
 
-		auto voxelType = chunks[newChunkId].GetVoxelType(blockPos);
+		auto voxelType = chunks[chunkId].GetVoxelType(blockPos);
 
 		if (voxelType == Game::VoxelType::AIR)
 		{
-			chunks[newChunkId].SetVoxel(blockPos, Game::VoxelType::DIRT);
+			chunks[chunkId].SetVoxel(blockPos, Game::VoxelType::DIRT);
 		}
 
 		std::vector<glm::i32vec3> chunksToUpdate;
 
-		chunksToUpdate.push_back(newChunkId);
+		chunksToUpdate.push_back(chunkId);
 
-		worldGen.GetAdjChunks(collision.Position(), chunksToUpdate);
+		worldGen.GetAdjChunks(blockPos, chunksToUpdate);
 
 		updateChunks(chunksToUpdate);
 	}
