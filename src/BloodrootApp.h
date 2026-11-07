@@ -18,8 +18,8 @@
 class BloodrootApp
 {
 	public:
-		const int WINDOW_WIDTH = 800;
-		const int WINDOW_HEIGHT = 600;
+		const int WINDOW_WIDTH = 1920;
+		const int WINDOW_HEIGHT = 1080;
 
 		BloodrootApp();
 		void run();
